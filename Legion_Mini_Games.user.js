@@ -862,21 +862,14 @@
         const first = match.players[0];
         const second = match.players[1];
 
-        const winnerText = match.winner === 'draw'
+        const winnerNickname = match.winner === 'draw'
             ? 'Ничья'
-            : 'Победитель: ' +
-                (match.players.find(p => p.id === match.winner)?.nickname ||
-                'Неизвестно');
-
+            : '@' + match.players.find(p => p.id === match.winner).nickname;
+        
         const message =
-            '🎮 Камень, ножницы, бумага!\n' +
-            first.nickname + ' — ' +
-            moves[first.move].emoji + ' ' +
-            moves[first.move].label + '\n' +
-            second.nickname + ' — ' +
-            moves[second.move].emoji + ' ' +
-            moves[second.move].label + '\n' +
-            '🏆 ' + winnerText;
+            'КНБ: @' + first.nickname + ' (' + moves[first.move].label + ')' +
+            ' vs @' + second.nickname + ' (' + moves[second.move].label + ')' +
+            ' | Победитель: ' + winnerNickname;
 
         const form = document.querySelector('form.cy-chat-f');
 
