@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Мини-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      1.4.0
+// @version      1.6.0
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -9,7 +9,7 @@
 // @updateURL    https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
 // @downloadURL  https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
 // @match        https://play.multidonate.ru/*
-/* @run-at       document-idle */
+// @run-at       document-idle
 // @grant        GM_xmlhttpRequest
 // @connect      legion-server.onrender.com
 // ==/UserScript==
@@ -21,12 +21,14 @@
         serverUrl: 'https://legion-server.onrender.com',
         heartbeatInterval: 20000,
         playersRefreshInterval: 10000,
-        invitationsRefreshInterval: 5000
+        invitationsRefreshInterval: 5000,
+        matchRefreshInterval: 2000
     };
 
     const STORAGE = {
         playerId: 'legion_mini_player_id',
-        nickname: 'legion_mini_nickname'
+        nickname: 'legion_mini_nickname',
+        publishedMatches: 'legion_mini_published_matches'
     };
 
     let playerId = localStorage.getItem(STORAGE.playerId);
@@ -39,15 +41,18 @@
 
     if (!nickname) {
         nickname = prompt('Введите ваш игровой ник:');
-
         if (!nickname || !nickname.trim()) return;
-
         nickname = nickname.trim().slice(0, 32);
         localStorage.setItem(STORAGE.nickname, nickname);
     }
 
     const shownInvitations = new Set();
     let activeInvitation = null;
+    let activeMatchId = null;
+    let displayedMatchId = null;
+    let matchResultShown = false;
+    let moveSubmitted = false;
+    let ui;
 
     // ========================================
     // HTTP REQUEST
@@ -77,11 +82,11 @@
             },
 
             onerror() {
-                callback(new Error('Connection failed'));
+                callback(new Error('Connection failed'), null, 0);
             },
 
             ontimeout() {
-                callback(new Error('Request timeout'));
+                callback(new Error('Request timeout'), null, 0);
             }
         });
     }
@@ -115,7 +120,7 @@
             }
 
             #legion-mini-toggle:hover,
-            .legion-mini-invite-button:hover {
+            .legion-mini-button:hover {
                 background: #414149;
             }
 
@@ -178,18 +183,17 @@
                 text-overflow: ellipsis;
             }
 
-            .legion-mini-invite-button {
-                padding: 6px 9px;
+            .legion-mini-button {
+                padding: 7px 10px;
                 border: 1px solid #55555e;
                 border-radius: 7px;
                 background: #303037;
                 color: #eee;
                 cursor: pointer;
-                font-size: 11px;
-                white-space: nowrap;
+                font-size: 12px;
             }
 
-            .legion-mini-invite-button:disabled {
+            .legion-mini-button:disabled {
                 opacity: .5;
                 cursor: default;
             }
@@ -207,37 +211,54 @@
                 font-size: 11px;
             }
 
-            #legion-mini-notification {
+            #legion-mini-modal {
                 display: none;
                 position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
+                inset: 0;
                 z-index: 1000001;
-                width: min(320px, calc(100vw - 40px));
-                padding: 20px;
+                align-items: center;
+                justify-content: center;
+                background: #0009;
+                font-family: Arial, sans-serif;
+                color: #eee;
+            }
+
+            #legion-mini-modal.open {
+                display: flex;
+            }
+
+            #legion-mini-modal-card {
+                width: min(380px, calc(100vw - 36px));
+                padding: 22px;
                 border: 1px solid #55555e;
                 border-radius: 14px;
                 background: #25252b;
-                color: #eee;
-                font-family: Arial, sans-serif;
                 box-shadow: 0 10px 40px #0009;
                 text-align: center;
             }
 
-            #legion-mini-notification.open {
-                display: block;
+            #legion-mini-modal-title {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 12px;
             }
 
-            .legion-mini-invite-actions {
+            #legion-mini-modal-body {
+                font-size: 14px;
+                line-height: 1.6;
+                white-space: pre-line;
+            }
+
+            .legion-mini-actions {
                 display: flex;
-                gap: 10px;
+                flex-wrap: wrap;
+                gap: 9px;
+                justify-content: center;
                 margin-top: 18px;
             }
 
-            .legion-mini-invite-actions button {
-                flex: 1;
-                padding: 10px;
+            .legion-mini-actions button {
+                padding: 10px 13px;
                 border: 1px solid #55555e;
                 border-radius: 8px;
                 background: #35353d;
@@ -245,9 +266,19 @@
                 cursor: pointer;
             }
 
-            .legion-mini-invite-actions .accept {
+            .legion-mini-actions .primary {
                 background: #315c40;
                 border-color: #477b59;
+            }
+
+            .legion-mini-actions .publish {
+                background: #725522;
+                border-color: #a17b35;
+            }
+
+            .legion-mini-actions button:disabled {
+                opacity: .5;
+                cursor: default;
             }
 
             #legion-mini-toast {
@@ -281,6 +312,8 @@
     function showToast(message) {
         const toast = document.getElementById('legion-mini-toast');
 
+        if (!toast) return;
+
         toast.textContent = message;
         toast.classList.add('open');
 
@@ -312,7 +345,7 @@
                     Подключение к серверу...
                 </div>
 
-                <div style="font-size:12px;margin-bottom:8px;">
+                <div style="font-size:12px;margin-bottom:8px">
                     Игроки онлайн
                     <span id="legion-mini-count">(0)</span>
                 </div>
@@ -333,29 +366,23 @@
 
         document.body.appendChild(widget);
 
-        const notification = document.createElement('div');
-        notification.id = 'legion-mini-notification';
+        const modal = document.createElement('div');
+        modal.id = 'legion-mini-modal';
 
-        notification.innerHTML = `
-            <div style="font-size:25px;margin-bottom:10px;">🎮</div>
-            <div style="font-weight:bold;margin-bottom:8px;">
-                Приглашение в игру
-            </div>
-            <div id="legion-mini-invite-text"></div>
-            <div class="legion-mini-invite-actions">
-                <button class="accept" id="legion-mini-accept">
-                    Принять
-                </button>
-                <button id="legion-mini-reject">
-                    Отклонить
-                </button>
+        modal.innerHTML = `
+            <div id="legion-mini-modal-card">
+                <div id="legion-mini-modal-title"></div>
+                <div id="legion-mini-modal-body"></div>
+                <div id="legion-mini-modal-actions"
+                     class="legion-mini-actions"></div>
             </div>
         `;
 
-        document.body.appendChild(notification);
+        document.body.appendChild(modal);
 
         const toast = document.createElement('div');
         toast.id = 'legion-mini-toast';
+
         document.body.appendChild(toast);
 
         widget.querySelector('#legion-mini-toggle')
@@ -367,37 +394,62 @@
         widget.querySelector('.legion-mini-self').textContent =
             'Вы вошли как: ' + nickname;
 
-        notification.querySelector('#legion-mini-accept')
-            .addEventListener('click', () => respondToInvitation(true));
-
-        notification.querySelector('#legion-mini-reject')
-            .addEventListener('click', () => respondToInvitation(false));
-
         return {
             status: widget.querySelector('#legion-mini-status'),
             count: widget.querySelector('#legion-mini-count'),
             players: widget.querySelector('#legion-mini-players'),
-            notification
+            modal,
+            modalTitle: modal.querySelector('#legion-mini-modal-title'),
+            modalBody: modal.querySelector('#legion-mini-modal-body'),
+            modalActions: modal.querySelector('#legion-mini-modal-actions')
         };
+    }
+
+    function openModal(title, body, actions) {
+        ui.modalTitle.textContent = title;
+        ui.modalBody.textContent = body;
+        ui.modalActions.replaceChildren();
+
+        actions.forEach(action => {
+            const button = document.createElement('button');
+
+            button.textContent = action.label;
+
+            if (action.className) {
+                button.className = action.className;
+            }
+
+            button.disabled = !!action.disabled;
+            button.addEventListener('click', action.onClick);
+
+            ui.modalActions.appendChild(button);
+        });
+
+        ui.modal.classList.add('open');
+    }
+
+    function closeModal() {
+        ui.modal.classList.remove('open');
     }
 
     // ========================================
     // PLAYER REGISTRATION
     // ========================================
 
-    function heartbeat(ui) {
+    function heartbeat() {
         request('POST', '/api/players/heartbeat', {
             id: playerId,
             nickname
         }, (error, result) => {
-            if (error || !result || !result.success) {
-                ui.status.textContent = 'Сервер запускается или недоступен';
-                ui.status.classList.remove('online');
-                return;
-            }
+            if (error || !result?.success) {
+                ui.status.textContent =
+                    'Сервер запускается или недоступен';
 
-            ui.status.textContent = '● Сервер онлайн';
-            ui.status.classList.add('online');
+                ui.status.classList.remove('online');
+            } else {
+                ui.status.textContent = '● Сервер онлайн';
+                ui.status.classList.add('online');
+            }
         });
     }
 
@@ -413,17 +465,15 @@
             fromId: playerId,
             toId: targetId
         }, (error, result, status) => {
-            if (error || !result || !result.success) {
+            if (error || !result?.success) {
                 button.disabled = false;
                 button.textContent = 'Пригласить';
 
-                if (status === 409) {
-                    showToast('Приглашение этому игроку уже отправлено');
-                } else {
-                    showToast(
-                        result?.error || 'Не удалось отправить приглашение'
-                    );
-                }
+                showToast(
+                    status === 409
+                        ? 'Игрок уже участвует в матче или приглашение отправлено'
+                        : (result?.error || 'Не удалось отправить приглашение')
+                );
 
                 return;
             }
@@ -437,17 +487,19 @@
     // ONLINE PLAYERS
     // ========================================
 
-    function refreshPlayers(ui) {
+    function refreshPlayers() {
         request('GET', '/api/players', null, (error, result) => {
-            if (error || !result || !result.success) return;
+            if (error || !result?.success) return;
 
             ui.count.textContent = '(' + result.count + ')';
             ui.players.replaceChildren();
 
-            if (result.players.length === 0) {
+            if (!result.players.length) {
                 const empty = document.createElement('div');
+
                 empty.className = 'legion-mini-empty';
                 empty.textContent = 'Пока никого нет онлайн';
+
                 ui.players.appendChild(empty);
                 return;
             }
@@ -461,15 +513,16 @@
 
                 const name = document.createElement('span');
                 name.className = 'legion-mini-player-name';
-                name.textContent = player.nickname;
+
+                name.textContent =
+                    player.nickname + (player.id === playerId ? ' (Вы)' : '');
 
                 item.append(dot, name);
 
-                if (player.id === playerId) {
-                    name.textContent += ' (Вы)';
-                } else {
+                if (player.id !== playerId) {
                     const button = document.createElement('button');
-                    button.className = 'legion-mini-invite-button';
+
+                    button.className = 'legion-mini-button';
                     button.textContent = 'Пригласить';
 
                     button.addEventListener('click', () => {
@@ -488,15 +541,13 @@
     // INCOMING INVITATIONS
     // ========================================
 
-    function refreshInvitations(ui) {
+    function refreshInvitations() {
         request(
             'GET',
             '/api/invites/' + encodeURIComponent(playerId),
             null,
             (error, result) => {
-                if (error || !result || !result.success) return;
-
-                if (activeInvitation) return;
+                if (error || !result?.success || activeInvitation) return;
 
                 const invitation = result.invitations.find(item =>
                     !shownInvitations.has(item.id)
@@ -507,11 +558,22 @@
                 shownInvitations.add(invitation.id);
                 activeInvitation = invitation;
 
-                ui.notification.querySelector('#legion-mini-invite-text')
-                    .textContent =
-                    invitation.fromNickname + ' приглашает вас сыграть!';
-
-                ui.notification.classList.add('open');
+                openModal(
+                    '🎮 Приглашение в игру',
+                    invitation.fromNickname +
+                    ' приглашает вас сыграть в «Камень, ножницы, бумага»!',
+                    [
+                        {
+                            label: 'Принять',
+                            className: 'primary',
+                            onClick: () => respondToInvitation(true)
+                        },
+                        {
+                            label: 'Отклонить',
+                            onClick: () => respondToInvitation(false)
+                        }
+                    ]
+                );
             }
         );
     }
@@ -534,27 +596,346 @@
             },
             (error, result) => {
                 activeInvitation = null;
+                closeModal();
 
-                document.getElementById('legion-mini-notification')
-                    .classList.remove('open');
-
-                if (error || !result || !result.success) {
+                if (error || !result?.success) {
                     showToast(
                         result?.error || 'Не удалось обработать приглашение'
                     );
+
                     return;
                 }
 
-                if (accept) {
+                showToast(
+                    accept
+                        ? 'Приглашение принято!'
+                        : 'Приглашение отклонено'
+                );
+
+                if (accept) checkMatch();
+            }
+        );
+    }
+
+    // ========================================
+    // ROCK PAPER SCISSORS
+    // ========================================
+
+    const moves = {
+        rock: {
+            label: 'Камень',
+            emoji: '✊'
+        },
+
+        scissors: {
+            label: 'Ножницы',
+            emoji: '✌️'
+        },
+
+        paper: {
+            label: 'Бумага',
+            emoji: '✋'
+        }
+    };
+
+    function showGame(match) {
+        if (
+            displayedMatchId === match.id &&
+            ui.modal.classList.contains('open')
+        ) {
+            return;
+        }
+
+        displayedMatchId = match.id;
+        activeMatchId = match.id;
+        matchResultShown = false;
+        moveSubmitted = false;
+
+        const opponent = match.players.find(player =>
+            player.id !== playerId
+        );
+
+        openModal(
+            '✊ Камень, ножницы, бумага',
+            'Ваш соперник: ' +
+            (opponent?.nickname || 'Игрок') +
+            '\n\nВыберите свой ход:',
+            Object.entries(moves).map(([key, move]) => ({
+                label: move.emoji + ' ' + move.label,
+                className: 'primary',
+                onClick: () => submitMove(key)
+            }))
+        );
+    }
+
+    function submitMove(move) {
+        if (!activeMatchId || moveSubmitted) return;
+
+        moveSubmitted = true;
+
+        openModal(
+            'Ход отправлен',
+            'Вы выбрали: ' +
+            moves[move].emoji + ' ' + moves[move].label +
+            '\n\nОжидаем ход соперника...',
+            [
+                {
+                    label: 'Ожидать',
+                    onClick: closeModal
+                }
+            ]
+        );
+
+        request(
+            'POST',
+            '/api/matches/' + encodeURIComponent(activeMatchId) + '/move',
+            {
+                playerId,
+                move
+            },
+            (error, result) => {
+                if (error || !result?.success) {
+                    moveSubmitted = false;
+
                     showToast(
-                        'Вы приняли приглашение от ' +
-                        invitation.fromNickname
+                        result?.error || 'Не удалось отправить ход'
                     );
-                } else {
-                    showToast('Приглашение отклонено');
+
+                    return;
+                }
+
+                pollMatchResult();
+            }
+        );
+    }
+
+    // ========================================
+    // MATCH CHECK
+    // ========================================
+
+    function checkMatch() {
+        request(
+            'GET',
+            '/api/matches/player/' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                if (error || !result?.success || !result.match) return;
+
+                const match = result.match;
+
+                if (
+                    match.status === 'playing' &&
+                    match.id !== displayedMatchId
+                ) {
+                    showGame(match);
+                }
+
+                if (match.status === 'finished') {
+                    activeMatchId = match.id;
+                    pollMatchResult();
                 }
             }
         );
+    }
+
+    // ========================================
+    // MATCH RESULT POLLING
+    // ========================================
+
+    function pollMatchResult() {
+        if (!activeMatchId || matchResultShown) return;
+
+        request(
+            'GET',
+            '/api/matches/' + encodeURIComponent(activeMatchId) +
+            '?playerId=' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                if (error || !result?.success || !result.match) return;
+
+                if (
+                    result.match.status === 'finished' &&
+                    result.match.players.every(player => player.move)
+                ) {
+                    showMatchResult(result.match);
+                }
+            }
+        );
+    }
+
+    // ========================================
+    // PUBLISHED MATCHES
+    // ========================================
+
+    function getPublishedMatches() {
+        try {
+            const value = JSON.parse(
+                localStorage.getItem(STORAGE.publishedMatches) || '[]'
+            );
+
+            return Array.isArray(value) ? value : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    // ========================================
+    // SHOW MATCH RESULT
+    // ========================================
+
+    function showMatchResult(match) {
+        if (matchResultShown) return;
+
+        matchResultShown = true;
+        displayedMatchId = match.id;
+        activeMatchId = match.id;
+
+        const first = match.players[0];
+        const second = match.players[1];
+
+        const winner = match.winner === 'draw'
+            ? 'Ничья!'
+            : 'Победитель: ' +
+                (match.players.find(p => p.id === match.winner)?.nickname ||
+                'Неизвестно');
+
+        const body =
+            first.nickname + ': ' +
+            moves[first.move].emoji + ' ' +
+            moves[first.move].label +
+            '\n' +
+            second.nickname + ': ' +
+            moves[second.move].emoji + ' ' +
+            moves[second.move].label +
+            '\n\n' +
+            winner;
+
+        const isInitiator = first.id === playerId;
+
+        const alreadyPublished =
+            getPublishedMatches().includes(match.id);
+
+        const actions = [];
+
+        if (isInitiator && !alreadyPublished) {
+            actions.push({
+                label: '📢 Опубликовать результат',
+                className: 'publish',
+                onClick: () => publishResult(match)
+            });
+        } else if (isInitiator) {
+            actions.push({
+                label: '✓ Уже опубликовано',
+                disabled: true,
+                onClick: () => {}
+            });
+        }
+
+        actions.push({
+            label: 'Закрыть',
+            onClick: closeModal
+        });
+
+        openModal('🏁 Игра завершена', body, actions);
+    }
+
+    // ========================================
+    // PUBLISH RESULT TO CHAT
+    // ========================================
+
+    function publishResult(match) {
+        if (match.players[0].id !== playerId) {
+            showToast(
+                'Опубликовать результат может только инициатор игры'
+            );
+
+            return;
+        }
+
+        const published = getPublishedMatches();
+
+        if (published.includes(match.id)) {
+            showToast('Этот результат уже опубликован');
+            return;
+        }
+
+        const first = match.players[0];
+        const second = match.players[1];
+
+        const winnerText = match.winner === 'draw'
+            ? 'Ничья'
+            : 'Победитель: ' +
+                (match.players.find(p => p.id === match.winner)?.nickname ||
+                'Неизвестно');
+
+        const message =
+            '🎮 Камень, ножницы, бумага!\n' +
+            first.nickname + ' — ' +
+            moves[first.move].emoji + ' ' +
+            moves[first.move].label + '\n' +
+            second.nickname + ' — ' +
+            moves[second.move].emoji + ' ' +
+            moves[second.move].label + '\n' +
+            '🏆 ' + winnerText;
+
+        const form = document.querySelector('form.cy-chat-f');
+
+        const input = form?.querySelector(
+            'input[type="text"], textarea'
+        );
+
+        const button = form?.querySelector(
+            'button[type="submit"]'
+        );
+
+        if (!form || !input || !button) {
+            showToast(
+                'Не удалось найти форму чата. Откройте чат и попробуйте снова'
+            );
+
+            return;
+        }
+
+        if (button.disabled) {
+            showToast('Кнопка отправки чата сейчас недоступна');
+            return;
+        }
+
+        const proto = input.tagName === 'TEXTAREA'
+            ? HTMLTextAreaElement.prototype
+            : HTMLInputElement.prototype;
+
+        const setter = Object.getOwnPropertyDescriptor(
+            proto,
+            'value'
+        )?.set;
+
+        if (setter) {
+            setter.call(input, message);
+        } else {
+            input.value = message;
+        }
+
+        input.dispatchEvent(
+            new Event('input', { bubbles: true })
+        );
+
+        input.dispatchEvent(
+            new Event('change', { bubbles: true })
+        );
+
+        // Отправка только после нажатия игроком кнопки публикации.
+        button.click();
+
+        published.push(match.id);
+
+        localStorage.setItem(
+            STORAGE.publishedMatches,
+            JSON.stringify(published.slice(-100))
+        );
+
+        showToast('Результат отправлен в общий чат!');
+        showMatchResult(match);
     }
 
     // ========================================
@@ -564,17 +945,41 @@
     function init() {
         if (document.getElementById('legion-mini-widget')) return;
 
-        console.log('[Legion Mini-Games] Version 1.4.0 loaded');
+        console.log(
+            '[Legion Mini-Games] Version 1.6.0 loaded'
+        );
 
-        const ui = createInterface();
+        ui = createInterface();
 
-        heartbeat(ui);
-        refreshPlayers(ui);
-        refreshInvitations(ui);
+        heartbeat();
+        refreshPlayers();
+        refreshInvitations();
+        checkMatch();
 
-        setInterval(() => heartbeat(ui), CONFIG.heartbeatInterval);
-        setInterval(() => refreshPlayers(ui), CONFIG.playersRefreshInterval);
-        setInterval(() => refreshInvitations(ui), CONFIG.invitationsRefreshInterval);
+        setInterval(
+            heartbeat,
+            CONFIG.heartbeatInterval
+        );
+
+        setInterval(
+            refreshPlayers,
+            CONFIG.playersRefreshInterval
+        );
+
+        setInterval(
+            refreshInvitations,
+            CONFIG.invitationsRefreshInterval
+        );
+
+        setInterval(
+            checkMatch,
+            CONFIG.matchRefreshInterval
+        );
+
+        setInterval(
+            pollMatchResult,
+            CONFIG.matchRefreshInterval
+        );
     }
 
     init();
