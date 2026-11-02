@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      1.8.2
+// @version      1.9.0
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
 // @supportURL   https://github.com/AhaHaHAH44/Legion-Mini-Games/issues
-// @updateURL    https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
-// @downloadURL  https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
+// @updateURL   https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
+// @downloadURL https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
 // @match        https://play.multidonate.ru/*
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -22,7 +22,8 @@
         heartbeatInterval: 20000,
         playersRefreshInterval: 10000,
         invitationsRefreshInterval: 5000,
-        matchRefreshInterval: 2000
+        matchRefreshInterval: 2000,
+        rouletteRefreshInterval: 2500
     };
 
     const STORAGE = {
@@ -71,6 +72,27 @@
     let matchResultShown = false;
     let moveSubmitted = false;
     let ui;
+
+    // Кото-рулетка
+    const ROULETTE_RESOURCES = {
+        pebble: { name: 'Камушек', emoji: '🪨', points: 1 },
+        limestone: { name: 'Известняк', emoji: '⬜', points: 2 },
+        iron: { name: 'Железо', emoji: '🔩', points: 3 },
+        coal: { name: 'Уголь', emoji: '⚫', points: 3 },
+        gold: { name: 'Золото', emoji: '🟡', points: 5 },
+        topaz: { name: 'Топаз', emoji: '💎', points: 8 }
+    };
+
+    let rouletteCooldownUntil = 0;
+    let rouletteResult = null;
+    let rouletteSpinning = false;
+    let rouletteInvite = null;
+    let rouletteMatchId = null;
+    let rouletteMatchShown = null;
+    let rouletteHasSpun = false;
+    let rouletteResultShown = false;
+    let rouletteInviteIds = new Set();
+    let rouletteTimers = [];
 
     function request(method, path, data, callback) {
         GM_xmlhttpRequest({
@@ -465,6 +487,106 @@
             #legion-mini-toast.open {
                 display: block;
             }
+
+            /* Кото-рулетка */
+            .legion-roulette {
+                margin: 14px 0 12px;
+                padding: 12px;
+                border: 1px solid #806044;
+                border-radius: 13px;
+                background: linear-gradient(145deg, #403226, #302923);
+            }
+
+            .legion-roulette-title {
+                color: #ffe0b8;
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 6px;
+            }
+
+            .legion-roulette-hint {
+                color: #b9a28b;
+                font-size: 10px;
+                line-height: 1.45;
+            }
+
+            .legion-roulette-reels {
+                display: flex;
+                justify-content: center;
+                gap: 8px;
+                margin: 13px 0;
+            }
+
+            .legion-roulette-reel {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 58px;
+                height: 58px;
+                border: 1px solid #9a7954;
+                border-radius: 12px;
+                background: #241f1b;
+                font-size: 29px;
+                box-shadow: inset 0 0 12px #0006;
+            }
+
+            .legion-roulette-reel.spinning {
+                animation: legion-roulette-shake .12s linear infinite alternate;
+                filter: brightness(1.25);
+            }
+
+            @keyframes legion-roulette-shake {
+                from { transform: translateY(-2px); }
+                to { transform: translateY(2px); }
+            }
+
+            .legion-roulette-result {
+                min-height: 30px;
+                margin: 8px 0;
+                color: #f4dfc4;
+                font-size: 12px;
+                line-height: 1.5;
+                text-align: center;
+            }
+
+            .legion-roulette-controls {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 7px;
+                margin: 9px 0;
+            }
+
+            .legion-roulette-controls button {
+                flex: 1;
+                min-width: 90px;
+            }
+
+            .legion-roulette-controls button:disabled {
+                opacity: .45;
+                cursor: not-allowed;
+            }
+
+            .legion-roulette-invite-button {
+                padding: 6px 8px;
+                border: 1px solid #9a7954;
+                border-radius: 8px;
+                background: #59432f;
+                color: #fff0dc;
+                cursor: pointer;
+                font-size: 11px;
+                white-space: nowrap;
+            }
+
+            .legion-roulette-invite-button:disabled {
+                opacity: .5;
+                cursor: wait;
+            }
+
+            .legion-roulette-score {
+                color: #f2d6a8;
+                font-weight: bold;
+            }
         `;
 
         document.head.appendChild(style);
@@ -726,7 +848,7 @@
         );
     }
 
-    function heartbeat() {
+     function heartbeat() {
         request(
             'POST',
             '/api/players/heartbeat',
@@ -1248,16 +1370,555 @@
         showToast('🐾 Результат отправлен в общий чат!');
     }
 
+     function createRouletteUI() {
+        const container = document.createElement('div');
+        container.className = 'legion-roulette';
+
+        container.innerHTML = `
+            <div class="legion-roulette-title">
+                🎰 Кото-рулетка
+            </div>
+
+            <div class="legion-roulette-hint">
+                Три слота, шесть ресурсов и шанс на джекпот!
+            </div>
+
+            <div class="legion-roulette-reels">
+                <div class="legion-roulette-reel" data-slot="0">❔</div>
+                <div class="legion-roulette-reel" data-slot="1">❔</div>
+                <div class="legion-roulette-reel" data-slot="2">❔</div>
+            </div>
+
+            <div class="legion-roulette-result" id="legion-roulette-result">
+                Попробуйте свою удачу!
+            </div>
+
+            <div class="legion-roulette-controls">
+                <button class="legion-mini-button"
+                        id="legion-roulette-spin"
+                        type="button">
+                    ⛏️ Копать!
+                </button>
+
+                <button class="legion-mini-button"
+                        id="legion-roulette-publish"
+                        type="button"
+                        disabled>
+                    📢 В чат
+                </button>
+            </div>
+
+            <div class="legion-roulette-hint"
+                 id="legion-roulette-cooldown">
+                Попытка доступна раз в 5 минут.
+            </div>
+
+            <div class="legion-roulette-hint"
+                 style="margin-top:10px">
+                🪨 Камушек — 1 · ⬜ Известняк — 2 · 🔩 Железо — 3
+                <br>
+                ⚫ Уголь — 3 · 🟡 Золото — 5 · 💎 Топаз — 8
+            </div>
+        `;
+
+        const panel = document.getElementById('legion-mini-panel');
+        const self = panel.querySelector('.legion-mini-self');
+
+        self.before(container);
+
+        container.querySelector('#legion-roulette-spin')
+            .addEventListener('click', spinRouletteSolo);
+
+        container.querySelector('#legion-roulette-publish')
+            .addEventListener('click', publishRouletteSolo);
+    }
+
+    function rouletteElements() {
+        const container = document.querySelector('.legion-roulette');
+        if (!container) return null;
+
+        return {
+            container,
+            reels: [...container.querySelectorAll('.legion-roulette-reel')],
+            result: container.querySelector('#legion-roulette-result'),
+            spin: container.querySelector('#legion-roulette-spin'),
+            publish: container.querySelector('#legion-roulette-publish'),
+            cooldown: container.querySelector('#legion-roulette-cooldown')
+        };
+    }
+
+    function rouletteResourceText(reels) {
+        return reels.map(key => {
+            const resource = ROULETTE_RESOURCES[key];
+
+            return resource
+                ? `${resource.emoji} ${resource.name}`
+                : '❔ Неизвестно';
+        }).join(' · ');
+    }
+
+    function rouletteIsJackpot(reels) {
+        return reels.length === 3 &&
+            reels[0] === reels[1] &&
+            reels[1] === reels[2];
+    }
+
+    function rouletteScore(reels) {
+        return reels.reduce(
+            (total, key) => total + (ROULETTE_RESOURCES[key]?.points || 0),
+            0
+        );
+    }
+
+    function rouletteChatMessage(result) {
+        const reels = result.reels || [];
+        const names = reels.map(key =>
+            ROULETTE_RESOURCES[key]?.name || key
+        );
+
+        if (result.jackpot || rouletteIsJackpot(reels)) {
+            return `🎰 Джекпот (три ${names[0].toLowerCase()})!`;
+        }
+
+        return `🎰 Кото-рулетка: ${names.join(', ')} — ${result.score} очков!`;
+    }
+
+    function loadRouletteStatus() {
+        request(
+            'GET',
+            '/api/roulette/status/' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                if (error || !result?.success) return;
+
+                rouletteCooldownUntil = result.nextAt || 0;
+                updateRouletteCooldownUI();
+            }
+        );
+    }
+
+    function updateRouletteCooldownUI() {
+        const elements = rouletteElements();
+        if (!elements) return;
+
+        const remaining = Math.max(
+            0,
+            Math.ceil((rouletteCooldownUntil - Date.now()) / 1000)
+        );
+
+        if (rouletteSpinning) {
+            elements.spin.disabled = true;
+            return;
+        }
+
+        if (remaining > 0) {
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+
+            elements.spin.disabled = true;
+            elements.cooldown.textContent =
+                `Следующая попытка через ${minutes}:${String(seconds).padStart(2, '0')}`;
+        } else {
+            elements.spin.disabled = false;
+            elements.cooldown.textContent =
+                '⛏️ Попытка доступна! Следующая — через 5 минут.';
+        }
+    }
+
+    function clearRouletteAnimation() {
+        rouletteTimers.forEach(timer => clearTimeout(timer));
+        rouletteTimers = [];
+
+        const elements = rouletteElements();
+        elements?.reels.forEach(reel => reel.classList.remove('spinning'));
+    }
+
+    function animateRoulette(reels, onComplete) {
+        const elements = rouletteElements();
+        if (!elements) {
+            onComplete();
+            return;
+        }
+
+        clearRouletteAnimation();
+        rouletteSpinning = true;
+        elements.spin.disabled = true;
+        elements.publish.disabled = true;
+        elements.result.textContent = '⛏️ Добываем ресурсы...';
+
+        elements.reels.forEach((reel, index) => {
+            reel.textContent = '❔';
+            reel.classList.add('spinning');
+
+            const timer = setTimeout(() => {
+                const resource = ROULETTE_RESOURCES[reels[index]];
+                reel.classList.remove('spinning');
+                reel.textContent = resource?.emoji || '❔';
+
+                if (index === 2) {
+                    rouletteSpinning = false;
+                    onComplete();
+                    updateRouletteCooldownUI();
+                }
+            }, 900 + index * 650);
+
+            rouletteTimers.push(timer);
+        });
+    }
+
+    function spinRouletteSolo() {
+        const elements = rouletteElements();
+        if (!elements || rouletteSpinning || Date.now() < rouletteCooldownUntil) {
+            return;
+        }
+
+        elements.spin.disabled = true;
+        elements.publish.disabled = true;
+        elements.result.textContent = 'Связываемся с шахтой...';
+
+        request(
+            'POST',
+            '/api/roulette/solo',
+            { playerId },
+            (error, result, status) => {
+                if (error || !result?.success) {
+                    elements.result.textContent =
+                        result?.error || 'Не удалось запустить рулетку. Попробуйте ещё раз.';
+
+                    if (status === 429 && result?.nextAt) {
+                        rouletteCooldownUntil = result.nextAt;
+                    }
+
+                    updateRouletteCooldownUI();
+                    return;
+                }
+
+                rouletteResult = {
+                    reels: result.reels,
+                    score: result.score,
+                    jackpot: result.jackpot
+                };
+                rouletteCooldownUntil = result.nextAt || 0;
+
+                animateRoulette(rouletteResult.reels, () => {
+                    const description = rouletteResourceText(rouletteResult.reels);
+                    elements.result.textContent = rouletteResult.jackpot
+                        ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} очков`
+                        : `${description} · ${rouletteResult.score} очков`;
+
+                    elements.publish.disabled = false;
+                });
+            }
+        );
+    }
+
+    function publishRouletteSolo() {
+        if (!rouletteResult) return;
+        publishToChat(rouletteChatMessage(rouletteResult));
+    }
+
+    function publishToChat(message) {
+        const form = document.querySelector('form.cy-chat-f');
+        const input = form?.querySelector('input[type="text"], textarea');
+        const button = form?.querySelector('button[type="submit"]');
+
+        if (!form || !input || !button) {
+            showToast('Не удалось найти форму чата. Откройте чат и попробуйте снова.');
+            return;
+        }
+
+        if (button.disabled) {
+            showToast('Кнопка отправки чата сейчас недоступна.');
+            return;
+        }
+
+        const proto = input.tagName === 'TEXTAREA'
+            ? HTMLTextAreaElement.prototype
+            : HTMLInputElement.prototype;
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+
+        if (setter) setter.call(input, message);
+        else input.value = message;
+
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        button.click();
+
+        showToast('📢 Сообщение отправлено в чат.');
+    }
+
+     function sendRouletteInvitation(targetId, targetNickname, button) {
+        button.disabled = true;
+        button.textContent = 'Отправка...';
+
+        request(
+            'POST',
+            '/api/roulette/invites',
+            { fromId: playerId, toId: targetId },
+            (error, result) => {
+                if (error || !result?.success) {
+                    button.disabled = false;
+                    button.textContent = '🎰 Дуэль';
+                    showToast(result?.error || 'Не удалось пригласить игрока в шахту.');
+                    return;
+                }
+
+                button.textContent = 'Отправлено';
+                showToast(`🎰 Приглашение в совместную шахту отправлено: ${targetNickname}`);
+            }
+        );
+    }
+
+    function refreshRouletteInvitations() {
+        if (rouletteInvite) return;
+
+        request(
+            'GET',
+            '/api/roulette/invites/' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                if (error || !result?.success || !result.invitations?.length) return;
+
+                const invitation = result.invitations.find(item =>
+                    !rouletteInviteIds.has(item.id)
+                );
+                if (!invitation) return;
+
+                rouletteInviteIds.add(invitation.id);
+                rouletteInvite = invitation;
+
+                openModal(
+                    '🎰 Приглашение в Кото-рулетку',
+                    `${invitation.fromNickname || 'Игрок'} приглашает вас в совместную шахту!\n\nКаждый сделает по одной прокрутке. Победит тот, кто наберёт больше очков.`,
+                    [
+                        {
+                            label: '⛏️ Принять',
+                            className: 'primary',
+                            onClick: () => respondRouletteInvitation(true)
+                        },
+                        {
+                            label: 'Отклонить',
+                            onClick: () => respondRouletteInvitation(false)
+                        }
+                    ]
+                );
+            }
+        );
+    }
+
+    function respondRouletteInvitation(accept) {
+        if (!rouletteInvite) return;
+
+        const invitation = rouletteInvite;
+
+        request(
+            'POST',
+            '/api/roulette/invites/' + encodeURIComponent(invitation.id) + '/respond',
+            { playerId, accept },
+            (error, result) => {
+                rouletteInvite = null;
+                closeModal();
+
+                if (error || !result?.success) {
+                    showToast(result?.error || 'Не удалось обработать приглашение.');
+                    return;
+                }
+
+                if (accept && result.matchId) {
+                    rouletteMatchId = result.matchId;
+                    rouletteMatchShown = null;
+                    rouletteHasSpun = false;
+                    rouletteResultShown = false;
+                    refreshRouletteMatch();
+                } else {
+                    showToast('Приглашение в шахту отклонено.');
+                }
+            }
+        );
+    }
+
+    function refreshRouletteMatch() {
+        request(
+            'GET',
+            '/api/roulette/matches/player/' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                if (error || !result?.success || !result.match) return;
+
+                const match = result.match;
+                rouletteMatchId = match.id;
+
+                const me = match.players.find(player => player.id === playerId);
+                const opponent = match.players.find(player => player.id !== playerId);
+
+                if (me?.hasSpun) rouletteHasSpun = true;
+
+                if (match.status === 'finished') {
+                    if (!rouletteResultShown) {
+                        rouletteResultShown = true;
+                        showRouletteMatchResult(match);
+                    }
+                    return;
+                }
+
+                if (!rouletteMatchShown || rouletteMatchShown !== match.id) {
+                    rouletteMatchShown = match.id;
+                    showRouletteMatch(match, opponent);
+                } else if (rouletteHasSpun && !rouletteResultShown) {
+                    showRouletteWaiting(match, opponent);
+                }
+            }
+        );
+    }
+
+    function showRouletteMatch(match, opponent) {
+        const me = match.players.find(player => player.id === playerId);
+
+        if (me?.hasSpun) {
+            rouletteHasSpun = true;
+            showRouletteWaiting(match, opponent);
+            return;
+        }
+
+        openModal(
+            '🎰 Совместная шахта',
+            `Ваш напарник: ${opponent?.nickname || 'игрок'}\n\nСделайте одну прокрутку. После этого останется дождаться результата второго игрока.`,
+            [
+                {
+                    label: '⛏️ Копать!',
+                    className: 'primary',
+                    onClick: spinRouletteCoop
+                },
+                {
+                    label: 'Свернуть',
+                    onClick: minimizeModal
+                }
+            ],
+            'В совместном режиме нет пятиминутного кулдауна. Результат сравнивается по сумме очков.'
+        );
+    }
+
+    function showRouletteWaiting(match, opponent) {
+        const other = opponent || match.players.find(player => player.id !== playerId);
+        const hasOpponentSpun = Boolean(other?.hasSpun);
+
+        openModal(
+            '🎰 Совместная шахта',
+            hasOpponentSpun
+                ? 'Оба котика сделали прокрутку! Подводим итоги...'
+                : 'Ваша прокрутка сохранена.\n\nОжидаем, пока второй котик добудет свои ресурсы...',
+            [
+                {
+                    label: 'Свернуть',
+                    onClick: minimizeModal
+                }
+            ]
+        );
+    }
+
+    function spinRouletteCoop() {
+        if (!rouletteMatchId || rouletteHasSpun) return;
+
+        rouletteHasSpun = true;
+
+        openModal(
+            '🎰 Шахта работает',
+            'Ваши барабаны вращаются...\n\nСейчас узнаем, что удалось добыть!',
+            [
+                {
+                    label: 'Свернуть',
+                    onClick: minimizeModal
+                }
+            ]
+        );
+
+        request(
+            'POST',
+            '/api/roulette/matches/' + encodeURIComponent(rouletteMatchId) + '/spin',
+            { playerId },
+            (error, result) => {
+                if (error || !result?.success) {
+                    rouletteHasSpun = false;
+                    showToast(result?.error || 'Не удалось сделать прокрутку.');
+                    refreshRouletteMatch();
+                    return;
+                }
+
+                const reels = result.reels || [];
+                const score = result.score || 0;
+
+                openModal(
+                    '🎰 Ваша добыча',
+                    `${rouletteResourceText(reels)}\n\n⭐ Ваш результат: ${score} очков\n\n${result.waitingForOpponent ? 'Ждём результат второго игрока...' : 'Оба результата готовы!'}`
+                );
+
+                addCoopWaitingButton();
+                refreshRouletteMatch();
+            }
+        );
+    }
+
+    function addCoopWaitingButton() {
+        const actions = ui.modalActions;
+        if (!actions) return;
+
+        const button = document.createElement('button');
+        button.textContent = 'Свернуть';
+        button.addEventListener('click', minimizeModal);
+        actions.appendChild(button);
+    }
+
+    function showRouletteMatchResult(match) {
+        const me = match.players.find(player => player.id === playerId);
+        const opponent = match.players.find(player => player.id !== playerId);
+
+        const meText = me
+            ? `${me.nickname}: ${rouletteResourceText(me.reels || [])} — ${me.score} очков`
+            : 'Ваш результат недоступен';
+        const opponentText = opponent
+            ? `${opponent.nickname}: ${rouletteResourceText(opponent.reels || [])} — ${opponent.score} очков`
+            : 'Результат соперника недоступен';
+
+        let winnerText;
+        if (match.winner === 'draw') {
+            winnerText = '🤝 Ничья! У котиков одинаковое количество очков.';
+        } else if (match.winner === playerId) {
+            winnerText = '🏆 Вы победили в совместной шахте!';
+        } else {
+            winnerText = `🏆 Победитель: ${opponent?.nickname || 'соперник'}`;
+        }
+
+        openModal(
+            '🏆 Итоги Кото-рулетки',
+            `${meText}\n\n${opponentText}\n\n${winnerText}`,
+            [
+                {
+                    label: 'Закрыть',
+                    onClick: () => {
+                        rouletteMatchId = null;
+                        rouletteMatchShown = null;
+                        rouletteHasSpun = false;
+                        rouletteResultShown = false;
+                        closeModal();
+                    }
+                }
+            ]
+        );
+    }
+
+
     function init() {
         if (document.getElementById('legion-mini-widget')) return;
 
         console.log(
-            '[Legion Кото-игры] Version 1.8.2 loaded'
+            '[Legion Кото-игры] Version 1.9.0 loaded'
         );
 
         ui = createInterface();
 
         updateDoNotDisturbUI();
+        createRouletteUI();
+        loadRouletteStatus();
 
         heartbeat();
         refreshPlayers();
@@ -1287,6 +1948,26 @@
         setInterval(
             pollMatchResult,
             CONFIG.matchRefreshInterval
+        );
+
+        setInterval(
+            refreshRouletteInvitations,
+            CONFIG.invitationsRefreshInterval
+        );
+
+        setInterval(
+            refreshRouletteMatch,
+            CONFIG.rouletteRefreshInterval
+        );
+
+        setInterval(
+            loadRouletteStatus,
+            30000
+        );
+
+        setInterval(
+            updateRouletteCooldownUI,
+            1000
         );
     }
 
