@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Legion - Кото-игры
+// @name         Legion - Мини-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      1.7.0
+// @version      1.8.0
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -56,46 +56,31 @@
     let moveSubmitted = false;
     let ui;
 
-    // ========================================
-    // HTTP REQUEST
-    // ========================================
-
     function request(method, path, data, callback) {
         GM_xmlhttpRequest({
             method,
             url: CONFIG.serverUrl + path,
-            headers: data ? {
-                'Content-Type': 'application/json'
-            } : {},
+            headers: data ? { 'Content-Type': 'application/json' } : {},
             data: data ? JSON.stringify(data) : undefined,
             timeout: 20000,
-
             onload(response) {
                 let result;
-
                 try {
                     result = JSON.parse(response.responseText);
                 } catch (error) {
                     callback(error, null, response.status);
                     return;
                 }
-
                 callback(null, result, response.status);
             },
-
             onerror() {
                 callback(new Error('Connection failed'), null, 0);
             },
-
             ontimeout() {
                 callback(new Error('Request timeout'), null, 0);
             }
         });
     }
-
-    // ========================================
-    // STYLES
-    // ========================================
 
     function addStyles() {
         const style = document.createElement('style');
@@ -313,11 +298,15 @@
                 display: flex;
             }
 
+            #legion-mini-modal.minimized {
+                display: none;
+            }
+
             #legion-mini-modal-card {
                 width: min(400px, calc(100vw - 36px));
                 max-height: calc(100vh - 36px);
                 overflow: auto;
-                padding: 23px;
+                padding: 18px 20px 22px;
                 border: 1px solid #806044;
                 border-radius: 18px;
                 background: linear-gradient(145deg, #382d23, #292626);
@@ -325,11 +314,53 @@
                 text-align: center;
             }
 
+            #legion-mini-modal-top {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 13px;
+            }
+
             #legion-mini-modal-title {
                 font-size: 19px;
                 font-weight: bold;
-                margin-bottom: 13px;
                 color: #ffe0b8;
+                text-align: left;
+                flex: 1;
+            }
+
+            #legion-mini-minimize {
+                width: 32px;
+                height: 30px;
+                flex-shrink: 0;
+                border: 1px solid #806044;
+                border-radius: 8px;
+                background: #4a3a2b;
+                color: #fff0dc;
+                font-size: 18px;
+                line-height: 1;
+                cursor: pointer;
+            }
+
+            #legion-mini-restore {
+                display: none;
+                position: fixed;
+                right: 20px;
+                bottom: 20px;
+                z-index: 1000002;
+                padding: 11px 15px;
+                border: 1px solid #a17b50;
+                border-radius: 12px;
+                background: #34291f;
+                color: #fff0dc;
+                font: 13px Arial, sans-serif;
+                box-shadow: 0 5px 18px #0008;
+                cursor: pointer;
+            }
+
+            #legion-mini-restore.open {
+                display: block;
             }
 
             #legion-mini-modal-body {
@@ -418,10 +449,6 @@
         document.head.appendChild(style);
     }
 
-    // ========================================
-    // NOTIFICATIONS
-    // ========================================
-
     function showToast(message) {
         const toast = document.getElementById('legion-mini-toast');
 
@@ -432,14 +459,11 @@
 
         clearTimeout(toast.timer);
 
-        toast.timer = setTimeout(() => {
-            toast.classList.remove('open');
-        }, 4000);
+        toast.timer = setTimeout(
+            () => toast.classList.remove('open'),
+            4000
+        );
     }
-
-    // ========================================
-    // INTERFACE
-    // ========================================
 
     function createInterface() {
         addStyles();
@@ -464,13 +488,11 @@
 
                 <div class="legion-mini-dnd">
                     <div class="legion-mini-dnd-copy">
-                        <div class="legion-mini-dnd-title"
-                             id="legion-mini-dnd-title">
+                        <div class="legion-mini-dnd-title" id="legion-mini-dnd-title">
                             🐾 Готов к игре
                         </div>
 
-                        <div class="legion-mini-dnd-hint"
-                             id="legion-mini-dnd-hint">
+                        <div class="legion-mini-dnd-hint" id="legion-mini-dnd-hint">
                             Можно получать игровые приглашения
                         </div>
                     </div>
@@ -508,18 +530,37 @@
 
         modal.innerHTML = `
             <div id="legion-mini-modal-card">
-                <div id="legion-mini-modal-title"></div>
+                <div id="legion-mini-modal-top">
+                    <div id="legion-mini-modal-title"></div>
+
+                    <button id="legion-mini-minimize"
+                            type="button"
+                            title="Свернуть игру">
+                        —
+                    </button>
+                </div>
+
                 <div id="legion-mini-modal-body"></div>
+
                 <div id="legion-mini-modal-actions"
                      class="legion-mini-actions"></div>
+
                 <div id="legion-mini-modal-footer"></div>
             </div>
         `;
 
         document.body.appendChild(modal);
 
+        const restoreButton = document.createElement('button');
+        restoreButton.id = 'legion-mini-restore';
+        restoreButton.type = 'button';
+        restoreButton.textContent = '🐾 Вернуться к игре';
+
+        document.body.appendChild(restoreButton);
+
         const toast = document.createElement('div');
         toast.id = 'legion-mini-toast';
+
         document.body.appendChild(toast);
 
         widget.querySelector('#legion-mini-toggle')
@@ -531,6 +572,11 @@
         widget.querySelector('#legion-mini-dnd-toggle')
             .addEventListener('click', toggleDoNotDisturb);
 
+        modal.querySelector('#legion-mini-minimize')
+            .addEventListener('click', minimizeModal);
+
+        restoreButton.addEventListener('click', restoreModal);
+
         widget.querySelector('.legion-mini-self').textContent =
             'Вы играете как: ' + nickname;
 
@@ -541,7 +587,10 @@
             dndTitle: widget.querySelector('#legion-mini-dnd-title'),
             dndHint: widget.querySelector('#legion-mini-dnd-hint'),
             dndButton: widget.querySelector('#legion-mini-dnd-toggle'),
+
             modal,
+            restoreButton,
+
             modalTitle: modal.querySelector('#legion-mini-modal-title'),
             modalBody: modal.querySelector('#legion-mini-modal-body'),
             modalActions: modal.querySelector('#legion-mini-modal-actions'),
@@ -550,9 +599,13 @@
     }
 
     function openModal(title, body, actions, footer = '') {
+        ui.modal.classList.remove('minimized');
+        ui.restoreButton.classList.remove('open');
+
         ui.modalTitle.textContent = title;
         ui.modalBody.textContent = body;
         ui.modalFooter.textContent = footer;
+
         ui.modalActions.replaceChildren();
 
         actions.forEach(action => {
@@ -573,13 +626,26 @@
         ui.modal.classList.add('open');
     }
 
-    function closeModal() {
+    function minimizeModal() {
+        if (!ui.modal.classList.contains('open')) return;
+
+        ui.modal.classList.add('minimized');
         ui.modal.classList.remove('open');
+
+        ui.restoreButton.classList.add('open');
     }
 
-    // ========================================
-    // DO NOT DISTURB
-    // ========================================
+    function restoreModal() {
+        ui.modal.classList.remove('minimized');
+        ui.modal.classList.add('open');
+
+        ui.restoreButton.classList.remove('open');
+    }
+
+    function closeModal() {
+        ui.modal.classList.remove('open', 'minimized');
+        ui.restoreButton.classList.remove('open');
+    }
 
     function updateDoNotDisturbUI() {
         if (!ui) return;
@@ -614,11 +680,9 @@
 
                 if (error || !result?.success) {
                     updateDoNotDisturbUI();
-
                     showToast(
                         result?.error || 'Не удалось изменить режим отдыха'
                     );
-
                     return;
                 }
 
@@ -640,10 +704,6 @@
             }
         );
     }
-
-    // ========================================
-    // PLAYER REGISTRATION
-    // ========================================
 
     function heartbeat() {
         request(
@@ -675,16 +735,14 @@
                         updateDoNotDisturbUI();
                     }
 
-                    ui.status.textContent = '● Игровой клуб на связи';
+                    ui.status.textContent =
+                        '● Игровой клуб на связи';
+
                     ui.status.classList.add('online');
                 }
             }
         );
     }
-
-    // ========================================
-    // SEND INVITATION
-    // ========================================
 
     function sendInvitation(targetId, targetNickname, button) {
         button.disabled = true;
@@ -705,14 +763,9 @@
                     showToast(
                         status === 403
                             ? 'Этот котик сейчас отдыхает и не принимает приглашения 😴'
-                            : (
-                                status === 409
-                                    ? 'Котик уже играет или приглашение уже отправлено'
-                                    : (
-                                        result?.error ||
-                                        'Не удалось отправить приглашение'
-                                    )
-                            )
+                            : status === 409
+                                ? 'Котик уже играет или приглашение уже отправлено'
+                                : result?.error || 'Не удалось отправить приглашение'
                     );
 
                     return;
@@ -726,10 +779,6 @@
             }
         );
     }
-
-    // ========================================
-    // ONLINE PLAYERS
-    // ========================================
 
     function refreshPlayers() {
         request(
@@ -801,23 +850,13 @@
         );
     }
 
-    // ========================================
-    // INCOMING INVITATIONS
-    // ========================================
-
     function refreshInvitations() {
         request(
             'GET',
             '/api/invites/' + encodeURIComponent(playerId),
             null,
             (error, result) => {
-                if (
-                    error ||
-                    !result?.success ||
-                    activeInvitation
-                ) {
-                    return;
-                }
+                if (error || !result?.success || activeInvitation) return;
 
                 const invitation = result.invitations.find(item =>
                     !shownInvitations.has(item.id)
@@ -848,10 +887,6 @@
         );
     }
 
-    // ========================================
-    // INVITATION RESPONSE
-    // ========================================
-
     function respondToInvitation(accept) {
         if (!activeInvitation) return;
 
@@ -859,7 +894,9 @@
 
         request(
             'POST',
-            '/api/invites/' + encodeURIComponent(invitation.id) + '/respond',
+            '/api/invites/' +
+            encodeURIComponent(invitation.id) +
+            '/respond',
             {
                 playerId,
                 accept
@@ -873,7 +910,6 @@
                         result?.error ||
                         'Не удалось обработать приглашение'
                     );
-
                     return;
                 }
 
@@ -888,21 +924,15 @@
         );
     }
 
-    // ========================================
-    // CAT ROCK PAPER SCISSORS
-    // ========================================
-
     const moves = {
         rock: {
             label: 'Лапка',
             emoji: '🐾'
         },
-
         scissors: {
             label: 'Царапка',
             emoji: '😼'
         },
-
         paper: {
             label: 'Коробка',
             emoji: '📦'
@@ -910,20 +940,17 @@
     };
 
     function showGame(match) {
-        if (
-            displayedMatchId === match.id &&
-            ui.modal.classList.contains('open')
-        ) {
-            return;
-        }
+        // Не открываем повторно уже показанный матч:
+        // он может быть свёрнут или закрыт пользователем.
+        if (displayedMatchId === match.id) return;
 
         displayedMatchId = match.id;
         activeMatchId = match.id;
         matchResultShown = false;
         moveSubmitted = false;
 
-        const opponent = match.players.find(player =>
-            player.id !== playerId
+        const opponent = match.players.find(
+            player => player.id !== playerId
         );
 
         openModal(
@@ -964,7 +991,9 @@
 
         request(
             'POST',
-            '/api/matches/' + encodeURIComponent(activeMatchId) + '/move',
+            '/api/matches/' +
+            encodeURIComponent(activeMatchId) +
+            '/move',
             {
                 playerId,
                 move
@@ -985,23 +1014,13 @@
         );
     }
 
-    // ========================================
-    // MATCH CHECK
-    // ========================================
-
     function checkMatch() {
         request(
             'GET',
             '/api/matches/player/' + encodeURIComponent(playerId),
             null,
             (error, result) => {
-                if (
-                    error ||
-                    !result?.success ||
-                    !result.match
-                ) {
-                    return;
-                }
+                if (error || !result?.success || !result.match) return;
 
                 const match = result.match;
 
@@ -1020,26 +1039,17 @@
         );
     }
 
-    // ========================================
-    // MATCH RESULT POLLING
-    // ========================================
-
     function pollMatchResult() {
         if (!activeMatchId || matchResultShown) return;
 
         request(
             'GET',
-            '/api/matches/' + encodeURIComponent(activeMatchId) +
+            '/api/matches/' +
+            encodeURIComponent(activeMatchId) +
             '?playerId=' + encodeURIComponent(playerId),
             null,
             (error, result) => {
-                if (
-                    error ||
-                    !result?.success ||
-                    !result.match
-                ) {
-                    return;
-                }
+                if (error || !result?.success || !result.match) return;
 
                 if (
                     result.match.status === 'finished' &&
@@ -1050,10 +1060,6 @@
             }
         );
     }
-
-    // ========================================
-    // PUBLISHED MATCHES
-    // ========================================
 
     function getPublishedMatches() {
         try {
@@ -1067,10 +1073,6 @@
         }
     }
 
-    // ========================================
-    // SHOW MATCH RESULT
-    // ========================================
-
     function showMatchResult(match) {
         if (matchResultShown) return;
 
@@ -1083,18 +1085,14 @@
 
         const winner = match.winner === 'draw'
             ? '😸 Ничья! Два котика оказались одинаково хитрыми.'
-            : (
-                match.winner === playerId
-                    ? '😻 Мяу! Победа за вами!'
-                    : (
-                        '😿 В этот раз победил другой котик: ' +
-                        (
-                            match.players.find(p =>
-                                p.id === match.winner
-                            )?.nickname || 'Неизвестно'
-                        )
-                    )
-            );
+            : match.winner === playerId
+                ? '😻 Мяу! Победа за вами!'
+                : '😿 В этот раз победил другой котик: ' +
+                  (
+                      match.players.find(
+                          player => player.id === match.winner
+                      )?.nickname || 'Неизвестно'
+                  );
 
         const body =
             first.nickname + ': ' +
@@ -1132,19 +1130,16 @@
             onClick: closeModal
         });
 
+        // openModal автоматически разворачивает окно,
+        // даже если пользователь до этого его свернул.
         openModal('🐾 Дуэль окончена', body, actions);
     }
-
-    // ========================================
-    // PUBLISH RESULT TO CHAT
-    // ========================================
 
     function publishResult(match) {
         if (match.players[0].id !== playerId) {
             showToast(
                 'Опубликовать результат может только инициатор игры'
             );
-
             return;
         }
 
@@ -1160,23 +1155,25 @@
 
         const winnerText = match.winner === 'draw'
             ? 'Ничья'
-            : (
-                'Победитель: ' +
-                (
-                    match.players.find(p =>
-                        p.id === match.winner
-                    )?.nickname || 'Неизвестно'
-                )
-            );
+            : 'Победитель: ' +
+              (
+                  match.players.find(
+                      player => player.id === match.winner
+                  )?.nickname || 'Неизвестно'
+              );
 
+        // Однострочное поле чата может схлопывать переносы строк.
+        // Поэтому используем явные разделители и пробелы.
         const message =
-            '🐱 Кото-КНБ!\n' +
+            '🐱 Кото-КНБ!  •  ' +
             first.nickname + ' — ' +
             moves[first.move].emoji + ' ' +
-            moves[first.move].label + '\n' +
+            moves[first.move].label +
+            '  •  ' +
             second.nickname + ' — ' +
             moves[second.move].emoji + ' ' +
-            moves[second.move].label + '\n' +
+            moves[second.move].label +
+            '  •  ' +
             '🏆 ' + winnerText;
 
         const form = document.querySelector('form.cy-chat-f');
@@ -1193,12 +1190,13 @@
             showToast(
                 'Не удалось найти форму чата. Откройте чат и попробуйте снова'
             );
-
             return;
         }
 
         if (button.disabled) {
-            showToast('Кнопка отправки чата сейчас недоступна');
+            showToast(
+                'Кнопка отправки чата сейчас недоступна'
+            );
             return;
         }
 
@@ -1206,10 +1204,8 @@
             ? HTMLTextAreaElement.prototype
             : HTMLInputElement.prototype;
 
-        const setter = Object.getOwnPropertyDescriptor(
-            proto,
-            'value'
-        )?.set;
+        const setter =
+            Object.getOwnPropertyDescriptor(proto, 'value')?.set;
 
         if (setter) {
             setter.call(input, message);
@@ -1235,18 +1231,13 @@
         );
 
         showToast('🐾 Результат отправлен в общий чат!');
-        showMatchResult(match);
     }
-
-    // ========================================
-    // INITIALIZATION
-    // ========================================
 
     function init() {
         if (document.getElementById('legion-mini-widget')) return;
 
         console.log(
-            '[Legion Mini-Games] Version 1.7.0 loaded'
+            '[Legion Mini-Games] Version 1.8.0 loaded'
         );
 
         ui = createInterface();
@@ -1285,5 +1276,4 @@
     }
 
     init();
-
 })();
