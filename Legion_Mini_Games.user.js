@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      1.8.1
+// @version      1.8.2
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -41,11 +41,27 @@
         localStorage.setItem(STORAGE.playerId, playerId);
     }
 
-    if (!nickname) {
-        nickname = prompt('Введите ваш игровой ник:');
-        if (!nickname || !nickname.trim()) return;
-        nickname = nickname.trim().slice(0, 32);
-        localStorage.setItem(STORAGE.nickname, nickname);
+    // Получение никнейма из интерфейса Multidonate
+    function getMultidonateNickname() {
+        const element = document.querySelector('span.who');
+        const value = element?.textContent?.trim();
+
+        return value ? value.slice(0, 32) : null;
+    }
+
+    // Ожидание появления никнейма после загрузки страницы
+    async function waitForNickname(timeout = 20000) {
+        const start = Date.now();
+
+        while (Date.now() - start < timeout) {
+            const value = getMultidonateNickname();
+
+            if (value) return value;
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        return null;
     }
 
     const shownInvitations = new Set();
@@ -63,19 +79,24 @@
             headers: data ? { 'Content-Type': 'application/json' } : {},
             data: data ? JSON.stringify(data) : undefined,
             timeout: 20000,
+
             onload(response) {
                 let result;
+
                 try {
                     result = JSON.parse(response.responseText);
                 } catch (error) {
                     callback(error, null, response.status);
                     return;
                 }
+
                 callback(null, result, response.status);
             },
+
             onerror() {
                 callback(new Error('Connection failed'), null, 0);
             },
+
             ontimeout() {
                 callback(new Error('Request timeout'), null, 0);
             }
@@ -1153,17 +1174,7 @@
         const first = match.players[0];
         const second = match.players[1];
 
-        const winnerText = match.winner === 'draw'
-            ? 'Ничья'
-            : 'Победитель: ' +
-              (
-                  match.players.find(
-                      player => player.id === match.winner
-                  )?.nickname || 'Неизвестно'
-              );
-
-        // Однострочное поле чата может схлопывать переносы строк.
-        // Поэтому используем явные разделители и пробелы.
+        // Однострочное сообщение с упоминаниями игроков
         const message =
             '🐱 Кото-КНБ: ' +
             '@' + first.nickname + ' ' +
@@ -1241,7 +1252,7 @@
         if (document.getElementById('legion-mini-widget')) return;
 
         console.log(
-            '[Legion Mini-Games] Version 1.8.0 loaded'
+            '[Legion Кото-игры] Version 1.8.2 loaded'
         );
 
         ui = createInterface();
@@ -1279,5 +1290,25 @@
         );
     }
 
-    init();
+    // Запускаем интерфейс только после получения никнейма
+    (async function startAfterNickname() {
+        nickname = await waitForNickname();
+
+        if (!nickname) {
+            console.error(
+                '[Legion Кото-игры] Не удалось получить ник Multidonate. ' +
+                'Проверьте, что вы авторизованы и на странице есть элемент span.who.'
+            );
+            return;
+        }
+
+        localStorage.setItem(STORAGE.nickname, nickname);
+
+        console.log(
+            '[Legion Кото-игры] Никнейм обнаружен: ' + nickname
+        );
+
+        init();
+    })();
+
 })();
