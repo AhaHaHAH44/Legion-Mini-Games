@@ -1,0 +1,39 @@
+// ==UserScript==
+// @name         Legion - Мини-игры
+// @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
+// @version      1.0.0
+// @description  Multiplayer mini-games for Multidonate
+// @author       Sectwi1l
+// @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
+// @supportURL   https://github.com/AhaHaHAH44/Legion-Mini-Games/issues
+// @updateURL    https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
+// @downloadURL  https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
+// @match        https://play.multidonate.ru/*
+// @run-at       document-idle
+// @grant        none
+// @require      https://cdn.socket.io/4.8.1/socket.io.min.js
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+    // ========================================
+    // CONFIGURATION
+    // ========================================
+
+    const CONFIG = {
+        serverUrl: 'https://legion-server.onrender.com'
+    };
+
+    // ========================================
+    // INITIALIZATION
+    // ========================================
+
+    function init() {
+        console.log('[Legion Mini-Games] Extension loaded!');
+        console.log('[Legion Mini-Games] Server:', CONFIG.serverUrl);
+    }
+
+    init();
+
+})();
