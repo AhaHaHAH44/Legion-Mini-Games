@@ -1165,16 +1165,20 @@
         // Однострочное поле чата может схлопывать переносы строк.
         // Поэтому используем явные разделители и пробелы.
         const message =
-            '🐱 Кото-КНБ!  •  ' +
-            first.nickname + ' — ' +
-            moves[first.move].emoji + ' ' +
-            moves[first.move].label +
-            '  •  ' +
-            second.nickname + ' — ' +
-            moves[second.move].emoji + ' ' +
-            moves[second.move].label +
-            '  •  ' +
-            '🏆 ' + winnerText;
+            '🐱 Кото-КНБ: ' +
+            '@' + first.nickname + ' ' +
+            moves[first.move].emoji +
+            ' vs ' +
+            '@' + second.nickname + ' ' +
+            moves[second.move].emoji +
+            ' | 🏆 ' +
+            (match.winner === 'draw'
+                ? 'Ничья'
+                : '@' + (
+                    match.players.find(
+                        player => player.id === match.winner
+                    )?.nickname || 'Неизвестно'
+                ));
 
         const form = document.querySelector('form.cy-chat-f');
 
