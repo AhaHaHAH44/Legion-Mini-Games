@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Legion - Мини-игры
+// @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      1.8.0
+// @version      1.8.1
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
