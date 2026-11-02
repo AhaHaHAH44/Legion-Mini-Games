@@ -1,4 +1,3 @@
-
 // ==UserScript==
 // @name         Legion - Мини-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -78,7 +77,6 @@
 
     function setStatus(indicator, state, message) {
         indicator.className = state;
-
         indicator.querySelector('.status-text').textContent = message;
     }
 
