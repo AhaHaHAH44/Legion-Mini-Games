@@ -1,3 +1,4 @@
+
 // ==UserScript==
 // @name         Legion - Мини-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -17,26 +18,20 @@
 (function () {
     'use strict';
 
-    // ========================================
-    // CONFIGURATION
-    // ========================================
-
-    const CONFIG = {
-        serverUrl: 'https://legion-server.onrender.com'
-    };
+    const SERVER_URL = 'https://legion-server.onrender.com';
 
     // ========================================
     // INTERFACE
     // ========================================
 
-    function createStatusIndicator() {
+    function createIndicator() {
         const indicator = document.createElement('div');
 
         indicator.id = 'legion-mini-status';
 
         indicator.innerHTML = `
-            <span class="legion-status-dot"></span>
-            <span class="legion-status-text">Подключение...</span>
+            <span class="dot"></span>
+            <span class="status-text">Проверка сервера...</span>
         `;
 
         const style = document.createElement('style');
@@ -51,33 +46,27 @@
                 align-items: center;
                 gap: 9px;
                 padding: 10px 15px;
-                background: rgba(35, 35, 39, 0.95);
+                background: rgba(35, 35, 39, .96);
                 border: 1px solid #48484e;
                 border-radius: 10px;
-                color: #eeeeee;
+                color: #eee;
                 font: 13px Arial, sans-serif;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-                pointer-events: none;
+                box-shadow: 0 4px 15px rgba(0,0,0,.25);
             }
 
-            #legion-mini-status .legion-status-dot {
+            #legion-mini-status .dot {
                 width: 9px;
                 height: 9px;
                 border-radius: 50%;
                 background: #d6a64a;
-                flex-shrink: 0;
             }
 
-            #legion-mini-status.connected .legion-status-dot {
+            #legion-mini-status.online .dot {
                 background: #55c878;
             }
 
-            #legion-mini-status.disconnected .legion-status-dot {
+            #legion-mini-status.offline .dot {
                 background: #e05b5b;
-            }
-
-            #legion-mini-status .legion-status-text {
-                white-space: nowrap;
             }
         `;
 
@@ -87,72 +76,50 @@
         return indicator;
     }
 
-    function updateStatus(indicator, status, text) {
-        indicator.className = status;
-        indicator.querySelector('.legion-status-text').textContent = text;
+    function setStatus(indicator, state, message) {
+        indicator.className = state;
+
+        indicator.querySelector('.status-text').textContent = message;
     }
 
     // ========================================
-    // SERVER CONNECTION
+    // SERVER CHECK
     // ========================================
 
-    function connectToServer(indicator) {
-        if (typeof io === 'undefined') {
-            updateStatus(
-                indicator,
-                'disconnected',
-                'Ошибка загрузки Socket.IO'
-            );
+    function checkServer(indicator) {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: SERVER_URL + '/health',
+            timeout: 20000,
 
-            console.error('[Legion Mini-Games] Socket.IO not loaded!');
-            return;
-        }
+            onload(response) {
+                if (response.status === 200) {
+                    setStatus(indicator, 'online', 'Сервер онлайн');
 
-        console.log('[Legion Mini-Games] Connecting to server...');
+                    console.log(
+                        '[Legion Mini-Games] Server is online'
+                    );
+                } else {
+                    setStatus(indicator, 'offline', 'Ошибка сервера');
+                }
+            },
 
-        const socket = io(CONFIG.serverUrl, {
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 3000,
-            reconnectionDelayMax: 10000,
-            timeout: 20000
+            onerror() {
+                setStatus(indicator, 'offline', 'Нет соединения');
+
+                console.error(
+                    '[Legion Mini-Games] Request failed'
+                );
+            },
+
+            ontimeout() {
+                setStatus(
+                    indicator,
+                    'offline',
+                    'Время ожидания истекло'
+                );
+            }
         });
-
-        socket.on('connect', () => {
-            console.log('[Legion Mini-Games] Connected:', socket.id);
-
-            updateStatus(
-                indicator,
-                'connected',
-                'Сервер онлайн'
-            );
-        });
-
-        socket.on('server:ready', (data) => {
-            console.log('[Legion Mini-Games] Server ready:', data.message);
-        });
-
-        socket.on('disconnect', (reason) => {
-            console.log('[Legion Mini-Games] Disconnected:', reason);
-
-            updateStatus(
-                indicator,
-                'disconnected',
-                'Соединение потеряно'
-            );
-        });
-
-        socket.on('connect_error', (error) => {
-            console.warn('[Legion Mini-Games] Connection error:', error.message);
-
-            updateStatus(
-                indicator,
-                '',
-                'Сервер запускается...'
-            );
-        });
-
-        return socket;
     }
 
     // ========================================
@@ -166,9 +133,9 @@
 
         console.log('[Legion Mini-Games] Extension loaded!');
 
-        const indicator = createStatusIndicator();
+        const indicator = createIndicator();
 
-        connectToServer(indicator);
+        checkServer(indicator);
     }
 
     init();
