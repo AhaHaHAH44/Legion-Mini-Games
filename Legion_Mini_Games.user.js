@@ -90,6 +90,34 @@
     let rouletteResultShown = false;
     let rouletteInviteIds = new Set();
     let rouletteTimers = [];
+    let rouletteMatchRequestInFlight = false;
+
+    const ROULETTE_COMPLETED_KEY = 'legion_mini_roulette_completed';
+    const ROULETTE_PUBLISHED_KEY = 'legion_mini_roulette_published';
+
+    function getStoredRouletteIds(key) {
+        try {
+            const value = JSON.parse(localStorage.getItem(key) || '[]');
+            return new Set(Array.isArray(value) ? value : []);
+        } catch (_) {
+            return new Set();
+        }
+    }
+
+    const completedRouletteMatches =
+        getStoredRouletteIds(ROULETTE_COMPLETED_KEY);
+
+    const publishedRouletteMatches =
+        getStoredRouletteIds(ROULETTE_PUBLISHED_KEY);
+
+    function rememberRouletteMatch(key, set, matchId) {
+        set.add(matchId);
+
+        localStorage.setItem(
+            key,
+            JSON.stringify([...set].slice(-100))
+        );
+    }
     let rouletteWaitingShown = false;
 
     let playersExpanded = false;
@@ -1826,12 +1854,12 @@
             showToast(
                 'Не удалось найти форму чата. Откройте чат и попробуйте снова.'
             );
-            return;
+            return false;
         }
 
         if (button.disabled) {
             showToast('Кнопка отправки чата сейчас недоступна.');
-            return;
+            return false;
         }
 
         const proto = input.tagName === 'TEXTAREA'
@@ -1858,6 +1886,7 @@
         button.click();
 
         showToast('📢 Результат отправлен в чат.');
+                return true;
     }
 
     function sendRouletteInvitation(targetId, targetNickname, button) {
@@ -1965,16 +1994,24 @@
         );
     }
 
-    function refreshRouletteMatch() {
+        function refreshRouletteMatch() {
+        if (rouletteMatchRequestInFlight) return;
+
+        rouletteMatchRequestInFlight = true;
+
         request(
             'GET',
-            '/api/roulette/matches/player/' +
-            encodeURIComponent(playerId),
+            '/api/roulette/matches/player/' + encodeURIComponent(playerId),
             null,
             (error, result) => {
+                rouletteMatchRequestInFlight = false;
+
                 if (error || !result?.success || !result.match) return;
 
                 const match = result.match;
+
+                if (completedRouletteMatches.has(match.id)) return;
+
                 rouletteMatchId = match.id;
 
                 const me = match.players.find(
@@ -2107,16 +2144,19 @@
 
         const firstScore = Number(first.score || 0);
         const secondScore = Number(second.score || 0);
+        const difference = Math.abs(firstScore - secondScore);
 
-        const winnerText = match.winner === 'draw'
+        const winnerPlayer = match.winner === 'draw'
+            ? null
+            : match.players.find(
+                player => player.id === match.winner
+            );
+
+        const winnerText = !winnerPlayer
             ? '🤝 Ничья! У котиков одинаковое количество очков.'
             : match.winner === playerId
-                ? '🏆 Вы победили!'
-                : `🏆 Победитель: ${
-                    match.players.find(
-                        player => player.id === match.winner
-                    )?.nickname || 'соперник'
-                }`;
+                ? `🏆 Вы победили с преимуществом в ${difference} очков!`
+                : `🏆 Победитель: ${winnerPlayer.nickname} (разница ${difference} очков)`;
 
         const body = [
             `${first.nickname}:`,
@@ -2128,13 +2168,30 @@
             winnerText
         ].join('\n');
 
+        const alreadyPublished =
+            publishedRouletteMatches.has(match.id);
+
         openModal(
             '🏆 Итоги Кото-рулетки',
             body,
             [
                 {
+                    label: alreadyPublished
+                        ? '✓ Результат уже опубликован'
+                        : '📢 Опубликовать результат',
+                    className: 'publish',
+                    disabled: alreadyPublished,
+                    onClick: () => publishRouletteMatchResult(match)
+                },
+                {
                     label: 'Закрыть',
                     onClick: () => {
+                        rememberRouletteMatch(
+                            ROULETTE_COMPLETED_KEY,
+                            completedRouletteMatches,
+                            match.id
+                        );
+
                         rouletteMatchId = null;
                         rouletteMatchShown = null;
                         rouletteWaitingShown = false;
@@ -2145,6 +2202,40 @@
                     }
                 }
             ]
+        );
+    }
+
+    function publishRouletteMatchResult(match) {
+        if (publishedRouletteMatches.has(match.id)) {
+            showToast('Этот результат уже опубликован.');
+            return;
+        }
+
+        const first = match.players[0];
+        const second = match.players[1];
+
+        const firstScore = Number(first.score || 0);
+        const secondScore = Number(second.score || 0);
+        const difference = Math.abs(firstScore - secondScore);
+
+        const winnerPlayer = match.winner === 'draw'
+            ? null
+            : match.players.find(
+                player => player.id === match.winner
+            );
+
+        const message = match.winner === 'draw'
+            ? `🎰 Кото-рулетка: @${first.nickname} — ${firstScore} очков, @${second.nickname} — ${secondScore} очков. 🤝 Ничья!`
+            : `🎰 Кото-рулетка: 🏆 @${winnerPlayer?.nickname || 'Победитель'} победил с разницей ${difference} очков! (${first.nickname}: ${firstScore}, ${second.nickname}: ${secondScore})`;
+
+        const sent = publishResultToChat(message);
+
+        if (!sent) return;
+
+        rememberRouletteMatch(
+            ROULETTE_PUBLISHED_KEY,
+            publishedRouletteMatches,
+            match.id
         );
     }
 
