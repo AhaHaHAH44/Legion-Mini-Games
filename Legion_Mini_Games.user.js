@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      1.9.0
+// @version      1.9.1
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
 // @supportURL   https://github.com/AhaHaHAH44/Legion-Mini-Games/issues
-// @updateURL   https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
-// @downloadURL https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
+// @updateURL    https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
+// @downloadURL  https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
 // @match        https://play.multidonate.ru/*
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -23,7 +23,7 @@
         playersRefreshInterval: 10000,
         invitationsRefreshInterval: 5000,
         matchRefreshInterval: 2000,
-        rouletteRefreshInterval: 2500
+        rouletteRefreshInterval: 3000
     };
 
     const STORAGE = {
@@ -42,7 +42,6 @@
         localStorage.setItem(STORAGE.playerId, playerId);
     }
 
-    // Получение никнейма из интерфейса Multidonate
     function getMultidonateNickname() {
         const element = document.querySelector('span.who');
         const value = element?.textContent?.trim();
@@ -50,7 +49,6 @@
         return value ? value.slice(0, 32) : null;
     }
 
-    // Ожидание появления никнейма после загрузки страницы
     async function waitForNickname(timeout = 20000) {
         const start = Date.now();
 
@@ -73,7 +71,6 @@
     let moveSubmitted = false;
     let ui;
 
-    // Кото-рулетка
     const ROULETTE_RESOURCES = {
         pebble: { name: 'Камушек', emoji: '🪨', points: 1 },
         limestone: { name: 'Известняк', emoji: '⬜', points: 2 },
@@ -93,6 +90,11 @@
     let rouletteResultShown = false;
     let rouletteInviteIds = new Set();
     let rouletteTimers = [];
+    let rouletteWaitingShown = false;
+
+    let playersExpanded = false;
+    let playersSearchTerm = '';
+    let cachedPlayers = [];
 
     function request(method, path, data, callback) {
         GM_xmlhttpRequest({
@@ -160,6 +162,10 @@
                 display: none;
                 width: 310px;
                 max-width: calc(100vw - 40px);
+                max-height: calc(100vh - 90px);
+                overflow-y: auto;
+                overflow-x: hidden;
+                box-sizing: border-box;
                 margin-bottom: 10px;
                 padding: 17px;
                 border: 1px solid #806044;
@@ -322,6 +328,76 @@
                 border-top: 1px solid #554536;
                 color: #b9a28b;
                 font-size: 11px;
+            }
+
+            .legion-mini-players-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                cursor: pointer;
+                user-select: none;
+            }
+
+            .legion-mini-players-header:hover {
+                color: #ffe0b8;
+            }
+
+            .legion-mini-players-arrow {
+                color: #c9a77f;
+                transition: transform .2s;
+            }
+
+            .legion-mini-players-section.expanded .legion-mini-players-arrow {
+                transform: rotate(180deg);
+            }
+
+            .legion-mini-players-content {
+                display: none;
+                margin-top: 8px;
+            }
+
+            .legion-mini-players-section.expanded .legion-mini-players-content {
+                display: block;
+            }
+
+            .legion-mini-search {
+                width: 100%;
+                box-sizing: border-box;
+                margin: 4px 0 8px;
+                padding: 9px 10px;
+                border: 1px solid #806044;
+                border-radius: 9px;
+                outline: none;
+                background: #29231e;
+                color: #fff0dc;
+                font-size: 12px;
+            }
+
+            .legion-mini-search:focus {
+                border-color: #c49a6c;
+            }
+
+            .legion-mini-search::placeholder {
+                color: #a99580;
+            }
+
+            .legion-mini-players-list {
+                max-height: 220px;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding-right: 3px;
+            }
+
+            .legion-mini-players-list::-webkit-scrollbar,
+            #legion-mini-panel::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .legion-mini-players-list::-webkit-scrollbar-thumb,
+            #legion-mini-panel::-webkit-scrollbar-thumb {
+                border-radius: 8px;
+                background: #806044;
             }
 
             #legion-mini-modal {
@@ -488,7 +564,6 @@
                 display: block;
             }
 
-            /* Кото-рулетка */
             .legion-roulette {
                 margin: 14px 0 12px;
                 padding: 12px;
@@ -591,8 +666,7 @@
 
         document.head.appendChild(style);
     }
-
-    function showToast(message) {
+        function showToast(message) {
         const toast = document.getElementById('legion-mini-toast');
 
         if (!toast) return;
@@ -647,14 +721,31 @@
                     </button>
                 </div>
 
-                <div class="legion-mini-section-title">
-                    🐱 Котики онлайн
-                    <span id="legion-mini-count">(0)</span>
-                </div>
+                <div class="legion-mini-players-section">
+                    <div class="legion-mini-section-title legion-mini-players-header"
+                         id="legion-mini-players-toggle">
+                        <span>
+                            🐱 Котики онлайн
+                            <span id="legion-mini-count">(0)</span>
+                        </span>
+                        <span class="legion-mini-players-arrow">▼</span>
+                    </div>
 
-                <div id="legion-mini-players">
-                    <div class="legion-mini-empty">
-                        Ищем котиков...
+                    <div class="legion-mini-players-content">
+                        <input
+                            id="legion-mini-player-search"
+                            class="legion-mini-search"
+                            type="text"
+                            placeholder="🔎 Поиск игрока по нику..."
+                            autocomplete="off"
+                        >
+
+                        <div id="legion-mini-players"
+                             class="legion-mini-players-list">
+                            <div class="legion-mini-empty">
+                                Ищем котиков...
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -706,14 +797,28 @@
 
         document.body.appendChild(toast);
 
+        const panel = widget.querySelector('#legion-mini-panel');
+        const playersSection = widget.querySelector('.legion-mini-players-section');
+        const searchInput = widget.querySelector('#legion-mini-player-search');
+
         widget.querySelector('#legion-mini-toggle')
             .addEventListener('click', () => {
-                widget.querySelector('#legion-mini-panel')
-                    .classList.toggle('open');
+                panel.classList.toggle('open');
             });
 
         widget.querySelector('#legion-mini-dnd-toggle')
             .addEventListener('click', toggleDoNotDisturb);
+
+        widget.querySelector('#legion-mini-players-toggle')
+            .addEventListener('click', () => {
+                playersExpanded = !playersExpanded;
+                playersSection.classList.toggle('expanded', playersExpanded);
+            });
+
+        searchInput.addEventListener('input', () => {
+            playersSearchTerm = searchInput.value.trim().toLowerCase();
+            renderPlayers();
+        });
 
         modal.querySelector('#legion-mini-minimize')
             .addEventListener('click', minimizeModal);
@@ -730,6 +835,8 @@
             dndTitle: widget.querySelector('#legion-mini-dnd-title'),
             dndHint: widget.querySelector('#legion-mini-dnd-hint'),
             dndButton: widget.querySelector('#legion-mini-dnd-toggle'),
+            playersSection,
+            searchInput,
 
             modal,
             restoreButton,
@@ -848,7 +955,7 @@
         );
     }
 
-     function heartbeat() {
+    function heartbeat() {
         request(
             'POST',
             '/api/players/heartbeat',
@@ -923,6 +1030,38 @@
         );
     }
 
+    function sendRouletteInvitation(targetId, targetNickname, button) {
+        button.disabled = true;
+        button.textContent = 'Отправка...';
+
+        request(
+            'POST',
+            '/api/roulette/invites',
+            {
+                fromId: playerId,
+                toId: targetId
+            },
+            (error, result) => {
+                if (error || !result?.success) {
+                    button.disabled = false;
+                    button.textContent = '🎰';
+
+                    showToast(
+                        result?.error ||
+                        'Не удалось отправить приглашение в рулетку'
+                    );
+                    return;
+                }
+
+                button.textContent = '✓';
+
+                showToast(
+                    `🎰 Приглашение в Кото-рулетку отправлено: ${targetNickname}`
+                );
+            }
+        );
+    }
+
     function refreshPlayers() {
         request(
             'GET',
@@ -931,69 +1070,99 @@
             (error, result) => {
                 if (error || !result?.success) return;
 
+                cachedPlayers = result.players || [];
                 ui.count.textContent = '(' + result.count + ')';
-                ui.players.replaceChildren();
 
-                if (!result.players.length) {
-                    const empty = document.createElement('div');
-
-                    empty.className = 'legion-mini-empty';
-                    empty.textContent =
-                        'Пока ни одного котика не видно...';
-
-                    ui.players.appendChild(empty);
-                    return;
-                }
-
-                result.players.forEach(player => {
-                    const item = document.createElement('div');
-                    item.className = 'legion-mini-player';
-
-                    const dot = document.createElement('span');
-                    dot.className = 'legion-mini-dot';
-
-                    const name = document.createElement('span');
-                    name.className = 'legion-mini-player-name';
-
-                    name.textContent =
-                        player.nickname +
-                        (player.id === playerId ? ' (это вы)' : '');
-
-                    item.append(dot, name);
-
-                    if (player.id !== playerId && player.doNotDisturb) {
-                        const resting = document.createElement('span');
-
-                        resting.className =
-                            'legion-mini-player-resting';
-
-                        resting.textContent = '😴 Отдыхает';
-
-                        item.appendChild(resting);
-                    } else if (player.id !== playerId) {
-                        const button = document.createElement('button');
-
-                        button.className = 'legion-mini-button';
-                        button.textContent = 'Пригласить';
-
-                        button.addEventListener('click', () => {
-                            sendInvitation(
-                                player.id,
-                                player.nickname,
-                                button
-                            );
-                        });
-
-                        item.appendChild(button);
-                    }
-
-                    ui.players.appendChild(item);
-                });
+                renderPlayers();
             }
         );
     }
 
-    function refreshInvitations() {
+    function renderPlayers() {
+        if (!ui) return;
+
+        ui.players.replaceChildren();
+
+        const filteredPlayers = cachedPlayers.filter(player => {
+            const nickname = (player.nickname || '').toLowerCase();
+
+            return nickname.includes(playersSearchTerm);
+        });
+
+        if (!filteredPlayers.length) {
+            const empty = document.createElement('div');
+            empty.className = 'legion-mini-empty';
+
+            empty.textContent = playersSearchTerm
+                ? 'Игроки не найдены'
+                : 'Пока ни одного котика не видно...';
+
+            ui.players.appendChild(empty);
+            return;
+        }
+
+        filteredPlayers.forEach(player => {
+            const item = document.createElement('div');
+            item.className = 'legion-mini-player';
+
+            const dot = document.createElement('span');
+            dot.className = 'legion-mini-dot';
+
+            const name = document.createElement('span');
+            name.className = 'legion-mini-player-name';
+
+            name.textContent =
+                player.nickname +
+                (player.id === playerId ? ' (это вы)' : '');
+
+            item.append(dot, name);
+
+            if (player.id !== playerId && player.doNotDisturb) {
+                const resting = document.createElement('span');
+
+                resting.className = 'legion-mini-player-resting';
+                resting.textContent = '😴 Отдыхает';
+
+                item.appendChild(resting);
+            } else if (player.id !== playerId) {
+                const buttons = document.createElement('div');
+                buttons.style.display = 'flex';
+                buttons.style.gap = '5px';
+
+                const knbButton = document.createElement('button');
+                knbButton.className = 'legion-mini-button';
+                knbButton.textContent = 'КНБ';
+                knbButton.title = 'Пригласить в Кото-КНБ';
+
+                knbButton.addEventListener('click', () => {
+                    sendInvitation(
+                        player.id,
+                        player.nickname,
+                        knbButton
+                    );
+                });
+
+                const rouletteButton = document.createElement('button');
+                rouletteButton.className = 'legion-roulette-invite-button';
+                rouletteButton.textContent = '🎰';
+                rouletteButton.title = 'Пригласить в Кото-рулетку';
+
+                rouletteButton.addEventListener('click', () => {
+                    sendRouletteInvitation(
+                        player.id,
+                        player.nickname,
+                        rouletteButton
+                    );
+                });
+
+                buttons.append(knbButton, rouletteButton);
+                item.appendChild(buttons);
+            }
+
+            ui.players.appendChild(item);
+        });
+    }
+        function refreshInvitations() {
         request(
             'GET',
             '/api/invites/' + encodeURIComponent(playerId),
@@ -1083,8 +1252,6 @@
     };
 
     function showGame(match) {
-        // Не открываем повторно уже показанный матч:
-        // он может быть свёрнут или закрыт пользователем.
         if (displayedMatchId === match.id) return;
 
         displayedMatchId = match.id;
@@ -1273,8 +1440,6 @@
             onClick: closeModal
         });
 
-        // openModal автоматически разворачивает окно,
-        // даже если пользователь до этого его свернул.
         openModal('🐾 Дуэль окончена', body, actions);
     }
 
@@ -1296,7 +1461,6 @@
         const first = match.players[0];
         const second = match.players[1];
 
-        // Однострочное сообщение с упоминаниями игроков
         const message =
             '🐱 Кото-КНБ: ' +
             '@' + first.nickname + ' ' +
@@ -1369,55 +1533,122 @@
 
         showToast('🐾 Результат отправлен в общий чат!');
     }
+        // ========================================
+    // КОТО-РУЛЕТКА
+    // ========================================
 
-     function createRouletteUI() {
+    function normalizeRouletteResource(value) {
+        if (!value) return null;
+
+        // Сервер может вернуть объект ресурса или строковый ключ.
+        if (typeof value === 'object') {
+            const id = value.id || value.key || value.resourceId;
+            const known = ROULETTE_RESOURCES[id];
+
+            return {
+                id: id || value.name || 'unknown',
+                name: value.name || known?.name || 'Неизвестно',
+                emoji: value.emoji || known?.emoji || '❔',
+                points: Number(value.points ?? known?.points ?? 0)
+            };
+        }
+
+        const known = ROULETTE_RESOURCES[value];
+
+        return known ? {
+            id: value,
+            ...known
+        } : {
+            id: String(value),
+            name: 'Неизвестно',
+            emoji: '❔',
+            points: 0
+        };
+    }
+
+    function normalizeRouletteResult(data) {
+        const raw = Array.isArray(data?.reels)
+            ? data.reels
+            : Array.isArray(data?.resources)
+                ? data.resources
+                : [];
+
+        const reels = raw.map(normalizeRouletteResource);
+
+        const score = Number.isFinite(Number(data?.score))
+            ? Number(data.score)
+            : reels.reduce((sum, item) => sum + item.points, 0);
+
+        const jackpot = typeof data?.jackpot === 'boolean'
+            ? data.jackpot
+            : reels.length === 3 &&
+              reels.every(item => item.id === reels[0].id);
+
+        return { reels, score, jackpot };
+    }
+
+    function rouletteResourceText(reels) {
+        return (reels || []).map(value => {
+            const item = normalizeRouletteResource(value);
+
+            return item
+                ? `${item.emoji} ${item.name}`
+                : '❔';
+        }).join(' · ');
+    }
+
+    function rouletteChatMessage(result) {
+        const normalized = normalizeRouletteResult(result);
+        const names = normalized.reels.map(item => item.name);
+
+        if (normalized.jackpot && names.length === 3) {
+            return `🎰 Джекпот (три ${names[0].toLowerCase()})!`;
+        }
+
+        return `🎰 Кото-рулетка: ${names.join(', ')} — ${normalized.score} очков!`;
+    }
+
+    function createRouletteUI() {
         const container = document.createElement('div');
         container.className = 'legion-roulette';
 
         container.innerHTML = `
-            <div class="legion-roulette-title">
-                🎰 Кото-рулетка
-            </div>
+            <div class="legion-roulette-title">🎰 Кото-рулетка</div>
 
             <div class="legion-roulette-hint">
                 Три слота, шесть ресурсов и шанс на джекпот!
             </div>
 
             <div class="legion-roulette-reels">
-                <div class="legion-roulette-reel" data-slot="0">❔</div>
-                <div class="legion-roulette-reel" data-slot="1">❔</div>
-                <div class="legion-roulette-reel" data-slot="2">❔</div>
+                <div class="legion-roulette-reel">❔</div>
+                <div class="legion-roulette-reel">❔</div>
+                <div class="legion-roulette-reel">❔</div>
             </div>
 
-            <div class="legion-roulette-result" id="legion-roulette-result">
+            <div class="legion-roulette-result">
                 Попробуйте свою удачу!
             </div>
 
             <div class="legion-roulette-controls">
-                <button class="legion-mini-button"
-                        id="legion-roulette-spin"
-                        type="button">
+                <button class="legion-mini-button" data-action="spin">
                     ⛏️ Копать!
                 </button>
 
                 <button class="legion-mini-button"
-                        id="legion-roulette-publish"
-                        type="button"
+                        data-action="publish"
                         disabled>
                     📢 В чат
                 </button>
             </div>
 
-            <div class="legion-roulette-hint"
-                 id="legion-roulette-cooldown">
+            <div class="legion-roulette-hint" data-role="cooldown">
                 Попытка доступна раз в 5 минут.
             </div>
 
-            <div class="legion-roulette-hint"
-                 style="margin-top:10px">
-                🪨 Камушек — 1 · ⬜ Известняк — 2 · 🔩 Железо — 3
+            <div class="legion-roulette-hint" style="margin-top:10px">
+                🪨 Камушек — 1 · ⚪ Известняк — 2 · ⛓️ Железо — 3
                 <br>
-                ⚫ Уголь — 3 · 🟡 Золото — 5 · 💎 Топаз — 8
+                ⬛ Уголь — 3 · 🟡 Золото — 5 · 💎 Топаз — 8
             </div>
         `;
 
@@ -1426,61 +1657,51 @@
 
         self.before(container);
 
-        container.querySelector('#legion-roulette-spin')
+        container.querySelector('[data-action="spin"]')
             .addEventListener('click', spinRouletteSolo);
 
-        container.querySelector('#legion-roulette-publish')
+        container.querySelector('[data-action="publish"]')
             .addEventListener('click', publishRouletteSolo);
     }
 
     function rouletteElements() {
         const container = document.querySelector('.legion-roulette');
+
         if (!container) return null;
 
         return {
-            container,
             reels: [...container.querySelectorAll('.legion-roulette-reel')],
-            result: container.querySelector('#legion-roulette-result'),
-            spin: container.querySelector('#legion-roulette-spin'),
-            publish: container.querySelector('#legion-roulette-publish'),
-            cooldown: container.querySelector('#legion-roulette-cooldown')
+            result: container.querySelector('.legion-roulette-result'),
+            spin: container.querySelector('[data-action="spin"]'),
+            publish: container.querySelector('[data-action="publish"]'),
+            cooldown: container.querySelector('[data-role="cooldown"]')
         };
     }
 
-    function rouletteResourceText(reels) {
-        return reels.map(key => {
-            const resource = ROULETTE_RESOURCES[key];
+    function updateRouletteCooldownUI() {
+        const elements = rouletteElements();
 
-            return resource
-                ? `${resource.emoji} ${resource.name}`
-                : '❔ Неизвестно';
-        }).join(' · ');
-    }
+        if (!elements) return;
 
-    function rouletteIsJackpot(reels) {
-        return reels.length === 3 &&
-            reels[0] === reels[1] &&
-            reels[1] === reels[2];
-    }
-
-    function rouletteScore(reels) {
-        return reels.reduce(
-            (total, key) => total + (ROULETTE_RESOURCES[key]?.points || 0),
-            0
-        );
-    }
-
-    function rouletteChatMessage(result) {
-        const reels = result.reels || [];
-        const names = reels.map(key =>
-            ROULETTE_RESOURCES[key]?.name || key
+        const remaining = Math.max(
+            0,
+            Math.ceil((rouletteCooldownUntil - Date.now()) / 1000)
         );
 
-        if (result.jackpot || rouletteIsJackpot(reels)) {
-            return `🎰 Джекпот (три ${names[0].toLowerCase()})!`;
+        if (rouletteSpinning) {
+            elements.spin.disabled = true;
+        } else if (remaining > 0) {
+            elements.spin.disabled = true;
+
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+
+            elements.cooldown.textContent =
+                `Следующая попытка через ${minutes}:${String(seconds).padStart(2, '0')}`;
+        } else {
+            elements.spin.disabled = false;
+            elements.cooldown.textContent = '⛏️ Попытка доступна!';
         }
-
-        return `🎰 Кото-рулетка: ${names.join(', ')} — ${result.score} очков!`;
     }
 
     function loadRouletteStatus() {
@@ -1491,56 +1712,23 @@
             (error, result) => {
                 if (error || !result?.success) return;
 
-                rouletteCooldownUntil = result.nextAt || 0;
+                rouletteCooldownUntil = Number(result.nextAt || 0);
                 updateRouletteCooldownUI();
             }
         );
     }
 
-    function updateRouletteCooldownUI() {
+    function animateRoulette(reels, callback) {
         const elements = rouletteElements();
-        if (!elements) return;
 
-        const remaining = Math.max(
-            0,
-            Math.ceil((rouletteCooldownUntil - Date.now()) / 1000)
-        );
-
-        if (rouletteSpinning) {
-            elements.spin.disabled = true;
+        if (!elements) {
+            callback();
             return;
         }
 
-        if (remaining > 0) {
-            const minutes = Math.floor(remaining / 60);
-            const seconds = remaining % 60;
-
-            elements.spin.disabled = true;
-            elements.cooldown.textContent =
-                `Следующая попытка через ${minutes}:${String(seconds).padStart(2, '0')}`;
-        } else {
-            elements.spin.disabled = false;
-            elements.cooldown.textContent =
-                '⛏️ Попытка доступна! Следующая — через 5 минут.';
-        }
-    }
-
-    function clearRouletteAnimation() {
-        rouletteTimers.forEach(timer => clearTimeout(timer));
+        rouletteTimers.forEach(clearTimeout);
         rouletteTimers = [];
 
-        const elements = rouletteElements();
-        elements?.reels.forEach(reel => reel.classList.remove('spinning'));
-    }
-
-    function animateRoulette(reels, onComplete) {
-        const elements = rouletteElements();
-        if (!elements) {
-            onComplete();
-            return;
-        }
-
-        clearRouletteAnimation();
         rouletteSpinning = true;
         elements.spin.disabled = true;
         elements.publish.disabled = true;
@@ -1550,25 +1738,29 @@
             reel.textContent = '❔';
             reel.classList.add('spinning');
 
-            const timer = setTimeout(() => {
-                const resource = ROULETTE_RESOURCES[reels[index]];
+            rouletteTimers.push(setTimeout(() => {
+                const resource = normalizeRouletteResource(reels[index]);
+
                 reel.classList.remove('spinning');
                 reel.textContent = resource?.emoji || '❔';
 
                 if (index === 2) {
                     rouletteSpinning = false;
-                    onComplete();
+                    callback();
                     updateRouletteCooldownUI();
                 }
-            }, 900 + index * 650);
-
-            rouletteTimers.push(timer);
+            }, 900 + index * 650));
         });
     }
 
     function spinRouletteSolo() {
         const elements = rouletteElements();
-        if (!elements || rouletteSpinning || Date.now() < rouletteCooldownUntil) {
+
+        if (
+            !elements ||
+            rouletteSpinning ||
+            Date.now() < rouletteCooldownUntil
+        ) {
             return;
         }
 
@@ -1583,25 +1775,24 @@
             (error, result, status) => {
                 if (error || !result?.success) {
                     elements.result.textContent =
-                        result?.error || 'Не удалось запустить рулетку. Попробуйте ещё раз.';
+                        result?.error || 'Не удалось запустить рулетку.';
 
-                    if (status === 429 && result?.nextAt) {
-                        rouletteCooldownUntil = result.nextAt;
+                    if (result?.nextAt) {
+                        rouletteCooldownUntil = Number(result.nextAt);
                     }
 
                     updateRouletteCooldownUI();
                     return;
                 }
 
-                rouletteResult = {
-                    reels: result.reels,
-                    score: result.score,
-                    jackpot: result.jackpot
-                };
-                rouletteCooldownUntil = result.nextAt || 0;
+                rouletteResult = normalizeRouletteResult(result);
+                rouletteCooldownUntil = Number(result.nextAt || 0);
 
                 animateRoulette(rouletteResult.reels, () => {
-                    const description = rouletteResourceText(rouletteResult.reels);
+                    const description = rouletteResourceText(
+                        rouletteResult.reels
+                    );
+
                     elements.result.textContent = rouletteResult.jackpot
                         ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} очков`
                         : `${description} · ${rouletteResult.score} очков`;
@@ -1614,16 +1805,27 @@
 
     function publishRouletteSolo() {
         if (!rouletteResult) return;
-        publishToChat(rouletteChatMessage(rouletteResult));
+
+        publishResultToChat(
+            rouletteChatMessage(rouletteResult)
+        );
     }
 
-    function publishToChat(message) {
+    function publishResultToChat(message) {
         const form = document.querySelector('form.cy-chat-f');
-        const input = form?.querySelector('input[type="text"], textarea');
-        const button = form?.querySelector('button[type="submit"]');
+
+        const input = form?.querySelector(
+            'input[type="text"], textarea'
+        );
+
+        const button = form?.querySelector(
+            'button[type="submit"]'
+        );
 
         if (!form || !input || !button) {
-            showToast('Не удалось найти форму чата. Откройте чат и попробуйте снова.');
+            showToast(
+                'Не удалось найти форму чата. Откройте чат и попробуйте снова.'
+            );
             return;
         }
 
@@ -1635,53 +1837,76 @@
         const proto = input.tagName === 'TEXTAREA'
             ? HTMLTextAreaElement.prototype
             : HTMLInputElement.prototype;
-        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
 
-        if (setter) setter.call(input, message);
-        else input.value = message;
+        const setter =
+            Object.getOwnPropertyDescriptor(proto, 'value')?.set;
 
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+        if (setter) {
+            setter.call(input, message);
+        } else {
+            input.value = message;
+        }
+
+        input.dispatchEvent(
+            new Event('input', { bubbles: true })
+        );
+
+        input.dispatchEvent(
+            new Event('change', { bubbles: true })
+        );
+
         button.click();
 
-        showToast('📢 Сообщение отправлено в чат.');
+        showToast('📢 Результат отправлен в чат.');
     }
 
-     function sendRouletteInvitation(targetId, targetNickname, button) {
+    function sendRouletteInvitation(targetId, targetNickname, button) {
         button.disabled = true;
-        button.textContent = 'Отправка...';
+        button.textContent = '...';
 
         request(
             'POST',
             '/api/roulette/invites',
-            { fromId: playerId, toId: targetId },
+            {
+                fromId: playerId,
+                toId: targetId
+            },
             (error, result) => {
                 if (error || !result?.success) {
                     button.disabled = false;
-                    button.textContent = '🎰 Дуэль';
-                    showToast(result?.error || 'Не удалось пригласить игрока в шахту.');
+                    button.textContent = '🎰';
+
+                    showToast(
+                        result?.error || 'Не удалось отправить приглашение.'
+                    );
                     return;
                 }
 
-                button.textContent = 'Отправлено';
-                showToast(`🎰 Приглашение в совместную шахту отправлено: ${targetNickname}`);
+                button.textContent = '✓';
+
+                showToast(
+                    `🎰 Приглашение отправлено: ${targetNickname}`
+                );
             }
         );
     }
 
     function refreshRouletteInvitations() {
-        if (rouletteInvite) return;
+        if (rouletteInvite || rouletteMatchId) return;
 
         request(
             'GET',
             '/api/roulette/invites/' + encodeURIComponent(playerId),
             null,
             (error, result) => {
-                if (error || !result?.success || !result.invitations?.length) return;
+                if (error || !result?.success || !result.invitations?.length) {
+                    return;
+                }
 
-                const invitation = result.invitations.find(item =>
-                    !rouletteInviteIds.has(item.id)
+                const invitation = result.invitations.find(
+                    item => !rouletteInviteIds.has(item.id)
                 );
+
                 if (!invitation) return;
 
                 rouletteInviteIds.add(invitation.id);
@@ -1689,7 +1914,7 @@
 
                 openModal(
                     '🎰 Приглашение в Кото-рулетку',
-                    `${invitation.fromNickname || 'Игрок'} приглашает вас в совместную шахту!\n\nКаждый сделает по одной прокрутке. Победит тот, кто наберёт больше очков.`,
+                    `${invitation.fromNickname || 'Игрок'} приглашает вас сыграть вместе!\n\nКаждый сделает по одной прокрутке. Победит тот, кто наберёт больше очков.`,
                     [
                         {
                             label: '⛏️ Принять',
@@ -1705,33 +1930,36 @@
             }
         );
     }
-
-    function respondRouletteInvitation(accept) {
+        function respondRouletteInvitation(accept) {
         if (!rouletteInvite) return;
 
         const invitation = rouletteInvite;
 
         request(
             'POST',
-            '/api/roulette/invites/' + encodeURIComponent(invitation.id) + '/respond',
-            { playerId, accept },
+            '/api/roulette/invites/' +
+            encodeURIComponent(invitation.id) +
+            '/respond',
+            {
+                playerId,
+                accept
+            },
             (error, result) => {
                 rouletteInvite = null;
                 closeModal();
 
                 if (error || !result?.success) {
-                    showToast(result?.error || 'Не удалось обработать приглашение.');
+                    showToast(
+                        result?.error || 'Не удалось обработать приглашение.'
+                    );
                     return;
                 }
 
-                if (accept && result.matchId) {
+                if (accept) {
                     rouletteMatchId = result.matchId;
-                    rouletteMatchShown = null;
                     rouletteHasSpun = false;
                     rouletteResultShown = false;
                     refreshRouletteMatch();
-                } else {
-                    showToast('Приглашение в шахту отклонено.');
                 }
             }
         );
@@ -1740,7 +1968,8 @@
     function refreshRouletteMatch() {
         request(
             'GET',
-            '/api/roulette/matches/player/' + encodeURIComponent(playerId),
+            '/api/roulette/matches/player/' +
+            encodeURIComponent(playerId),
             null,
             (error, result) => {
                 if (error || !result?.success || !result.match) return;
@@ -1748,44 +1977,40 @@
                 const match = result.match;
                 rouletteMatchId = match.id;
 
-                const me = match.players.find(player => player.id === playerId);
-                const opponent = match.players.find(player => player.id !== playerId);
+                const me = match.players.find(
+                    player => player.id === playerId
+                );
 
-                if (me?.hasSpun) rouletteHasSpun = true;
+                const opponent = match.players.find(
+                    player => player.id !== playerId
+                );
+
+                rouletteHasSpun = Boolean(me?.hasSpun);
 
                 if (match.status === 'finished') {
-                    if (!rouletteResultShown) {
-                        rouletteResultShown = true;
-                        showRouletteMatchResult(match);
-                    }
-                    return;
-                }
-
-                if (!rouletteMatchShown || rouletteMatchShown !== match.id) {
-                    rouletteMatchShown = match.id;
+                    showRouletteMatchResult(match);
+                } else if (!rouletteHasSpun) {
                     showRouletteMatch(match, opponent);
-                } else if (rouletteHasSpun && !rouletteResultShown) {
-                    showRouletteWaiting(match, opponent);
+                } else if (!rouletteWaitingShown) {
+                    rouletteWaitingShown = true;
+                    showRouletteWaiting(opponent);
                 }
             }
         );
     }
 
     function showRouletteMatch(match, opponent) {
-        const me = match.players.find(player => player.id === playerId);
+        if (rouletteMatchShown === match.id) return;
 
-        if (me?.hasSpun) {
-            rouletteHasSpun = true;
-            showRouletteWaiting(match, opponent);
-            return;
-        }
+        rouletteMatchShown = match.id;
+        rouletteWaitingShown = false;
 
         openModal(
-            '🎰 Совместная шахта',
-            `Ваш напарник: ${opponent?.nickname || 'игрок'}\n\nСделайте одну прокрутку. После этого останется дождаться результата второго игрока.`,
+            '🎰 Совместная Кото-рулетка',
+            `Ваш соперник: ${opponent?.nickname || 'котик'}\n\nСделайте один бросок. У каждого игрока будет одна попытка.`,
             [
                 {
-                    label: '⛏️ Копать!',
+                    label: '⛏️ Крутить!',
                     className: 'primary',
                     onClick: spinRouletteCoop
                 },
@@ -1794,19 +2019,14 @@
                     onClick: minimizeModal
                 }
             ],
-            'В совместном режиме нет пятиминутного кулдауна. Результат сравнивается по сумме очков.'
+            'В совместном режиме нет пятиминутного кулдауна.'
         );
     }
 
-    function showRouletteWaiting(match, opponent) {
-        const other = opponent || match.players.find(player => player.id !== playerId);
-        const hasOpponentSpun = Boolean(other?.hasSpun);
-
+    function showRouletteWaiting(opponent) {
         openModal(
-            '🎰 Совместная шахта',
-            hasOpponentSpun
-                ? 'Оба котика сделали прокрутку! Подводим итоги...'
-                : 'Ваша прокрутка сохранена.\n\nОжидаем, пока второй котик добудет свои ресурсы...',
+            '🎰 Ожидание соперника',
+            `Ваш результат сохранён.\n\nОжидаем бросок игрока ${opponent?.nickname || 'соперника'}.`,
             [
                 {
                     label: 'Свернуть',
@@ -1817,13 +2037,19 @@
     }
 
     function spinRouletteCoop() {
-        if (!rouletteMatchId || rouletteHasSpun) return;
+        if (
+            !rouletteMatchId ||
+            rouletteHasSpun ||
+            rouletteSpinning
+        ) {
+            return;
+        }
 
-        rouletteHasSpun = true;
+        rouletteSpinning = true;
 
         openModal(
-            '🎰 Шахта работает',
-            'Ваши барабаны вращаются...\n\nСейчас узнаем, что удалось добыть!',
+            '🎰 Совместная рулетка',
+            '⛏️ Добываем ваши ресурсы...',
             [
                 {
                     label: 'Свернуть',
@@ -1834,71 +2060,87 @@
 
         request(
             'POST',
-            '/api/roulette/matches/' + encodeURIComponent(rouletteMatchId) + '/spin',
-            { playerId },
+            '/api/roulette/matches/' +
+            encodeURIComponent(rouletteMatchId) +
+            '/spin',
+            {
+                playerId
+            },
             (error, result) => {
+                rouletteSpinning = false;
+
                 if (error || !result?.success) {
-                    rouletteHasSpun = false;
-                    showToast(result?.error || 'Не удалось сделать прокрутку.');
-                    refreshRouletteMatch();
+                    showToast(
+                        result?.error || 'Не удалось выполнить бросок.'
+                    );
                     return;
                 }
 
-                const reels = result.reels || [];
-                const score = result.score || 0;
+                rouletteHasSpun = true;
+                rouletteWaitingShown = true;
+
+                const spin = normalizeRouletteResult(result);
 
                 openModal(
                     '🎰 Ваша добыча',
-                    `${rouletteResourceText(reels)}\n\n⭐ Ваш результат: ${score} очков\n\n${result.waitingForOpponent ? 'Ждём результат второго игрока...' : 'Оба результата готовы!'}`
+                    `${rouletteResourceText(spin.reels)}\n\n⭐ Ваш результат: ${spin.score} очков\n\nОжидаем второго игрока...`,
+                    [
+                        {
+                            label: 'Свернуть',
+                            onClick: minimizeModal
+                        }
+                    ]
                 );
 
-                addCoopWaitingButton();
                 refreshRouletteMatch();
             }
         );
     }
 
-    function addCoopWaitingButton() {
-        const actions = ui.modalActions;
-        if (!actions) return;
-
-        const button = document.createElement('button');
-        button.textContent = 'Свернуть';
-        button.addEventListener('click', minimizeModal);
-        actions.appendChild(button);
-    }
-
     function showRouletteMatchResult(match) {
-        const me = match.players.find(player => player.id === playerId);
-        const opponent = match.players.find(player => player.id !== playerId);
+        if (rouletteResultShown) return;
 
-        const meText = me
-            ? `${me.nickname}: ${rouletteResourceText(me.reels || [])} — ${me.score} очков`
-            : 'Ваш результат недоступен';
-        const opponentText = opponent
-            ? `${opponent.nickname}: ${rouletteResourceText(opponent.reels || [])} — ${opponent.score} очков`
-            : 'Результат соперника недоступен';
+        rouletteResultShown = true;
 
-        let winnerText;
-        if (match.winner === 'draw') {
-            winnerText = '🤝 Ничья! У котиков одинаковое количество очков.';
-        } else if (match.winner === playerId) {
-            winnerText = '🏆 Вы победили в совместной шахте!';
-        } else {
-            winnerText = `🏆 Победитель: ${opponent?.nickname || 'соперник'}`;
-        }
+        const first = match.players[0];
+        const second = match.players[1];
+
+        const firstScore = Number(first.score || 0);
+        const secondScore = Number(second.score || 0);
+
+        const winnerText = match.winner === 'draw'
+            ? '🤝 Ничья! У котиков одинаковое количество очков.'
+            : match.winner === playerId
+                ? '🏆 Вы победили!'
+                : `🏆 Победитель: ${
+                    match.players.find(
+                        player => player.id === match.winner
+                    )?.nickname || 'соперник'
+                }`;
+
+        const body = [
+            `${first.nickname}:`,
+            `${rouletteResourceText(first.reels || [])} — ${firstScore} очков`,
+            '',
+            `${second.nickname}:`,
+            `${rouletteResourceText(second.reels || [])} — ${secondScore} очков`,
+            '',
+            winnerText
+        ].join('\n');
 
         openModal(
             '🏆 Итоги Кото-рулетки',
-            `${meText}\n\n${opponentText}\n\n${winnerText}`,
+            body,
             [
                 {
                     label: 'Закрыть',
                     onClick: () => {
                         rouletteMatchId = null;
                         rouletteMatchShown = null;
+                        rouletteWaitingShown = false;
                         rouletteHasSpun = false;
                         rouletteResultShown = false;
+
                         closeModal();
                     }
                 }
@@ -1906,12 +2148,11 @@
         );
     }
 
-
     function init() {
         if (document.getElementById('legion-mini-widget')) return;
 
         console.log(
-            '[Legion Кото-игры] Version 1.9.0 loaded'
+            '[Legion Кото-игры] Version 1.9.1 loaded'
         );
 
         ui = createInterface();
