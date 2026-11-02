@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Мини-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      1.1.0
+// @version      1.2.0
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -10,8 +10,8 @@
 // @downloadURL  https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
 // @match        https://play.multidonate.ru/*
 // @run-at       document-idle
-// @grant        none
-// @require      https://cdn.socket.io/4.8.1/socket.io.min.js
+// @grant        GM_xmlhttpRequest
+// @connect      legion-server.onrender.com
 // ==/UserScript==
 
 (function () {
