@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.0.2
+// @version      2.0.3
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -1655,8 +1655,23 @@
     rouletteSpinning = true;
 
     function updateModal() {
-        ui.modalBody.textContent =
-            `⛏️ Добываем ваши ресурсы...\n\n${symbols.join('   ')}`;
+        ui.modalBody.innerHTML = `
+            <div style="text-align:center;">
+                <div style="font-size:15px; margin-bottom:18px;">
+                    ⛏️ Добываем ваши ресурсы...
+                </div>
+                <div style="
+                    display:flex;
+                    justify-content:center;
+                    align-items:center;
+                    gap:18px;
+                    font-size:42px;
+                    line-height:1.5;
+                ">
+                    ${symbols.map(symbol => `<span>${symbol}</span>`).join('')}
+                </div>
+            </div>
+        `;
     }
 
     updateModal();
@@ -1874,15 +1889,15 @@
                 const newTie =
                     match.lastRound?.winner === 'draw' &&
                     Number(match.round || 0) > rouletteLastTieRoundShown;
-    
+                
                 if (newTie) {
                     rouletteLastTieRoundShown = Number(match.round || 0);
                     rouletteMatchShown = null;
                     rouletteWaitingShown = false;
-    
-                    showToast(
-                        '🤝 Ничья! Следующий раунд начинается без дополнительной ставки.'
-                    );
+                    rouletteHasSpun = false;
+                    rouletteResultShown = false;
+                
+                    showToast('🤝 Ничья! Начинается следующий раунд.');
                 }
     
                 if (match.status === 'finished') {
@@ -1997,40 +2012,80 @@
     }
 
     function spinRouletteCoop() {
-        if (!rouletteMatchId || rouletteHasSpun || rouletteSpinning) return;
+    if (!rouletteMatchId || rouletteHasSpun || rouletteSpinning) return;
 
-        rouletteSpinning = true;
-        openModal('🎰 Совместная рулетка', '⛏️ Добываем ваши ресурсы...', [
-            { label: 'Свернуть', onClick: minimizeModal }
-        ]);
+    rouletteSpinning = true;
 
-        request('POST', '/api/roulette/matches/' + encodeURIComponent(rouletteMatchId) + '/spin',
-            { playerId },
-            (error, result) => {
-                rouletteSpinning = false;
+    openModal('🎰 Совместная рулетка', '⛏️ Добываем ваши ресурсы...', [
+        { label: 'Свернуть', onClick: minimizeModal }
+    ]);
 
-                if (error || !result?.success) {
-                    showToast(result?.error || 'Не удалось выполнить бросок.');
+    request(
+        'POST',
+        '/api/roulette/matches/' + encodeURIComponent(rouletteMatchId) + '/spin',
+        { playerId },
+        (error, result) => {
+            rouletteSpinning = false;
+
+            if (error || !result?.success) {
+                showToast(result?.error || 'Не удалось выполнить бросок.');
+                refreshRouletteMatch();
+                return;
+            }
+
+            rouletteHasSpun = true;
+
+            const spin = normalizeRouletteResult(result);
+
+            animateCoopRoulette(spin.reels, () => {
+                const multiplierText = spin.multiplier > 1
+                    ? `\nМножитель: ×${spin.multiplier}`
+                    : '';
+
+                const resultText =
+                    `${rouletteResourceText(spin.reels)}\n\n` +
+                    `⭐ Ваш результат: ${spin.score} очков${multiplierText}`;
+
+                if (result.status === 'finished') {
+                    openModal(
+                        '🎰 Бросок завершён',
+                        resultText + '\n\nПолучаем результаты матча...',
+                        [{ label: 'Свернуть', onClick: minimizeModal }]
+                    );
+
+                    refreshRouletteMatch();
                     return;
                 }
 
-                rouletteHasSpun = true;
-                rouletteWaitingShown = true;
-                const spin = normalizeRouletteResult(result);
+                if (result.status === 'draw') {
+                    rouletteHasSpun = false;
+                    rouletteWaitingShown = false;
+                    rouletteMatchShown = null;
 
-                // Повторно используем анимацию трёх слотов из одиночной рулетки.
-                animateCoopRoulette(spin.reels, () => {
-                    const multiplierText = spin.multiplier > 1 ? `\nМножитель: ×${spin.multiplier}` : '';
                     openModal(
-                        '🎰 Ваша добыча',
-                        `${rouletteResourceText(spin.reels)}\n\n⭐ Ваш результат: ${spin.score} очков${multiplierText}\n\nОжидаем второго игрока...`,
+                        '🤝 Ничья!',
+                        resultText +
+                        '\n\nОдинаковое количество очков! Начинается следующий раунд.',
                         [{ label: 'Свернуть', onClick: minimizeModal }]
                     );
+
                     refreshRouletteMatch();
-                });
-            }
-        );
-    }
+                    return;
+                }
+
+                rouletteWaitingShown = true;
+
+                openModal(
+                    '🎰 Ваша добыча',
+                    resultText + '\n\nОжидаем второго игрока...',
+                    [{ label: 'Свернуть', onClick: minimizeModal }]
+                );
+
+                refreshRouletteMatch();
+            });
+        }
+    );
+}
 
     function showRouletteMatchResult(match) {
         if (rouletteResultShown) return;
