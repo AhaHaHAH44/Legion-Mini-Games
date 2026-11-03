@@ -1644,6 +1644,50 @@
             }, 900 + index * 650));
         });
     }
+    
+    function animateCoopRoulette(reels, callback) {
+    const finalReels = reels.map(normalizeRouletteResource);
+    const symbols = ['❔', '❔', '❔'];
+    const stopped = [false, false, false];
+
+    const availableEmojis = ['🪨', '⚪', '⛓️', '⬛', '🟡', '💎'];
+
+    rouletteSpinning = true;
+
+    function updateModal() {
+        ui.modalBody.textContent =
+            `⛏️ Добываем ваши ресурсы...\n\n${symbols.join('   ')}`;
+    }
+
+    updateModal();
+
+    const animation = setInterval(() => {
+        symbols.forEach((_, index) => {
+            if (!stopped[index]) {
+                symbols[index] = availableEmojis[
+                    Math.floor(Math.random() * availableEmojis.length)
+                ];
+            }
+        });
+
+        updateModal();
+    }, 100);
+
+    [900, 1450, 2000].forEach((delay, index) => {
+        setTimeout(() => {
+            stopped[index] = true;
+            symbols[index] = finalReels[index]?.emoji || '❔';
+
+            updateModal();
+
+            if (index === 2) {
+                clearInterval(animation);
+                rouletteSpinning = false;
+                callback();
+            }
+        }, delay);
+    });
+}
 
     function spinRouletteSolo() {
         const elements = rouletteElements();
@@ -1744,7 +1788,7 @@
 
                 openModal(
                     '🎰 Приглашение в Кото-рулетку',
-                    `${invitation.fromNickname || 'Игрок'} приглашает вас сыграть вместе!\\n\\nСначала вы договоритесь о ставке (минимум 50 очков). Списание произойдёт только после совпадения ставок.`,
+                    `${invitation.fromNickname || 'Игрок'} приглашает вас сыграть вместе!\n\nСначала вы договоритесь о ставке (минимум 50 очков). Списание произойдёт только после совпадения ставок.`,
                     [
                         { label: '⛏️ Принять', className: 'primary', onClick: () => respondRouletteInvitation(true) },
                         { label: 'Отклонить', onClick: () => respondRouletteInvitation(false) }
@@ -1780,44 +1824,87 @@
 
     function refreshRouletteMatch() {
         if (rouletteMatchRequestInFlight) return;
+    
         rouletteMatchRequestInFlight = true;
-        request('GET', '/api/roulette/matches/player/' + encodeURIComponent(playerId), null,
+    
+        request(
+            'GET',
+            '/api/roulette/matches/player/' + encodeURIComponent(playerId),
+            null,
             (error, result) => {
                 rouletteMatchRequestInFlight = false;
+    
                 if (error || !result?.success || !result.match) return;
+    
                 const match = result.match;
+    
                 if (completedRouletteMatches.has(match.id)) return;
+    
                 rouletteMatchId = match.id;
+    
                 const me = match.players.find(player => player.id === playerId);
                 const opponent = match.players.find(player => player.id !== playerId);
+    
                 rouletteHasSpun = Boolean(me?.hasSpun);
+    
                 if (match.status === 'cancelled' || match.status === 'expired') {
-                    if (!completedRouletteMatches.has(match.id)) {
-                        rememberRouletteMatch(ROULETTE_COMPLETED_KEY, completedRouletteMatches, match.id);
-                        closeModal();
-                        showToast(match.status === 'expired' ? 'Время матча истекло. Зарезервированные ставки возвращены.' : 'Соперник отменил переговоры о ставке.');
-                    }
+                    rememberRouletteMatch(
+                        ROULETTE_COMPLETED_KEY,
+                        completedRouletteMatches,
+                        match.id
+                    );
+    
+                    closeModal();
+                    showToast(
+                        match.status === 'expired'
+                            ? 'Время матча истекло. Зарезервированные ставки возвращены.'
+                            : 'Соперник отменил переговоры о ставке.'
+                    );
+    
                     rouletteMatchId = null;
                     rouletteNegotiationShown = null;
                     rouletteMatchShown = null;
+                    rouletteWaitingShown = false;
+                    rouletteHasSpun = false;
+                    rouletteResultShown = false;
+    
                     return;
                 }
-                const newTie = match.lastRound?.winner === 'draw' && Number(match.round || 0) > rouletteLastTieRoundShown;
+    
+                const newTie =
+                    match.lastRound?.winner === 'draw' &&
+                    Number(match.round || 0) > rouletteLastTieRoundShown;
+    
                 if (newTie) {
                     rouletteLastTieRoundShown = Number(match.round || 0);
                     rouletteMatchShown = null;
                     rouletteWaitingShown = false;
-                    showToast('🤝 Ничья! Следующий раунд начинается без дополнительной ставки.');
+    
+                    showToast(
+                        '🤝 Ничья! Следующий раунд начинается без дополнительной ставки.'
+                    );
                 }
+    
                 if (match.status === 'finished') {
                     showRouletteMatchResult(match);
-                } else if (match.status === 'negotiating') {
+                    return;
+                }
+    
+                if (match.status === 'negotiating') {
                     showRouletteNegotiation(match);
-                } else if (match.status === 'playing' && !rouletteHasSpun) {
+                    return;
+                }
+    
+                if (match.status === 'playing' && !rouletteHasSpun) {
                     showRouletteMatch(match, opponent, match);
-                } else if (match.status === 'playing' && rouletteHasSpun && !rouletteWaitingShown) {
-                    rouletteWaitingShown = true;
-                    showRouletteWaiting(opponent);
+                    return;
+                }
+    
+                if (match.status === 'playing' && rouletteHasSpun) {
+                    if (!rouletteWaitingShown) {
+                        rouletteWaitingShown = true;
+                        showRouletteWaiting(opponent);
+                    }
                 }
             }
         );
@@ -1904,7 +1991,7 @@
     function showRouletteWaiting(opponent) {
         openModal(
             '🎰 Ожидание соперника',
-            `Ваш результат сохранён.\\n\\nОжидаем бросок игрока ${opponent?.nickname || 'соперника'}.`,
+            `Ваш результат сохранён.\n\nОжидаем бросок игрока ${opponent?.nickname || 'соперника'}.`,
             [{ label: 'Свернуть', onClick: minimizeModal }]
         );
     }
@@ -1932,7 +2019,7 @@
                 const spin = normalizeRouletteResult(result);
 
                 // Повторно используем анимацию трёх слотов из одиночной рулетки.
-                animateRoulette(spin.reels, () => {
+                animateCoopRoulette(spin.reels, () => {
                     const multiplierText = spin.multiplier > 1 ? `\nМножитель: ×${spin.multiplier}` : '';
                     openModal(
                         '🎰 Ваша добыча',
