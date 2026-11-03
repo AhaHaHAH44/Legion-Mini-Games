@@ -1524,7 +1524,11 @@
         const names = normalized.reels.map(item => item.name);
 
         if (normalized.jackpot && names.length === 3) {
-            return `🎰 Джекпот (три ${names[0].toLowerCase()})!`;
+        const emojis = normalized.reels
+            .map(resource => normalizeRouletteResource(resource)?.emoji || '❔')
+            .join(' ');
+    
+        return `🎰 Джекпот — выигрыш ${normalized.score} очков (×2) ${emojis}!`;
         }
 
         return `🎰 Кото-рулетка: ${names.join(', ')} — ${normalized.score} очков!`;
