@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.0.6
+// @version      2.0.7
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -858,7 +858,7 @@
                 </div>
 
                 <div id="legion-mini-status" class="legion-mini-status">
-                    Подключаемся к игровому клубу...
+                   🐾 Котик ищет дорогу в игровой клуб...
                 </div>
 
                 <div class="legion-mini-dnd">
@@ -897,7 +897,7 @@
 
                 <div id="legion-mini-players" class="collapsed">
                     <div class="legion-mini-empty">
-                        Ищем котиков...
+                        🔎 Высматриваем котиков...
                     </div>
                 </div>
 
@@ -907,7 +907,7 @@
             <div class="legion-mini-launcher">
             <button id="legion-mini-leaderboard-button"
                     type="button"
-                    title="Таблица лидеров">
+                    title="Зал славы котиков">
                 🏆
             </button>
         
@@ -1176,7 +1176,7 @@
             (error, result) => {
                 if (error || !result?.success) {
                     ui.status.textContent =
-                        'Игровой клуб пока не отвечает';
+                        '😿 Игровой клуб пока не откликается';
 
                     ui.status.classList.remove('online');
                 } else {
@@ -1195,7 +1195,7 @@
                     }
 
                     ui.status.textContent =
-                        '● Игровой клуб на связи';
+                        '🐱 Котик на связи!';
 
                     ui.status.classList.add('online');
                     loadRouletteStatus();
@@ -1206,7 +1206,7 @@
 
     function sendInvitation(targetId, targetNickname, button) {
         button.disabled = true;
-        button.textContent = 'Отправка...';
+        button.textContent = '🐾 Отправляем послание...';
 
         request(
             'POST',
@@ -1218,7 +1218,7 @@
             (error, result, status) => {
                 if (error || !result?.success) {
                     button.disabled = false;
-                    button.textContent = 'Пригласить';
+                    button.textContent = 'Позвать котика';
 
                     showToast(
                         status === 403
@@ -1231,7 +1231,7 @@
                     return;
                 }
 
-                button.textContent = 'Отправлено';
+                button.textContent = '🐾 Послание доставлено!';
 
                 showToast(
                     '🐾 Игровой вызов отправлен: ' + targetNickname
@@ -1257,7 +1257,7 @@
             empty.className = 'legion-mini-empty';
             empty.textContent = query
                 ? 'Никого не найдено.'
-                : 'Пока ни одного котика не видно...';
+                : '🐾 Пока здесь тихо... Котиков не видно';
             ui.players.appendChild(empty);
             return;
         }
@@ -1344,12 +1344,12 @@
                     ' зовёт вас сыграть в Кото-КНБ! Примете вызов?',
                     [
                         {
-                            label: 'Играть',
+                            label: 'Принять вызов',
                             className: 'primary',
                             onClick: () => respondToInvitation(true)
                         },
                         {
-                            label: 'Отказаться',
+                            label: 'Не сейчас',
                             onClick: () => respondToInvitation(false)
                         }
                     ]
@@ -1386,8 +1386,8 @@
 
                 showToast(
                     accept
-                        ? '🐱 Вызов принят! Вперёд играть!'
-                        : 'Вызов отклонён. Может, в другой раз!'
+                        ? '😼 Вызов принят! К бою, котики!'
+                        : '🐾 Котик пока не готов играть'
                 );
 
                 if (accept) checkMatch();
@@ -1603,7 +1603,7 @@
 
         // openModal автоматически разворачивает окно,
         // даже если пользователь до этого его свернул.
-        openModal('🐾 Дуэль окончена', body, actions);
+        openModal('🏆 Кото-дуэль завершена', body, actions);
     }
 
     function publishResult(match) {
@@ -1653,7 +1653,7 @@
 
         if (!form || !input || !button) {
             showToast(
-                'Не удалось найти форму чата. Откройте чат и попробуйте снова'
+                '😿 Не нашли окошко чата. Откройте его и попробуйте снова'
             );
             return;
         }
@@ -1767,10 +1767,10 @@
             .map(resource => normalizeRouletteResource(resource)?.emoji || '❔')
             .join(' ');
     
-        return `🎰 Джекпот — выигрыш ${normalized.score} очков (×2) ${emojis}!`;
+        return `🎰 Джекпот — выигрыш ${normalized.score} мяукоинов (×2) ${emojis}!`;
         }
 
-        return `🎰 Кото-рулетка: ${names.join(', ')} — ${normalized.score} очков!`;
+        return `🎰 Кото-рулетка: ${names.join(', ')} — ${normalized.score} мяукоинов!`;
     }
 
     function createRouletteUI() {
@@ -1787,7 +1787,7 @@
                 <div class="legion-roulette-reel">❔</div>
                 <div class="legion-roulette-reel">❔</div>
             </div>
-            <div class="legion-roulette-result">Попробуйте свою удачу!</div>
+            <div class="legion-roulette-result">🍀 Испытайте удачу, котик!</div>
             <div class="legion-roulette-hint" data-role="balance">Баланс: загрузка...</div>
             <div class="legion-roulette-controls">
                 <button class="legion-mini-button" data-action="spin">⛏️ Копать!</button>
@@ -1853,7 +1853,7 @@
                 rouletteCooldownUntil = Number(result.nextAt || 0);
                 rouletteBalance = Number(result.balance || 0);
                 const elements = rouletteElements();
-                if (elements?.balance) elements.balance.textContent = `💰 Баланс: ${rouletteBalance} очков`;
+                if (elements?.balance) elements.balance.textContent = `💰 Баланс: ${rouletteBalance} мяукоинов`;
                 updateRouletteCooldownUI();
             }
         );
@@ -1868,7 +1868,7 @@
         rouletteSpinning = true;
         elements.spin.disabled = true;
         elements.publish.disabled = true;
-        elements.result.textContent = '⛏️ Добываем ресурсы...';
+        elements.result.textContent = '⛏️ Добываем Находки...';
 
         elements.reels.forEach((reel, index) => {
             reel.textContent = '❔';
@@ -1901,7 +1901,7 @@
         ui.modalBody.innerHTML = `
             <div style="text-align:center;">
                 <div style="font-size:15px; margin-bottom:18px;">
-                    ⛏️ Добываем ваши ресурсы...
+                    ⛏️ Отправляемся за добычей...
                 </div>
                 <div style="
                     display:flex;
@@ -1970,11 +1970,11 @@
                 const description = rouletteResourceText(rouletteResult.reels);
                 const multiplier = Number(result.multiplier || 1);
                 rouletteBalance = Number(result.balance ?? rouletteBalance);
-                if (elements.balance) elements.balance.textContent = `💰 Баланс: ${rouletteBalance} очков`;
+                if (elements.balance) elements.balance.textContent = `💰 Баланс: ${rouletteBalance} мяукоинов`;
                 const multiplierText = multiplier > 1 ? ` · множитель ×${multiplier}` : '';
                 elements.result.textContent = rouletteResult.jackpot
-                    ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} очков${multiplierText}`
-                    : `${description} · ${rouletteResult.score} очков${multiplierText}`;
+                    ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`
+                    : `${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
                 elements.publish.disabled = false;
             });
         });
@@ -1991,7 +1991,7 @@
         const button = form?.querySelector('button[type="submit"]');
 
         if (!form || !input || !button) {
-            showToast('Не удалось найти форму чата. Откройте чат и попробуйте снова.');
+            showToast('😿 Не нашли окошко чата. Откройте его и попробуйте снова');
             return false;
         }
         if (button.disabled) {
@@ -2009,7 +2009,7 @@
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
         button.click();
-        showToast('📢 Результат отправлен в чат.');
+        showToast('🐾 Результат отправлен в чат.');
         return true;
     }
 
@@ -2022,7 +2022,7 @@
                 if (error || !result?.success) {
                     button.disabled = false;
                     button.textContent = '🎰';
-                    showToast(result?.error || 'Не удалось отправить приглашение.');
+                    showToast(result?.error || '😿 Не получилось позвать котика.');
                     return;
                 }
                 button.textContent = '✓';
@@ -2046,7 +2046,7 @@
 
                 openModal(
                     '🎰 Приглашение в Кото-рулетку',
-                    `${invitation.fromNickname || 'Игрок'} приглашает вас сыграть вместе!\n\nСначала вы договоритесь о ставке (минимум 50 очков). Списание произойдёт только после совпадения ставок.`,
+                    `${invitation.fromNickname || 'Игрок'} приглашает вас сыграть вместе!\n\nСначала вы договоритесь о ставке (минимум 50 мяукоинов). Списание произойдёт только после совпадения ставок.`,
                     [
                         { label: '⛏️ Принять', className: 'primary', onClick: () => respondRouletteInvitation(true) },
                         { label: 'Отклонить', onClick: () => respondRouletteInvitation(false) }
@@ -2176,11 +2176,11 @@
         rouletteNegotiationShown = match.id;
         const me = match.players.find(player => player.id === playerId);
         const opponent = match.players.find(player => player.id !== playerId);
-        const myOffer = me?.offer == null ? 'ещё не предложена' : `${me.offer} очков`;
-        const theirOffer = opponent?.offer == null ? 'ещё не предложена' : `${opponent.offer} очков`;
+        const myOffer = me?.offer == null ? 'ещё не предложена' : `${me.offer} мяукоинов`;
+        const theirOffer = opponent?.offer == null ? 'ещё не предложена' : `${opponent.offer} мяукоинов`;
         openModal(
             '🎰 Согласование ставки',
-            `Соперник: ${opponent?.nickname || 'котик'}\n\nВаша ставка: ${myOffer}\nСтавка соперника: ${theirOffer}\n\nМинимальная ставка — 50 очков. Баланс: ${rouletteBalance}. Очки не списываются, пока ставки не совпадут.`,
+            `Соперник: ${opponent?.nickname || 'котик'}\n\nВаша Кото-ставка: ${myOffer}\nКото-ставка соперника: ${theirOffer}\n\nМинимальная Кото-ставка — 50 мяукоинов. Баланс: ${rouletteBalance}. Мяукоины не списываются, пока ставки не совпадут.`,
             [
                 { label: '💰 Предложить / изменить ставку', className: 'primary', onClick: () => submitRouletteOffer(match.id) },
                 { label: 'Отказаться', onClick: () => declineRouletteNegotiation(match.id) },
@@ -2191,11 +2191,11 @@
 
     function submitRouletteOffer(matchId) {
         rouletteNegotiationShown = null;
-        const value = prompt('Введите ставку в очках (минимум 50):', '50');
+        const value = prompt('Введите ставку в мяукоинах (минимум 50):', '50');
         if (value === null) return;
         const amount = Number(value.trim());
         if (!Number.isSafeInteger(amount) || amount < 50) {
-            showToast('Минимальная ставка — 50 целых очков.');
+            showToast('Минимальная Кото-ставка — 50 целых мяукоинов.');
             return;
         }
         request('POST', `/api/roulette/matches/${encodeURIComponent(matchId)}/offer`, { playerId, amount },
@@ -2209,9 +2209,9 @@
                 if (result.status === 'playing') {
                     rouletteWaitingShown = false;
                     rouletteHasSpun = false;
-                    showToast(`Ставки совпали! Общий банк: ${result.pot} очков.`);
+                    showToast(`Ставки совпали! Общий банк: ${result.pot} мяукоинов.`);
                 } else {
-                    showToast('Предложение сохранено. Ожидаем ставку соперника.');
+                    showToast('🐾 Ваша ставка записана! Ждём ответа второго котика.');
                 }
                 refreshRouletteMatch();
                 loadRouletteStatus();
@@ -2241,7 +2241,7 @@
         rouletteWaitingShown = false;
         openModal(
             '🎰 Совместная Кото-рулетка',
-            `Ваш соперник: ${opponent?.nickname || 'котик'}\n\nСтавка каждого: ${fullMatch?.stake || '—'} очков\nОбщий банк: ${fullMatch?.pot || '—'} очков\nРаунд: ${fullMatch?.round || 1}\n\nСделайте бросок. Победитель заберёт весь банк.`,
+            `Ваш соперник: ${opponent?.nickname || 'котик'}\n\nКото-ставка каждого: ${fullMatch?.stake || '—'} мяукоинов\nОбщий банк: ${fullMatch?.pot || '—'} мяукоинов\nРаунд: ${fullMatch?.round || 1}\n\nСделайте бросок. Победитель заберёт весь банк.`,
             [
                 { label: '⛏️ Крутить!', className: 'primary', onClick: spinRouletteCoop },
                 { label: 'Свернуть', onClick: minimizeModal }
@@ -2252,7 +2252,7 @@
     function showRouletteWaiting(opponent) {
         openModal(
             '🎰 Ожидание соперника',
-            `Ваш результат сохранён.\n\nОжидаем бросок игрока ${opponent?.nickname || 'соперника'}.`,
+            `🐾 Ваш бросок готов!\n\nЖдём, когда ${opponent?.nickname || 'второй котик'} сделает свой ход.`,
             [{ label: 'Свернуть', onClick: minimizeModal }]
         );
     }
@@ -2262,7 +2262,7 @@
 
     rouletteSpinning = true;
 
-    openModal('🎰 Совместная рулетка', '⛏️ Добываем ваши ресурсы...', [
+    openModal('🎰 Совместная рулетка', '⛏️ Отправляемся за добычей...', [
         { label: 'Свернуть', onClick: minimizeModal }
     ]);
 
@@ -2290,7 +2290,7 @@
 
                 const resultText =
                     `${rouletteResourceText(spin.reels)}\n\n` +
-                    `⭐ Ваш результат: ${spin.score} очков${multiplierText}`;
+                    `⭐ Ваша добыча: ${spin.score} мяукоинов${multiplierText}`;
 
                 if (result.status === 'finished') {
                     rouletteWaitingShown = false;
@@ -2306,7 +2306,7 @@
                     if (finishedMatch.players.length === 2) {
                         showRouletteMatchResult(finishedMatch);
                     } else {
-                        showToast('Не удалось получить итоги. Повторно запрашиваем матч.');
+                        showToast('😿 Не получилось узнать итоги. Проверяем результат ещё раз...');
                         refreshRouletteMatch();
                     }
                 
@@ -2321,7 +2321,7 @@
                     openModal(
                         '🤝 Ничья!',
                         resultText +
-                        '\n\nОдинаковое количество очков! Начинается следующий раунд.',
+                        '\n\nОдинаковое количество мяукоинов! Начинается следующий раунд.',
                         [{ label: 'Свернуть', onClick: minimizeModal }]
                     );
 
@@ -2346,7 +2346,7 @@
     function showRouletteMatchResult(match) {
         if (!match?.players || match.players.length !== 2) {
             console.error('[Кото-рулетка] Некорректные данные матча:', match);
-            showToast('Не удалось загрузить результаты матча.');
+            showToast('😿 Не получилось узнать итоги кото-дуэли.');
             return;
         }
         if (rouletteResultShown && rouletteResultMatchId === match.id) return;
@@ -2367,19 +2367,19 @@
             : match.players.find(player => player.id === match.winner);
 
         const winnerText = !winnerPlayer
-            ? '🤝 Ничья! У котиков одинаковое количество очков.'
+            ? '🤝 Ничья! У котиков одинаковое количество мяукоинов.'
             : match.winner === playerId
-                ? `🏆 Вы победили с преимуществом в ${difference} очк.`
-                : `🏆 Победитель: ${winnerPlayer.nickname} (разница ${difference} очк.)`;
+                ? `🏆 Вы победили с преимуществом в ${difference} мяук.`
+                : `🏆 Победитель: ${winnerPlayer.nickname} (разница ${difference} мяук.)`;
 
         const firstMultiplier = normalizeRouletteResult({ reels: first.reels || [], score: firstScore }).multiplier;
         const secondMultiplier = normalizeRouletteResult({ reels: second.reels || [], score: secondScore }).multiplier;
         const body = [
             `${first.nickname}:`,
-            `${rouletteResourceText(first.reels || [])} — ${firstScore} очков${firstMultiplier > 1 ? ` (×${firstMultiplier})` : ''}`,
+            `${rouletteResourceText(first.reels || [])} — ${firstScore} мяукоинов${firstMultiplier > 1 ? ` (×${firstMultiplier})` : ''}`,
             '',
             `${second.nickname}:`,
-            `${rouletteResourceText(second.reels || [])} — ${secondScore} очков${secondMultiplier > 1 ? ` (×${secondMultiplier})` : ''}`,
+            `${rouletteResourceText(second.reels || [])} — ${secondScore} мяукоинов${secondMultiplier > 1 ? ` (×${secondMultiplier})` : ''}`,
             '',
             winnerText
         ].join('\n');
@@ -2436,8 +2436,8 @@
             : match.players.find(player => player.id === match.winner);
 
         const message = match.winner === 'draw'
-            ? `🎰 Кото-рулетка: @${first.nickname} — ${firstScore} очков, @${second.nickname} — ${secondScore} очков. 🤝 Ничья!`
-            : `🎰 Кото-рулетка: 🏆 @${winnerPlayer?.nickname || 'Победитель'} победил с разницей ${difference} очк. (${first.nickname}: ${firstScore}, ${second.nickname}: ${secondScore})`;
+            ? `🎰 Кото-рулетка: @${first.nickname} — ${firstScore} мяукоинов, @${second.nickname} — ${secondScore} мяукоинов. 🤝 Ничья!`
+            : `🎰 Кото-рулетка: 🏆 @${winnerPlayer?.nickname || 'Победитель'} победил с разницей ${difference} мяук. (${first.nickname}: ${firstScore}, ${second.nickname}: ${secondScore})`;
 
         const sent = publishResultToChat(message);
         if (!sent) return;
@@ -2536,11 +2536,11 @@ function renderLeaderboard(data) {
     );
 
     const personalStats = [
-        ['Баланс', `${personal.balance} очков`],
-        ['Всего заработано', `${personal.total_earned} очков`],
+        ['Баланс', `${personal.balance} мяукоинов`],
+        ['Всего заработано', `${personal.total_earned} мяукоинов`],
         ['Всего бросков', personal.total_spins],
         ['Джекпоты', personal.jackpots],
-        ['Личный рекорд', `${personal.personal_max_jackpot} очков`]
+        ['Личный рекорд', `${personal.personal_max_jackpot} мяукоинов`]
     ];
 
     personalStats.forEach(([label, value]) => {
@@ -2577,7 +2577,7 @@ function renderLeaderboard(data) {
                 createLeaderboardRow(
                     `${index + 1}.`,
                     player.nickname,
-                    `${player.balance} очков`,
+                    `${player.balance} мяукоинов`,
                     player.player_id === playerId
                 )
             );
@@ -2612,7 +2612,7 @@ function renderLeaderboard(data) {
             createLeaderboardElement(
                 'div',
                 'legion-leaderboard-record-name',
-                `🏆 ${data.maxJackpot.score} очков`
+                `🏆 ${data.maxJackpot.score} мяукоинов`
             )
         );
 
@@ -2708,7 +2708,7 @@ function openLeaderboard() {
                         'div',
                         'legion-leaderboard-empty',
                         result?.error ||
-                        'Не удалось загрузить таблицу лидеров. Попробуйте позже.'
+                        '😿 Не получилось загрузить зал славы. Попробуйте чуть позже.'
                     )
                 );
 
@@ -2724,7 +2724,7 @@ function openLeaderboard() {
         if (document.getElementById('legion-mini-widget')) return;
 
         console.log(
-            '[Legion Кото-игры] Version 2.0.5 loaded'
+            '[Legion Кото-игры] Version 2.0.7 loaded'
         );
 
         ui = createInterface();
