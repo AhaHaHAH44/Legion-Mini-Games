@@ -2538,6 +2538,7 @@ function renderLeaderboard(data) {
     const personalStats = [
         ['Баланс', `${personal.balance} очков`],
         ['Всего заработано', `${personal.total_earned} очков`],
+        ['Всего бросков', personal.total_spins],
         ['Джекпоты', personal.jackpots],
         ['Личный рекорд', `${personal.personal_max_jackpot} очков`]
     ];
