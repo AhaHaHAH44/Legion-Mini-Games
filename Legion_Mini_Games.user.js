@@ -44,9 +44,9 @@
 
     // Получение никнейма из интерфейса Multidonate
     function getMultidonateNickname() {
-        const element = document.querySelector('span.who');
+        const element = document.querySelector('span.whn, span.who');
         const value = element?.textContent?.trim();
-
+    
         return value ? value.slice(0, 32) : null;
     }
 
