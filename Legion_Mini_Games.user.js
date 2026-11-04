@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.0.5
+// @version      2.0.6
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -490,19 +490,16 @@
             }
 
             #legion-mini-restore {
-                display: none;
-                position: fixed;
-                right: 20px;
-                bottom: 20px;
-                z-index: 1000002;
-                padding: 11px 15px;
-                border: 1px solid #a17b50;
-                border-radius: 12px;
-                background: #34291f;
-                color: #fff0dc;
-                font: 13px Arial, sans-serif;
-                box-shadow: 0 5px 18px #0008;
-                cursor: pointer;
+            display: none;
+            padding: 11px 15px;
+            border: 1px solid #a17b50;
+            border-radius: 12px;
+            background: #34291f;
+            color: #fff0dc;
+            font: 13px Arial, sans-serif;
+            box-shadow: 0 5px 18px #0008;
+            cursor: pointer;
+            white-space: nowrap;
             }
 
             #legion-mini-restore.open {
@@ -982,7 +979,11 @@
         restoreButton.type = 'button';
         restoreButton.textContent = '🐾 Вернуться к игре';
 
-        document.body.appendChild(restoreButton);
+        widget.querySelector('.legion-mini-launcher')
+        .insertBefore(
+            restoreButton,
+            widget.querySelector('#legion-mini-leaderboard-button')
+        );
 
         const toast = document.createElement('div');
         toast.id = 'legion-mini-toast';
@@ -2292,13 +2293,23 @@
                     `⭐ Ваш результат: ${spin.score} очков${multiplierText}`;
 
                 if (result.status === 'finished') {
-                    openModal(
-                        '🎰 Бросок завершён',
-                        resultText + '\n\nПолучаем результаты матча...',
-                        [{ label: 'Свернуть', onClick: minimizeModal }]
-                    );
-
-                    refreshRouletteMatch();
+                    rouletteWaitingShown = false;
+                    rouletteHasSpun = false;
+                
+                    const finishedMatch = {
+                        id: rouletteMatchId,
+                        status: 'finished',
+                        winner: result.lastRound?.winner,
+                        players: result.lastRound?.players || []
+                    };
+                
+                    if (finishedMatch.players.length === 2) {
+                        showRouletteMatchResult(finishedMatch);
+                    } else {
+                        showToast('Не удалось получить итоги. Повторно запрашиваем матч.');
+                        refreshRouletteMatch();
+                    }
+                
                     return;
                 }
 
@@ -2333,6 +2344,11 @@
 }
 
     function showRouletteMatchResult(match) {
+        if (!match?.players || match.players.length !== 2) {
+            console.error('[Кото-рулетка] Некорректные данные матча:', match);
+            showToast('Не удалось загрузить результаты матча.');
+            return;
+        }
         if (rouletteResultShown && rouletteResultMatchId === match.id) return;
     
         rouletteResultShown = true;
@@ -2391,6 +2407,7 @@
                 rouletteMatchId = null;
                 rouletteNegotiationShown = null;
                 rouletteMatchShown = null;
+                rouletteResultMatchId = null;
                 rouletteWaitingShown = false;
                 rouletteHasSpun = false;
                 rouletteResultShown = false;
