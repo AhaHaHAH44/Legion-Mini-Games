@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.0.3
+// @version      2.0.5
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -94,6 +94,7 @@
     let rouletteWaitingShown = false;
     let rouletteHasSpun = false;
     let rouletteResultShown = false;
+    let rouletteResultMatchId = null;
     let rouletteInviteIds = new Set();
     let rouletteTimers = [];
     let rouletteMatchRequestInFlight = false;
@@ -160,6 +161,35 @@
                 z-index: 999999;
                 color: #f4eadb;
                 font-family: Arial, sans-serif;
+            }
+
+            .legion-mini-launcher {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            }
+            
+            #legion-mini-leaderboard-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 44px;
+                height: 43px;
+                padding: 0;
+                border: 1px solid #8c6748;
+                border-radius: 14px;
+                background: #34291f;
+                color: #fff1df;
+                cursor: pointer;
+                font-size: 19px;
+                box-shadow: 0 5px 18px #0006;
+                transition: .18s;
+            }
+            
+            #legion-mini-leaderboard-button:hover {
+                background: #51402f;
+                transform: translateY(-1px);
             }
 
             #legion-mini-toggle {
@@ -638,6 +668,160 @@
                 opacity: .45;
                 cursor: not-allowed;
             }
+
+            /* ========================================
+               LEADERBOARD
+            ======================================== */
+            
+            #legion-leaderboard-modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 1000003;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+                background: #100d0bcc;
+                font-family: Arial, sans-serif;
+                color: #f4eadb;
+            }
+            
+            #legion-leaderboard-modal.open {
+                display: flex;
+            }
+            
+            #legion-leaderboard-card {
+                width: min(520px, calc(100vw - 36px));
+                max-height: calc(100vh - 36px);
+                overflow-y: auto;
+                padding: 20px;
+                border: 1px solid #806044;
+                border-radius: 18px;
+                background: linear-gradient(145deg, #382d23, #292626);
+                box-shadow: 0 12px 45px #000a;
+            }
+            
+            #legion-leaderboard-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            
+            #legion-leaderboard-title {
+                color: #ffe0b8;
+                font-size: 19px;
+                font-weight: bold;
+            }
+            
+            #legion-leaderboard-close {
+                width: 32px;
+                height: 30px;
+                border: 1px solid #806044;
+                border-radius: 8px;
+                background: #4a3a2b;
+                color: #fff0dc;
+                font-size: 18px;
+                cursor: pointer;
+            }
+            
+            #legion-leaderboard-content {
+                font-size: 13px;
+                line-height: 1.5;
+            }
+            
+            .legion-leaderboard-section {
+                margin-top: 16px;
+            }
+            
+            .legion-leaderboard-section-title {
+                margin-bottom: 9px;
+                color: #e8cba8;
+                font-size: 13px;
+                font-weight: bold;
+            }
+            
+            .legion-leaderboard-loading,
+            .legion-leaderboard-empty {
+                padding: 20px 8px;
+                color: #b9a28b;
+                text-align: center;
+            }
+            
+            .legion-leaderboard-row {
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                padding: 9px 10px;
+                border-top: 1px solid #554536;
+            }
+            
+            .legion-leaderboard-rank {
+                width: 25px;
+                flex-shrink: 0;
+                color: #e8cba8;
+                font-weight: bold;
+            }
+            
+            .legion-leaderboard-name {
+                flex: 1;
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+            
+            .legion-leaderboard-value {
+                color: #f5d4a8;
+                font-weight: bold;
+                text-align: right;
+            }
+            
+            .legion-leaderboard-self {
+                background: #73563833;
+                border-radius: 8px;
+            }
+            
+            .legion-leaderboard-personal {
+                padding: 12px;
+                border: 1px solid #68513d;
+                border-radius: 12px;
+                background: #302920;
+            }
+            
+            .legion-leaderboard-personal-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 5px 0;
+            }
+            
+            .legion-leaderboard-personal-row span:first-child {
+                color: #cdb99f;
+            }
+            
+            .legion-leaderboard-personal-row strong {
+                color: #ffe0b8;
+                text-align: right;
+            }
+            
+            .legion-leaderboard-record {
+                padding: 11px;
+                border: 1px solid #68513d;
+                border-radius: 11px;
+                background: #302920;
+                margin-top: 8px;
+            }
+            
+            .legion-leaderboard-record-name {
+                color: #ffe0b8;
+                font-weight: bold;
+            }
+            
+            .legion-leaderboard-record-details {
+                margin-top: 5px;
+                color: #cdb99f;
+                font-size: 12px;
+            }
         `;
 
         document.head.appendChild(style);
@@ -723,9 +907,17 @@
                 <div class="legion-mini-self"></div>
             </div>
 
+            <div class="legion-mini-launcher">
+            <button id="legion-mini-leaderboard-button"
+                    type="button"
+                    title="Таблица лидеров">
+                🏆
+            </button>
+        
             <button id="legion-mini-toggle">
                 🐾 Кото-игры
             </button>
+            </div>
         `;
 
         document.body.appendChild(widget);
@@ -756,6 +948,35 @@
 
         document.body.appendChild(modal);
 
+        const leaderboardModal = document.createElement('div');
+        leaderboardModal.id = 'legion-leaderboard-modal';
+        
+        leaderboardModal.innerHTML = `
+            <div id="legion-leaderboard-card">
+        
+                <div id="legion-leaderboard-header">
+                    <div id="legion-leaderboard-title">
+                        🏆 Зал славы котиков
+                    </div>
+        
+                    <button id="legion-leaderboard-close"
+                            type="button"
+                            title="Закрыть">
+                        ×
+                    </button>
+                </div>
+        
+                <div id="legion-leaderboard-content">
+                    <div class="legion-leaderboard-loading">
+                        Загружаем достижения котиков...
+                    </div>
+                </div>
+        
+            </div>
+        `;
+        
+        document.body.appendChild(leaderboardModal);
+
         const restoreButton = document.createElement('button');
         restoreButton.id = 'legion-mini-restore';
         restoreButton.type = 'button';
@@ -773,6 +994,9 @@
                 widget.querySelector('#legion-mini-panel')
                     .classList.toggle('open');
             });
+
+        widget.querySelector('#legion-mini-leaderboard-button')
+            .addEventListener('click', openLeaderboard);
 
         widget.querySelector('#legion-mini-dnd-toggle')
             .addEventListener('click', toggleDoNotDisturb);
@@ -793,6 +1017,15 @@
 
         restoreButton.addEventListener('click', restoreModal);
 
+        leaderboardModal.querySelector('#legion-leaderboard-close')
+            .addEventListener('click', closeLeaderboard);
+        
+        leaderboardModal.addEventListener('click', event => {
+            if (event.target === leaderboardModal) {
+                closeLeaderboard();
+            }
+        });
+
         widget.querySelector('.legion-mini-self').textContent =
             'Вы играете как: ' + nickname;
 
@@ -810,6 +1043,11 @@
 
             modal,
             restoreButton,
+
+            leaderboardModal,
+            leaderboardContent: leaderboardModal.querySelector(
+                '#legion-leaderboard-content'
+            ),
 
             modalTitle: modal.querySelector('#legion-mini-modal-title'),
             modalBody: modal.querySelector('#legion-mini-modal-body'),
@@ -1905,6 +2143,9 @@
                 }
     
                 if (match.status === 'finished') {
+                    rouletteWaitingShown = false;
+                    rouletteHasSpun = false;
+                
                     showRouletteMatchResult(match);
                     return;
                 }
@@ -2092,8 +2333,11 @@
 }
 
     function showRouletteMatchResult(match) {
-        if (rouletteResultShown) return;
+        if (rouletteResultShown && rouletteResultMatchId === match.id) return;
+    
         rouletteResultShown = true;
+        rouletteResultMatchId = match.id;
+        rouletteWaitingShown = false;
 
         const first = match.players[0];
         const second = match.players[1];
@@ -2188,11 +2432,281 @@
         );
     }
 
+    function closeLeaderboard() {
+    ui.leaderboardModal.classList.remove('open');
+}
+
+function createLeaderboardElement(tag, className, text = '') {
+    const element = document.createElement(tag);
+
+    if (className) {
+        element.className = className;
+    }
+
+    element.textContent = text;
+
+    return element;
+}
+
+function createLeaderboardSection(title) {
+    const section = createLeaderboardElement(
+        'div',
+        'legion-leaderboard-section'
+    );
+
+    section.appendChild(
+        createLeaderboardElement(
+            'div',
+            'legion-leaderboard-section-title',
+            title
+        )
+    );
+
+    return section;
+}
+
+function createLeaderboardRow(rank, nickname, value, isSelf = false) {
+    const row = createLeaderboardElement(
+        'div',
+        'legion-leaderboard-row' +
+            (isSelf ? ' legion-leaderboard-self' : '')
+    );
+
+    row.appendChild(
+        createLeaderboardElement(
+            'div',
+            'legion-leaderboard-rank',
+            rank
+        )
+    );
+
+    row.appendChild(
+        createLeaderboardElement(
+            'div',
+            'legion-leaderboard-name',
+            nickname
+        )
+    );
+
+    row.appendChild(
+        createLeaderboardElement(
+            'div',
+            'legion-leaderboard-value',
+            value
+        )
+    );
+
+    return row;
+}
+
+function renderLeaderboard(data) {
+    const content = ui.leaderboardContent;
+    content.replaceChildren();
+
+    // ========================================
+    // ЛИЧНАЯ СТАТИСТИКА
+    // ========================================
+
+    const personal = data.personal;
+
+    const personalSection = createLeaderboardSection(
+        '🐾 Ваша статистика'
+    );
+
+    const personalCard = createLeaderboardElement(
+        'div',
+        'legion-leaderboard-personal'
+    );
+
+    const personalStats = [
+        ['Баланс', `${personal.balance} очков`],
+        ['Всего заработано', `${personal.total_earned} очков`],
+        ['Джекпоты', personal.jackpots],
+        ['Личный рекорд', `${personal.personal_max_jackpot} очков`]
+    ];
+
+    personalStats.forEach(([label, value]) => {
+        const row = createLeaderboardElement(
+            'div',
+            'legion-leaderboard-personal-row'
+        );
+
+        row.appendChild(
+            createLeaderboardElement('span', '', label)
+        );
+
+        row.appendChild(
+            createLeaderboardElement('strong', '', String(value))
+        );
+
+        personalCard.appendChild(row);
+    });
+
+    personalSection.appendChild(personalCard);
+    content.appendChild(personalSection);
+
+    // ========================================
+    // ТОП ПО БАЛАНСУ
+    // ========================================
+
+    const balanceSection = createLeaderboardSection(
+        '💰 Богатейшие котики'
+    );
+
+    if (data.leaderboard.length) {
+        data.leaderboard.forEach((player, index) => {
+            balanceSection.appendChild(
+                createLeaderboardRow(
+                    `${index + 1}.`,
+                    player.nickname,
+                    `${player.balance} очков`,
+                    player.player_id === playerId
+                )
+            );
+        });
+    } else {
+        balanceSection.appendChild(
+            createLeaderboardElement(
+                'div',
+                'legion-leaderboard-empty',
+                'Пока здесь никого нет.'
+            )
+        );
+    }
+
+    content.appendChild(balanceSection);
+
+    // ========================================
+    // МИРОВОЙ РЕКОРД ДЖЕКПОТА
+    // ========================================
+
+    const jackpotSection = createLeaderboardSection(
+        '💎 Самый большой джекпот'
+    );
+
+    if (data.maxJackpot) {
+        const record = createLeaderboardElement(
+            'div',
+            'legion-leaderboard-record'
+        );
+
+        record.appendChild(
+            createLeaderboardElement(
+                'div',
+                'legion-leaderboard-record-name',
+                `🏆 ${data.maxJackpot.score} очков`
+            )
+        );
+
+        data.maxJackpot.players.forEach(player => {
+            const reels = (player.reels || [])
+                .map(item => item.emoji || item.name || '?')
+                .join(' ');
+
+            const details = createLeaderboardElement(
+                'div',
+                'legion-leaderboard-record-details',
+                `${player.nickname} — ${reels}`
+            );
+
+            record.appendChild(details);
+        });
+
+        jackpotSection.appendChild(record);
+    } else {
+        jackpotSection.appendChild(
+            createLeaderboardElement(
+                'div',
+                'legion-leaderboard-empty',
+                'Джекпотов пока не было.'
+            )
+        );
+    }
+
+    content.appendChild(jackpotSection);
+
+    // ========================================
+    // САМЫЕ УДАЧЛИВЫЕ КОТИКИ
+    // ========================================
+
+    const luckiestSection = createLeaderboardSection(
+        '🍀 Самые удачливые котики'
+    );
+
+    if (data.luckiest.length) {
+        data.luckiest.forEach((player, index) => {
+            luckiestSection.appendChild(
+                createLeaderboardRow(
+                    `${index + 1}.`,
+                    player.nickname,
+                    `${player.jackpots} джекп.`
+                )
+            );
+        });
+    } else {
+        luckiestSection.appendChild(
+            createLeaderboardElement(
+                'div',
+                'legion-leaderboard-empty',
+                'Пока нет джекпотов.'
+            )
+        );
+    }
+
+    content.appendChild(luckiestSection);
+}
+
+// ========================================
+// ОТКРЫТИЕ ТАБЛИЦЫ ЛИДЕРОВ
+// ========================================
+
+function openLeaderboard() {
+    ui.leaderboardModal.classList.add('open');
+
+    ui.leaderboardContent.replaceChildren();
+
+    ui.leaderboardContent.appendChild(
+        createLeaderboardElement(
+            'div',
+            'legion-leaderboard-loading',
+            '🏆 Загружаем достижения котиков...'
+        )
+    );
+
+    request(
+        'GET',
+        '/api/roulette/leaderboard/' + encodeURIComponent(playerId),
+        null,
+        (error, result) => {
+            if (!ui.leaderboardModal.classList.contains('open')) {
+                return;
+            }
+
+            if (error || !result?.success) {
+                ui.leaderboardContent.replaceChildren();
+
+                ui.leaderboardContent.appendChild(
+                    createLeaderboardElement(
+                        'div',
+                        'legion-leaderboard-empty',
+                        result?.error ||
+                        'Не удалось загрузить таблицу лидеров. Попробуйте позже.'
+                    )
+                );
+
+                return;
+            }
+
+            renderLeaderboard(result);
+        }
+    );
+}
+
     function init() {
         if (document.getElementById('legion-mini-widget')) return;
 
         console.log(
-            '[Legion Кото-игры] Version 2.0.0 loaded'
+            '[Legion Кото-игры] Version 2.0.5 loaded'
         );
 
         ui = createInterface();
