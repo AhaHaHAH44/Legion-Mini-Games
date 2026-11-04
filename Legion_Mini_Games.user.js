@@ -1758,18 +1758,22 @@
         }).join(' · ');
     }
 
+    
     function rouletteChatMessage(result) {
         const normalized = normalizeRouletteResult(result);
         const names = normalized.reels.map(item => item.name);
-
-        if (normalized.jackpot && names.length === 3) {
         const emojis = normalized.reels
-            .map(resource => normalizeRouletteResource(resource)?.emoji || '❔')
+            .map(item => item.emoji)
             .join(' ');
     
-        return `🎰 Джекпот — выигрыш ${normalized.score} мяукоинов (×2) ${emojis}!`;
+        if (normalized.jackpot && names.length === 3) {
+            return `🎰 ДЖЕКПОТ! ${normalized.score} мяукоинов (×2) ${emojis}!`;
         }
-
+    
+        if (normalized.multiplier === 1.5) {
+            return `🎰 Пара! ${names.join(', ')} — ${normalized.score} мяукоинов (×1.5) ${emojis}!`;
+        }
+    
         return `🎰 Кото-рулетка: ${names.join(', ')} — ${normalized.score} мяукоинов!`;
     }
 
