@@ -1764,22 +1764,44 @@ function selectGameMode(mode) {
 }
 
     function showBetSelection(match) {
-     if (
-        displayedBetMatchId === match.id &&
-        ui.modal.classList.contains('open')
-    ) return;
-
-    displayedBetMatchId = match.id;
-    activeMatchId = match.id;
     const opponent = match.players.find(
         player => player.id !== playerId
     );
 
-    openModal(
-        '💰 Ставка в Кото-КНБ',
+    const opponentBet = opponent?.bet;
+
+    const message =
         'Ваш соперник: ' +
         (opponent?.nickname || 'котик') +
-        '\n\nВведите размер ставки:',
+        (
+            opponentBet != null
+                ? '\n\n🐾 Соперник уже предложил: ' +
+                  opponentBet + ' мяукоинов.'
+                : '\n\nСоперник ещё не предложил ставку.'
+        ) +
+        '\n\nВведите размер ставки:';
+
+    // Если окно уже открыто — обновляем текст,
+    // не удаляя поле ввода
+    if (
+        displayedBetMatchId === match.id &&
+        (
+            ui.modal.classList.contains('open') ||
+            ui.modal.classList.contains('minimized')
+        )
+    ) {
+        if (ui.modalBody.firstChild) {
+            ui.modalBody.firstChild.textContent = message;
+        }
+        return;
+    }
+
+    displayedBetMatchId = match.id;
+    activeMatchId = match.id;
+
+    openModal(
+        '💰 Ставка в Кото-КНБ',
+        message,
         [
             {
                 label: '🐾 Подтвердить ставку',
@@ -1856,6 +1878,8 @@ function submitBet(amount) {
             }
 
             if (result.waitingForOpponent) {
+                displayedBetMatchId = null;
+                
                 openModal(
                     '🐾 Ожидание соперника',
                     'Ваша ставка: ' + amount +
@@ -2011,6 +2035,18 @@ function submitBet(amount) {
                       )?.nickname || 'Неизвестно'
                   );
 
+        const betResult = match.mode === 'betting'
+            ? '\n\n💰 Ставка: ' + match.stake +
+              ' мяукоинов с каждого.' +
+              (
+                  match.winner === 'draw'
+                      ? '\n🐾 Ничья! Ставки возвращены обоим игрокам.'
+                      : match.winner === playerId
+                          ? '\n😻 Вы получили банк: ' + match.pot + ' мяукоинов!'
+                          : '\n😿 Соперник получил банк: ' + match.pot + ' мяукоинов.'
+              )
+            : '';
+        
         const body =
             first.nickname + ': ' +
             moves[first.move].emoji + ' ' +
@@ -2020,7 +2056,8 @@ function submitBet(amount) {
             moves[second.move].emoji + ' ' +
             moves[second.move].label +
             '\n\n' +
-            winner;
+            winner +
+            betResult;
 
         const isInitiator = first.id === playerId;
         const alreadyPublished =
@@ -2071,6 +2108,12 @@ function submitBet(amount) {
         const second = match.players[1];
 
         // Однострочное сообщение с упоминаниями игроков
+        const betMessage = match.mode === 'betting'
+            ? match.winner === 'draw'
+                ? ' | 💰 Ничья — ставки возвращены'
+                : ' | 💰 Банк: ' + match.pot + ' мяукоинов'
+            : '';
+        
         const message =
             '🐱 Кото-КНБ: ' +
             '@' + first.nickname + ' ' +
@@ -2085,7 +2128,8 @@ function submitBet(amount) {
                     match.players.find(
                         player => player.id === match.winner
                     )?.nickname || 'Неизвестно'
-                ));
+                )) +
+            betMessage;
 
         const form = document.querySelector('form.cy-chat-f');
 
