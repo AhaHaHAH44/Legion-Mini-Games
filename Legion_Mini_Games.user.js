@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.0.8
+// @version      2.1.0
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -71,6 +71,7 @@
     let displayedMatchId = null;
     let matchResultShown = false;
     let displayedModeMatchId = null;
+    let displayedModeMismatch = false;
     let displayedBetMatchId = null;
     let currentKnbMatch = null;
     let moveSubmitted = false;
@@ -1731,6 +1732,7 @@ function selectGameMode(mode) {
             }
 
             if (result.modeMismatch) {
+                displayedModeMismatch = true;
                 displayedModeMatchId = null;
             
                 showToast(
@@ -1738,7 +1740,6 @@ function selectGameMode(mode) {
                 );
             
                 showModeSelection(currentKnbMatch);
-            
                 return;
             }
 
@@ -1955,9 +1956,27 @@ function submitBet(amount) {
 
             const match = result.match;
 
+            if (match.status !== 'choosing_mode') {
+                displayedModeMismatch = false;
+            }
+
             if (match.status === 'choosing_mode') {
                 currentKnbMatch = match;
-                showModeSelection(match);
+            
+                const modesMismatch =
+                    match.players.every(player => player.mode !== null) &&
+                    match.players[0].mode !== match.players[1].mode;
+            
+                if (modesMismatch && !displayedModeMismatch) {
+                    displayedModeMismatch = true;
+                    displayedModeMatchId = null;
+            
+                    showModeSelection(match);
+                } else if (!modesMismatch) {
+                    displayedModeMismatch = false;
+                    showModeSelection(match);
+                }
+            
                 return;
             }
 
