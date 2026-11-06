@@ -2003,9 +2003,9 @@ function submitBet(amount) {
                     activeMatchId === match.id ||
                     currentKnbMatch?.id === match.id;
             
-                closeModal();
-            
                 if (wasCurrentMatch) {
+                    closeModal();
+            
                     showToast('🐾 Соперник отказался от игры.');
                 }
             
