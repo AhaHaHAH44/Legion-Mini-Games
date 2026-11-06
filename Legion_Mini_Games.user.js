@@ -192,6 +192,28 @@
                 transform: translateY(-1px);
             }
 
+            #legion-mini-shop-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 44px;
+                height: 43px;
+                padding: 0;
+                border: 1px solid #8c6748;
+                border-radius: 14px;
+                background: #34291f;
+                color: #fff1df;
+                cursor: pointer;
+                font-size: 19px;
+                box-shadow: 0 5px 18px #0006;
+                transition: .18s;
+            }
+            
+            #legion-mini-shop-button:hover {
+                background: #51402f;
+                transform: translateY(-1px);
+            }
+
             #legion-mini-toggle {
                 border: 1px solid #8c6748;
                 border-radius: 14px;
@@ -819,6 +841,134 @@
                 color: #cdb99f;
                 font-size: 12px;
             }
+
+            /* ========================================
+               SHOP
+            ======================================== */
+            
+            #legion-shop-modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 1000004;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+                background: #100d0bcc;
+                font-family: Arial, sans-serif;
+                color: #f4eadb;
+            }
+            
+            #legion-shop-modal.open {
+                display: flex;
+            }
+            
+            #legion-shop-card {
+                width: min(520px, calc(100vw - 36px));
+                max-height: calc(100vh - 36px);
+                overflow-y: auto;
+                padding: 20px;
+                border: 1px solid #806044;
+                border-radius: 18px;
+                background: linear-gradient(145deg, #382d23, #292626);
+                box-shadow: 0 12px 45px #000a;
+            }
+            
+            #legion-shop-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            
+            #legion-shop-title {
+                color: #ffe0b8;
+                font-size: 19px;
+                font-weight: bold;
+            }
+            
+            #legion-shop-close {
+                width: 32px;
+                height: 30px;
+                border: 1px solid #806044;
+                border-radius: 8px;
+                background: #4a3a2b;
+                color: #fff0dc;
+                font-size: 18px;
+                cursor: pointer;
+            }
+            
+            #legion-shop-balance {
+                margin-bottom: 16px;
+                padding: 12px;
+                border: 1px solid #68513d;
+                border-radius: 11px;
+                background: #302920;
+                color: #ffe0b8;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            
+            #legion-shop-content {
+                font-size: 13px;
+                line-height: 1.5;
+            }
+
+            .legion-shop-item {
+                margin-bottom: 10px;
+                padding: 13px;
+                border: 1px solid #68513d;
+                border-radius: 12px;
+                background: #302920;
+            }
+            
+            .legion-shop-item-name {
+                color: #ffe0b8;
+                font-size: 15px;
+                font-weight: bold;
+            }
+            
+            .legion-shop-item-description {
+                margin-top: 6px;
+                color: #cdb99f;
+                font-size: 12px;
+            }
+            
+            .legion-shop-item-price {
+                margin-top: 10px;
+                color: #f5d4a8;
+                font-weight: bold;
+            }
+            
+            .legion-shop-item-status {
+                margin-top: 6px;
+                color: #b9a28b;
+                font-size: 12px;
+            }
+
+            .legion-shop-buy {
+                width: 100%;
+                margin-top: 12px;
+                padding: 10px;
+                border: 1px solid #8c6748;
+                border-radius: 9px;
+                background: #51402f;
+                color: #fff1df;
+                font-size: 13px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: .18s;
+            }
+            
+            .legion-shop-buy:hover:not(:disabled) {
+                background: #735638;
+            }
+            
+            .legion-shop-buy:disabled {
+                opacity: .55;
+                cursor: not-allowed;
+            }
         `;
 
         document.head.appendChild(style);
@@ -911,6 +1061,17 @@
                 🏆
             </button>
         
+            <button id="legion-mini-shop-button"
+                    type="button"
+                    title="Магазин котиков">
+                🛒
+            </button>
+        
+            <button id="legion-mini-toggle">
+                🐾 Кото-игры
+            </button>
+            </div>
+        
             <button id="legion-mini-toggle">
                 🐾 Кото-игры
             </button>
@@ -974,6 +1135,39 @@
         
         document.body.appendChild(leaderboardModal);
 
+        const shopModal = document.createElement('div');
+        shopModal.id = 'legion-shop-modal';
+        
+        shopModal.innerHTML = `
+            <div id="legion-shop-card">
+        
+                <div id="legion-shop-header">
+                    <div id="legion-shop-title">
+                        🛒 Магазин котиков
+                    </div>
+        
+                    <button id="legion-shop-close"
+                            type="button"
+                            title="Закрыть">
+                        ×
+                    </button>
+                </div>
+        
+                <div id="legion-shop-balance">
+                    💰 Баланс: загрузка...
+                </div>
+        
+                <div id="legion-shop-content">
+                    <div class="legion-leaderboard-loading">
+                        Загружаем товары...
+                    </div>
+                </div>
+        
+            </div>
+        `;
+        
+        document.body.appendChild(shopModal);
+
         const restoreButton = document.createElement('button');
         restoreButton.id = 'legion-mini-restore';
         restoreButton.type = 'button';
@@ -998,6 +1192,9 @@
 
         widget.querySelector('#legion-mini-leaderboard-button')
             .addEventListener('click', openLeaderboard);
+
+        widget.querySelector('#legion-mini-shop-button')
+            .addEventListener('click', openShop);
 
         widget.querySelector('#legion-mini-dnd-toggle')
             .addEventListener('click', toggleDoNotDisturb);
@@ -1027,6 +1224,15 @@
             }
         });
 
+        shopModal.querySelector('#legion-shop-close')
+            .addEventListener('click', closeShop);
+        
+        shopModal.addEventListener('click', event => {
+            if (event.target === shopModal) {
+                closeShop();
+            }
+        });
+
         widget.querySelector('.legion-mini-self').textContent =
             'Вы играете как: ' + nickname;
 
@@ -1049,6 +1255,10 @@
             leaderboardContent: leaderboardModal.querySelector(
                 '#legion-leaderboard-content'
             ),
+
+            shopModal,
+            shopBalance: shopModal.querySelector('#legion-shop-balance'),
+            shopContent: shopModal.querySelector('#legion-shop-content'),
 
             modalTitle: modal.querySelector('#legion-mini-modal-title'),
             modalBody: modal.querySelector('#legion-mini-modal-body'),
@@ -2465,25 +2675,189 @@
     }
 
     function closeLeaderboard() {
-    ui.leaderboardModal.classList.remove('open');
-}
-
-function createLeaderboardElement(tag, className, text = '') {
-    const element = document.createElement(tag);
-
-    if (className) {
-        element.className = className;
+        ui.leaderboardModal.classList.remove('open');
     }
 
-    element.textContent = text;
+    // ========================================
+    // МАГАЗИН КОТИКОВ
+    // ========================================
+    
+    function openShop() {
+    ui.shopModal.classList.add('open');
 
-    return element;
+    ui.shopBalance.textContent = '💰 Баланс: загружаем...';
+    ui.shopContent.replaceChildren();
+
+    ui.shopContent.appendChild(
+        createLeaderboardElement(
+            'div',
+            'legion-leaderboard-loading',
+            '🛒 Загружаем товары котиков...'
+        )
+    );
+
+    request(
+        'GET',
+        '/api/shop/' + encodeURIComponent(playerId),
+        null,
+        (error, result) => {
+            if (!ui.shopModal.classList.contains('open')) {
+                return;
+            }
+
+            if (error || !result?.success) {
+                ui.shopBalance.textContent = '💰 Не удалось загрузить баланс';
+
+                ui.shopContent.replaceChildren();
+
+                ui.shopContent.appendChild(
+                    createLeaderboardElement(
+                        'div',
+                        'legion-leaderboard-empty',
+                        result?.error ||
+                        '😿 Не удалось загрузить магазин. Попробуйте позже.'
+                    )
+                );
+
+                return;
+            }
+
+            renderShop(result);
+        }
+    );
 }
+    
+    function closeShop() {
+        ui.shopModal.classList.remove('open');
+    }
 
-function createLeaderboardSection(title) {
-    const section = createLeaderboardElement(
-        'div',
-        'legion-leaderboard-section'
+    function renderShop(data) {
+        ui.shopBalance.textContent =
+            `💰 Ваш баланс: ${data.balance} мяукоинов`;
+    
+        ui.shopContent.replaceChildren();
+    
+        if (!data.items || data.items.length === 0) {
+            ui.shopContent.appendChild(
+                createLeaderboardElement(
+                    'div',
+                    'legion-leaderboard-empty',
+                    'Пока в магазине нет товаров.'
+                )
+            );
+    
+            return;
+        }
+    
+        data.items.forEach(item => {
+            const card = createLeaderboardElement(
+                'div',
+                'legion-shop-item'
+            );
+    
+            const name = createLeaderboardElement(
+                'div',
+                'legion-shop-item-name',
+                item.name
+            );
+    
+            const description = createLeaderboardElement(
+                'div',
+                'legion-shop-item-description',
+                item.description
+            );
+    
+            const price = createLeaderboardElement(
+                'div',
+                'legion-shop-item-price',
+                `💰 ${item.price} мяукоинов`
+            );
+    
+            const status = createLeaderboardElement(
+                'div',
+                'legion-shop-item-status',
+                item.owned ? '✓ Уже куплено' : 'Доступно для покупки'
+            );
+    
+            const buyButton = document.createElement('button');
+            buyButton.className = 'legion-shop-buy';
+            
+            if (item.owned) {
+                buyButton.textContent = '✓ Куплено';
+                buyButton.disabled = true;
+            } else if (data.balance < item.price) {
+                buyButton.textContent = 'Недостаточно мяукоинов';
+                buyButton.disabled = true;
+            } else {
+                buyButton.textContent = 'Купить';
+            
+                buyButton.addEventListener('click', () => {
+                    purchaseShopItem(item, buyButton);
+                });
+            }
+            
+            card.append(
+                name,
+                description,
+                price,
+                status,
+                buyButton
+            );
+            
+            ui.shopContent.appendChild(card);
+        });
+    }
+
+    function purchaseShopItem(item, button) {
+        const confirmed = confirm(
+            `Купить «${item.name}» за ${item.price} мяукоинов?\n\n` +
+            'После покупки деньги будут списаны с вашего баланса.'
+        );
+    
+        if (!confirmed) return;
+    
+        button.disabled = true;
+        button.textContent = 'Покупаем...';
+    
+        request(
+            'POST',
+            '/api/shop/purchase',
+            {
+                playerId,
+                itemCode: item.code
+            },
+            (error, result) => {
+                if (error || !result?.success) {
+                    showToast(
+                        result?.error || '😿 Не удалось совершить покупку.'
+                    );
+    
+                    openShop();
+                    return;
+                }
+    
+                showToast('🐾 Покупка успешно совершена!');
+                openShop();
+            }
+        );
+    }
+
+    function createLeaderboardElement(tag, className, text = '') {
+        const element = document.createElement(tag);
+    
+        if (className) {
+            element.className = className;
+        }
+    
+        element.textContent = text;
+    
+        return element;
+    }
+
+    function createLeaderboardSection(title) {
+        const section = createLeaderboardElement(
+            'div',
+            'legion-leaderboard-section'
     );
 
     section.appendChild(
