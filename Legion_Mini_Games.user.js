@@ -70,6 +70,9 @@
     let activeMatchId = null;
     let displayedMatchId = null;
     let matchResultShown = false;
+    let displayedModeMatchId = null;
+    let displayedBetMatchId = null;
+    let currentKnbMatch = null;
     let moveSubmitted = false;
     let ui;
 
@@ -1626,37 +1629,254 @@
         }
     };
 
-    function showGame(match) {
-        // Не открываем повторно уже показанный матч:
-        // он может быть свёрнут или закрыт пользователем.
-        if (displayedMatchId === match.id) return;
+    function showModeSelection(match) {
+    currentKnbMatch = match;
 
-        displayedMatchId = match.id;
-        activeMatchId = match.id;
-        matchResultShown = false;
-        moveSubmitted = false;
+    if (displayedModeMatchId === match.id) return;
 
-        const opponent = match.players.find(
-            player => player.id !== playerId
-        );
+    displayedModeMatchId = match.id;
+    activeMatchId = match.id;
 
-        openModal(
-            '🐱 Кото-КНБ',
-            'Ваш соперник: ' +
-            (opponent?.nickname || 'котик') +
-            '\n\nКакой ход сделаем?',
-            Object.entries(moves).map(([key, move]) => ({
-                label: move.emoji + ' ' + move.label,
+    const opponent = match.players.find(
+        player => player.id !== playerId
+    );
+
+    openModal(
+        '🐱 Кото-КНБ',
+        'Ваш соперник: ' +
+        (opponent?.nickname || 'котик') +
+        '\n\nВыберите режим игры:',
+        [
+            {
+                label: '🐾 Бесплатная игра',
                 className: 'primary',
-                onClick: () => submitMove(key)
-            })),
-            '📖 Как играть?\n' +
-            '🐾 Лапка бьёт 😼 Царапку.\n' +
-            '😼 Царапка рвёт 📦 Коробку.\n' +
-            '📦 Коробка накрывает 🐾 Лапку.\n\n' +
-            'Одинаковые ходы — ничья! У каждого котика одна попытка.'
-        );
-    }
+                onClick: () => selectGameMode('free')
+            },
+            {
+                label: '💰 Игра на мяукоины',
+                className: 'primary',
+                onClick: () => selectGameMode('betting')
+            }
+        ],
+        '🐾 Бесплатный режим не требует мяукоинов.\n' +
+        '💰 В режиме ставок оба котика должны выбрать одинаковую сумму.\n' +
+        'Минимальная ставка — 50 мяукоинов.'
+    );
+}
+
+    function showMoveSelection(match) {
+    if (
+        displayedMatchId === match.id &&
+        ui.modal.classList.contains('open')
+    ) return;
+
+    displayedMatchId = match.id;
+    activeMatchId = match.id;
+    matchResultShown = false;
+    moveSubmitted = false;
+
+    const opponent = match.players.find(
+        player => player.id !== playerId
+    );
+
+    openModal(
+        '🐱 Кото-КНБ',
+        'Ваш соперник: ' +
+        (opponent?.nickname || 'котик') +
+        '\n\nКакой ход сделаем?',
+        Object.entries(moves).map(([key, move]) => ({
+            label: move.emoji + ' ' + move.label,
+            className: 'primary',
+            onClick: () => submitMove(key)
+        })),
+        '📖 Как играть?\n' +
+        '🐾 Лапка бьёт 😼 Царапку.\n' +
+        '😼 Царапка рвёт 📦 Коробку.\n' +
+        '📦 Коробка накрывает 🐾 Лапку.\n\n' +
+        'Одинаковые ходы — ничья! У каждого котика одна попытка.'
+    );
+}
+
+    let modeSelectionInFlight = false;
+
+function selectGameMode(mode) {
+    if (!activeMatchId || modeSelectionInFlight) return;
+
+    modeSelectionInFlight = true;
+
+    request(
+        'POST',
+        '/api/matches/' +
+        encodeURIComponent(activeMatchId) +
+        '/mode',
+        {
+            playerId,
+            mode
+        },
+        (error, result, status) => {
+            modeSelectionInFlight = false;
+
+            if (error || !result?.success) {
+                if (status === 403 && result?.error === 'BETTING_LOCK_REQUIRED') {
+                    showToast(
+                        '🔒 Для ставок оба котика должны купить соответствующее улучшение в магазине.'
+                    );
+                } else {
+                    showToast(
+                        result?.error || 'Не удалось выбрать режим игры'
+                    );
+                }
+
+                return;
+            }
+
+            if (result.modeMismatch) {
+                displayedModeMatchId = null;
+            
+                showToast(
+                    '😺 Режимы не совпали! Выберите режим соперника.'
+                );
+            
+                showModeSelection(currentKnbMatch);
+            
+                return;
+            }
+
+            if (result.waitingForOpponent) {
+                openModal(
+                    '🐾 Ожидание соперника',
+                    mode === 'free'
+                        ? 'Вы выбрали бесплатную игру.\n\nЖдём, пока соперник выберет такой же режим...'
+                        : 'Вы выбрали игру на мяукоины.\n\nЖдём выбора соперника...',
+                    []
+                );
+
+                return;
+            }
+
+            showToast(
+                mode === 'free'
+                    ? '🐾 Режим бесплатной игры согласован!'
+                    : '💰 Режим ставок согласован!'
+            );
+        }
+    );
+}
+
+    function showBetSelection(match) {
+     if (
+        displayedBetMatchId === match.id &&
+        ui.modal.classList.contains('open')
+    ) return;
+
+    displayedBetMatchId = match.id;
+    activeMatchId = match.id;
+    const opponent = match.players.find(
+        player => player.id !== playerId
+    );
+
+    openModal(
+        '💰 Ставка в Кото-КНБ',
+        'Ваш соперник: ' +
+        (opponent?.nickname || 'котик') +
+        '\n\nВведите размер ставки:',
+        [
+            {
+                label: '🐾 Подтвердить ставку',
+                className: 'primary',
+                onClick: () => {
+                    const amount = Number(betInput.value);
+
+                    if (
+                        !Number.isSafeInteger(amount) ||
+                        amount < 50
+                    ) {
+                        showToast(
+                            'Минимальная ставка — 50 мяукоинов.'
+                        );
+                        return;
+                    }
+
+                    submitBet(amount);
+                }
+            }
+        ],
+        'Оба котика должны поставить одинаковую сумму.\n' +
+        'Минимальная ставка — 50 мяукоинов.'
+    );
+
+    const betInput = document.createElement('input');
+
+    betInput.type = 'number';
+    betInput.min = '50';
+    betInput.step = '1';
+    betInput.placeholder = 'Например, 100';
+    betInput.style.cssText =
+        'box-sizing:border-box;width:100%;margin-top:14px;' +
+        'padding:11px;border:1px solid #806044;border-radius:9px;' +
+        'background:#2d251f;color:#fff0dc;font-size:15px;';
+
+    ui.modalBody.appendChild(betInput);
+    betInput.focus();
+}
+
+    let betSubmissionInFlight = false;
+
+function submitBet(amount) {
+    if (!activeMatchId || betSubmissionInFlight) return;
+
+    betSubmissionInFlight = true;
+
+    request(
+        'POST',
+        '/api/matches/' +
+        encodeURIComponent(activeMatchId) +
+        '/bet',
+        {
+            playerId,
+            amount
+        },
+        (error, result) => {
+            betSubmissionInFlight = false;
+
+            if (error || !result?.success) {
+                const errorMessage = result?.error;
+
+                if (errorMessage === 'INSUFFICIENT_BALANCE') {
+                    showToast(
+                        '😿 Недостаточно мяукоинов для этой ставки.'
+                    );
+                } else {
+                    showToast(
+                        errorMessage || 'Не удалось отправить ставку.'
+                    );
+                }
+
+                return;
+            }
+
+            if (result.waitingForOpponent) {
+                openModal(
+                    '🐾 Ожидание соперника',
+                    'Ваша ставка: ' + amount +
+                    ' мяукоинов.\n\n' +
+                    'Ждём, пока соперник предложит такую же сумму...',
+                    []
+                );
+
+                return;
+            }
+
+            if (result.status === 'playing') {
+                showToast(
+                    '💰 Ставки совпали! Начинаем Кото-КНБ!'
+                );
+
+                checkMatch();
+            }
+        }
+    );
+}
 
     function submitMove(move) {
         if (!activeMatchId || moveSubmitted) return;
@@ -1702,29 +1922,39 @@
     }
 
     function checkMatch() {
-        request(
-            'GET',
-            '/api/matches/player/' + encodeURIComponent(playerId),
-            null,
-            (error, result) => {
-                if (error || !result?.success || !result.match) return;
+    request(
+        'GET',
+        '/api/matches/player/' + encodeURIComponent(playerId),
+        null,
+        (error, result) => {
+            if (error || !result?.success || !result.match) return;
 
-                const match = result.match;
+            const match = result.match;
 
-                if (
-                    match.status === 'playing' &&
-                    match.id !== displayedMatchId
-                ) {
-                    showGame(match);
-                }
-
-                if (match.status === 'finished') {
-                    activeMatchId = match.id;
-                    pollMatchResult();
-                }
+            if (match.status === 'choosing_mode') {
+                currentKnbMatch = match;
+                showModeSelection(match);
+                return;
             }
-        );
-    }
+
+            if (match.status === 'negotiating') {
+                showBetSelection(match);
+                return;
+            }
+
+            if (match.status === 'playing') {
+                displayedBetMatchId = null;
+                showMoveSelection(match);
+                return;
+            }
+
+            if (match.status === 'finished') {
+                activeMatchId = match.id;
+                pollMatchResult();
+            }
+        }
+    );
+}
 
     function pollMatchResult() {
         if (!activeMatchId || matchResultShown) return;
