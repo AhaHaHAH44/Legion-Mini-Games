@@ -1630,6 +1630,44 @@
         }
     };
 
+    let cancelMatchInFlight = false;
+
+    function cancelKnbMatch() {
+        if (!activeMatchId || cancelMatchInFlight) return;
+    
+        cancelMatchInFlight = true;
+    
+        request(
+            'POST',
+            '/api/matches/' +
+            encodeURIComponent(activeMatchId) +
+            '/cancel',
+            {
+                playerId
+            },
+            (error, result) => {
+                cancelMatchInFlight = false;
+    
+                if (error || !result?.success) {
+                    showToast(
+                        result?.error || 'Не удалось отменить игру'
+                    );
+                    return;
+                }
+    
+                closeModal();
+    
+                activeMatchId = null;
+                currentKnbMatch = null;
+                displayedModeMatchId = null;
+                displayedModeMismatch = false;
+                displayedBetMatchId = null;
+    
+                showToast('🐾 Вы отказались от игры.');
+            }
+        );
+    }
+
     function showModeSelection(match) {
     currentKnbMatch = match;
 
@@ -1657,6 +1695,10 @@
                 label: '💰 Игра на мяукоины',
                 className: 'primary',
                 onClick: () => selectGameMode('betting')
+            },
+            {
+                label: '❌ Отказаться',
+                onClick: cancelKnbMatch
             }
         ],
         '🐾 Бесплатный режим не требует мяукоинов.\n' +
