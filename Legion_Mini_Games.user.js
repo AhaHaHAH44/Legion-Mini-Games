@@ -1998,6 +1998,26 @@ function submitBet(amount) {
 
             const match = result.match;
 
+            if (match.status === 'cancelled') {
+                const wasCurrentMatch =
+                    activeMatchId === match.id ||
+                    currentKnbMatch?.id === match.id;
+            
+                closeModal();
+            
+                if (wasCurrentMatch) {
+                    showToast('🐾 Соперник отказался от игры.');
+                }
+            
+                activeMatchId = null;
+                currentKnbMatch = null;
+                displayedModeMatchId = null;
+                displayedModeMismatch = false;
+                displayedBetMatchId = null;
+            
+                return;
+            }
+
             if (match.status !== 'choosing_mode') {
                 displayedModeMismatch = false;
             }
