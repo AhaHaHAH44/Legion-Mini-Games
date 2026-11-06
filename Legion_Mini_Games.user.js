@@ -1071,11 +1071,6 @@
                 🐾 Кото-игры
             </button>
             </div>
-        
-            <button id="legion-mini-toggle">
-                🐾 Кото-игры
-            </button>
-            </div>
         `;
 
         document.body.appendChild(widget);
