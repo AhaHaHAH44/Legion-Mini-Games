@@ -1180,6 +1180,17 @@
 
                     ui.status.classList.remove('online');
                 } else {
+                   if (
+                        typeof result.playerId === 'string' &&
+                        result.playerId !== playerId
+                    ) {
+                        playerId = result.playerId;
+
+                        localStorage.setItem(
+                            STORAGE.playerId,
+                            playerId
+                        );
+                    }
                     if (
                         typeof result.doNotDisturb === 'boolean' &&
                         result.doNotDisturb !== doNotDisturb
