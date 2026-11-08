@@ -1851,7 +1851,7 @@ function selectGameMode(mode) {
                 className: 'primary',
                 onClick: () => {
                     const amount = Number(betInput.value);
-
+        
                     if (
                         !Number.isSafeInteger(amount) ||
                         amount < 50
@@ -1861,11 +1861,15 @@ function selectGameMode(mode) {
                         );
                         return;
                     }
-
+        
                     submitBet(amount);
                 }
+            },
+            {
+                label: '❌ Отменить игру',
+                onClick: cancelKnbMatch
             }
-        ],
+        ]
         'Оба котика должны поставить одинаковую сумму.\n' +
         'Минимальная ставка — 50 мяукоинов.'
     );
@@ -1928,7 +1932,12 @@ function submitBet(amount) {
                     'Ваша ставка: ' + amount +
                     ' мяукоинов.\n\n' +
                     'Ждём, пока соперник предложит такую же сумму...',
-                    []
+                    [
+                        {
+                            label: '❌ Отменить игру',
+                            onClick: cancelKnbMatch
+                        }
+                    ]
                 );
 
                 return;
