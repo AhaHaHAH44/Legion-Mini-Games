@@ -2966,7 +2966,7 @@ function submitBet(amount) {
             
         rouletteCompleted = false;
         rouletteCompleting = false;
-        rouletteRerollUsed = Boolean(result.rerollUsed);
+        rouletteRerollUsed = false;
         rouletteSelectedReelIndex = null;
         updateRouletteRerollUI();
 
@@ -2990,7 +2990,7 @@ function submitBet(amount) {
             }
             rouletteCompleted = false;
             rouletteCompleting = false;
-            rouletteRerollUsed = false;
+            rouletteRerollUsed = Boolean(result.rerollUsed);
             rouletteSelectedReelIndex = null;
             updateRouletteRerollUI();
 
