@@ -2105,6 +2105,369 @@
             #legion-mini-widget .legion-mini-return-row:empty {
                 display: none;
             }
+
+            /* ========================================
+               ГЛАВНОЕ ОКНО — ОБНОВЛЁННЫЙ ДИЗАЙН
+            ======================================== */
+            
+            /* Основная карточка */
+            #legion-mini-panel {
+                padding: 19px;
+                border: 1px solid #98734f;
+                border-radius: 19px;
+            
+                background:
+                    radial-gradient(
+                        ellipse at 100% 0%,
+                        rgba(205, 157, 94, .13),
+                        transparent 42%
+                    ),
+                    linear-gradient(
+                        145deg,
+                        rgba(65, 48, 35, .98),
+                        rgba(43, 35, 29, .99) 55%,
+                        rgba(35, 32, 30, .99)
+                    );
+            
+                box-shadow:
+                    0 16px 45px rgba(0, 0, 0, .48),
+                    inset 0 1px rgba(255, 255, 255, .07);
+            
+                scrollbar-width: thin;
+                scrollbar-color: #98734f #30251d;
+            }
+            
+            /* Шапка */
+            .legion-mini-heading {
+                margin-bottom: 7px;
+                color: #ffe2b8;
+                font-size: 17px;
+                letter-spacing: .15px;
+                text-shadow: 0 2px 10px rgba(226, 172, 103, .15);
+            }
+            
+            .legion-mini-heading span:last-child {
+                font-size: 18px;
+                opacity: .8;
+            }
+            
+            .legion-mini-subtitle {
+                margin: 0 0 16px;
+                padding-bottom: 13px;
+                border-bottom: 1px solid rgba(205, 160, 105, .28);
+                color: #c6ad91;
+                font-size: 11px;
+            }
+            
+            /* Статус подключения */
+            .legion-mini-status {
+                display: flex;
+                align-items: center;
+                gap: 7px;
+                margin-bottom: 13px;
+                padding: 9px 11px;
+            
+                border: 1px solid rgba(196, 151, 99, .25);
+                border-radius: 10px;
+                background: rgba(117, 83, 54, .16);
+            
+                color: #e7c18f;
+                font-size: 12px;
+                line-height: 1.4;
+            }
+            
+            .legion-mini-status.online {
+                border-color: rgba(145, 190, 119, .25);
+                background: rgba(111, 151, 91, .12);
+                color: #b8d99e;
+            }
+            
+            /* Карточка Не беспокоить */
+            .legion-mini-dnd {
+                margin: 0 0 17px;
+                padding: 13px;
+            
+                border: 1px solid #806044;
+                border-radius: 14px;
+            
+                background:
+                    linear-gradient(
+                        135deg,
+                        rgba(117, 83, 54, .25),
+                        rgba(55, 43, 33, .55)
+                    );
+            
+                box-shadow:
+                    inset 0 1px rgba(255,255,255,.035),
+                    0 4px 12px rgba(0,0,0,.12);
+            }
+            
+            .legion-mini-dnd-title {
+                color: #ffe0b8;
+                font-size: 13px;
+            }
+            
+            .legion-mini-dnd-hint {
+                color: #c6ad91;
+                font-size: 10px;
+                line-height: 1.45;
+            }
+            
+            .legion-mini-dnd-button {
+                padding: 9px 11px;
+                border: 1px solid #a47b50;
+                border-radius: 9px;
+            
+                background: linear-gradient(145deg, #765438, #59402e);
+                color: #fff0dc;
+            
+                font-weight: bold;
+                font-size: 11px;
+            
+                box-shadow: inset 0 1px rgba(255,255,255,.08);
+                transition: .2s ease;
+            }
+            
+            .legion-mini-dnd-button:hover:not(:disabled) {
+                background: linear-gradient(145deg, #906844, #684a32);
+                border-color: #d1a875;
+                transform: translateY(-1px);
+            }
+            
+            .legion-mini-dnd-button.active {
+                border-color: #a68d6e;
+                background: linear-gradient(145deg, #5c5144, #403a33);
+                color: #e9d9c5;
+            }
+            
+            /* Заголовки разделов */
+            .legion-mini-section-title {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                margin-bottom: 9px;
+                color: #f3d5ad;
+                font-size: 13px;
+            }
+            
+            /* Поиск игроков */
+            .legion-player-tools {
+                gap: 8px;
+                margin: 0 0 9px;
+            }
+            
+            .legion-player-search {
+                padding: 10px 11px;
+                border-color: #806044;
+                border-radius: 10px;
+                background: rgba(35, 29, 24, .75);
+                color: #fff0dc;
+                transition: border-color .2s, box-shadow .2s;
+            }
+            
+            .legion-player-search:focus {
+                border-color: #c49b65;
+                box-shadow: 0 0 0 3px rgba(196, 155, 101, .12);
+            }
+            
+            .legion-player-toggle {
+                padding: 9px 12px;
+                border-color: #98734f;
+                border-radius: 9px;
+                background: linear-gradient(145deg, #765438, #59402e);
+                color: #fff0dc;
+                font-weight: bold;
+                transition: .2s ease;
+            }
+            
+            .legion-player-toggle:hover {
+                background: #806044;
+                border-color: #d1a875;
+            }
+            
+            /* Список игроков */
+            #legion-mini-players {
+                border-radius: 11px;
+            }
+            
+            .legion-mini-player {
+                padding: 10px;
+                margin-top: 5px;
+                border: 1px solid rgba(128, 96, 68, .35);
+                border-radius: 9px;
+                background: rgba(117, 83, 54, .13);
+            }
+            
+            .legion-mini-player-name {
+                color: #f2dfc7;
+            }
+            
+            .legion-mini-player-resting {
+                color: #c6ad91;
+            }
+            
+            .legion-mini-empty {
+                padding: 15px 8px;
+                border: 1px dashed rgba(128, 96, 68, .5);
+                border-radius: 10px;
+                background: rgba(80, 57, 39, .15);
+                color: #c6ad91;
+            }
+            
+            /* ========================================
+               КОТО-РУЛЕТКА — ЦЕНТРАЛЬНАЯ КАРТОЧКА
+            ======================================== */
+            
+            .legion-roulette {
+                position: relative;
+                margin: 16px 0 12px;
+                padding: 15px;
+            
+                border: 1px solid #98734f;
+                border-radius: 16px;
+            
+                background:
+                    radial-gradient(
+                        ellipse at 50% 0%,
+                        rgba(203, 157, 96, .13),
+                        transparent 55%
+                    ),
+                    linear-gradient(145deg, #493727, #352a22 65%, #302821);
+            
+                box-shadow:
+                    0 6px 18px rgba(0,0,0,.2),
+                    inset 0 1px rgba(255,255,255,.05);
+            }
+            
+            .legion-roulette-title {
+                margin-bottom: 7px;
+                color: #ffe2b5;
+                font-size: 15px;
+                text-shadow: 0 2px 8px rgba(226,172,103,.15);
+            }
+            
+            .legion-roulette-hint {
+                color: #c6ad91;
+                font-size: 10px;
+                line-height: 1.55;
+            }
+            
+            /* Барабаны */
+            .legion-roulette-reels {
+                gap: 8px;
+                margin: 15px 0;
+            }
+            
+            .legion-roulette-reel {
+                width: 59px;
+                height: 59px;
+                flex: 0 0 59px;
+            
+                border: 1px solid #a98258;
+                border-radius: 14px;
+            
+                background:
+                    linear-gradient(145deg, #342a24, #211d1a);
+            
+                font-size: 30px;
+            
+                box-shadow:
+                    inset 0 2px 8px rgba(0,0,0,.45),
+                    0 3px 8px rgba(0,0,0,.16);
+            }
+            
+            .legion-roulette-reel.selectable:hover {
+                border-color: #e0b66f;
+                background: linear-gradient(145deg, #493727, #30251e);
+                box-shadow: 0 0 13px rgba(218,174,111,.2);
+            }
+            
+            .legion-roulette-reel.selected {
+                border-color: #f2c45f;
+                background: linear-gradient(145deg, #574329, #3a2d1b);
+                box-shadow:
+                    0 0 0 2px rgba(242,196,95,.2),
+                    0 0 18px rgba(242,196,95,.3);
+            }
+            
+            /* Результат */
+            .legion-roulette-result {
+                min-height: 34px;
+                margin: 10px 0;
+                padding: 9px 8px;
+            
+                border: 1px solid rgba(196,151,99,.2);
+                border-radius: 10px;
+                background: rgba(30,25,21,.32);
+            
+                color: #ffe1b6;
+                font-size: 12px;
+                font-weight: bold;
+                line-height: 1.5;
+            }
+            
+            /* Баланс */
+            .legion-roulette [data-role="balance"] {
+                display: block;
+                margin: 10px 0;
+                padding: 8px 10px;
+            
+                border: 1px solid rgba(196,151,99,.25);
+                border-radius: 9px;
+                background: rgba(117,83,54,.17);
+            
+                color: #f0d19d;
+                font-size: 11px;
+            }
+            
+            /* Кнопки рулетки */
+            .legion-roulette-controls {
+                gap: 8px;
+                margin: 11px 0;
+            }
+            
+            .legion-roulette-controls button {
+                min-height: 37px;
+                border: 1px solid #a47b50;
+                border-radius: 10px;
+            
+                background: linear-gradient(145deg, #765438, #59402e);
+                color: #fff0dc;
+            
+                font-weight: bold;
+                font-size: 11px;
+            
+                box-shadow: inset 0 1px rgba(255,255,255,.07);
+                transition: .2s ease;
+            }
+            
+            .legion-roulette-controls button:hover:not(:disabled) {
+                background: linear-gradient(145deg, #906844, #684a32);
+                border-color: #d1a875;
+                transform: translateY(-1px);
+            }
+            
+            .legion-roulette-controls button:active:not(:disabled) {
+                transform: translateY(0);
+            }
+            
+            /* Информация о ресурсах */
+            .legion-roulette > .legion-roulette-hint:last-child {
+                margin-top: 12px !important;
+                padding-top: 10px;
+                border-top: 1px solid rgba(196,151,99,.2);
+                color: #d0b99c;
+                font-size: 10px;
+            }
+            
+            /* Подпись игрока */
+            .legion-mini-self {
+                margin-top: 13px;
+                padding-top: 11px;
+                border-top: 1px solid rgba(196,151,99,.28);
+                color: #c6ad91;
+                font-size: 11px;
+            }
         `;
 
         document.head.appendChild(style);
