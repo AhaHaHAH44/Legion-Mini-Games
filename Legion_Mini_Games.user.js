@@ -2962,11 +2962,11 @@ function submitBet(amount) {
         elements.result.textContent = 'Связываемся с шахтой...';
         
         rouletteSessionId = null;
-        rouletteResult = null;
+        rouletteResult = null
+            
         rouletteCompleted = false;
         rouletteCompleting = false;
-        
-        rouletteRerollUsed = false;
+        rouletteRerollUsed = Boolean(result.rerollUsed);
         rouletteSelectedReelIndex = null;
         updateRouletteRerollUI();
 
