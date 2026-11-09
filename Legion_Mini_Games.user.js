@@ -2958,76 +2958,189 @@ function submitBet(amount) {
 }
 
     function spinRouletteSolo() {
-        const elements = rouletteElements();
-        if (!elements || rouletteSpinning || Date.now() < rouletteCooldownUntil) return;
+    const elements = rouletteElements();
 
-        elements.spin.disabled = true;
-        elements.publish.disabled = true;
-        elements.result.textContent = 'Связываемся с шахтой...';
-        
-        rouletteSessionId = null;
-        rouletteResult = null
-            
-        rouletteCompleted = false;
-        rouletteCompleting = false;
-        rouletteRerollUsed = false;
-        rouletteSelectedReelIndex = null;
-        updateRouletteRerollUI();
-
-        request('POST', '/api/roulette/solo', { playerId }, (error, result, status) => {
-            if (error || !result?.success) {
-                elements.result.textContent =
-                    result?.error || 'Не удалось запустить рулетку.';
-            
-                if (result?.nextAt) {
-                    rouletteCooldownUntil = Number(result.nextAt);
-                }
-            
-                rouletteSpinning = false;
-                updateRouletteCooldownUI();
-                updateRouletteRerollUI();
-                return;
-            }
-
-            rouletteResult = normalizeRouletteResult(result);
-            rouletteCooldownUntil = Number(result.nextAt || 0);
-            
-            rouletteSessionId = result.sessionId;
-            if (!rouletteSessionId) {
-                elements.result.textContent =
-                    '😿 Сервер не вернул ID вращения. Награду пока нельзя получить.';
-                elements.publish.disabled = true;
-                return;
-            }
-            rouletteCompleted = false;
-            rouletteCompleting = false;
-            rouletteRerollUsed = Boolean(result.rerollUsed);
-            rouletteSelectedReelIndex = null;
-            updateRouletteRerollUI();
-
-            animateRoulette(rouletteResult.reels, () => {
-                const description = rouletteResourceText(rouletteResult.reels);
-                const multiplier = Number(result.multiplier || 1);
-                rouletteBalance = Number(result.balance ?? rouletteBalance);
-                if (elements.balance) elements.balance.textContent = `💰 Баланс: ${rouletteBalance} мяукоинов`;
-                const multiplierText = multiplier > 1 ? ` · множитель ×${multiplier}` : '';
-                elements.result.textContent = rouletteResult.jackpot
-                    ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`
-                    : `${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
-                
-                if (result.modifierDrop) {
-                    showToast(
-                        `🎁 Джекпот! Получен модификатор «${result.modifierDrop.name}»!`
-                    );
-                }
-
-                updateRouletteRerollUI();
-                loadRouletteRerollAvailability();
-                
-                elements.publish.disabled = false;
-            });
-        });
+    if (
+        !elements ||
+        rouletteSpinning ||
+        rouletteCompleting ||
+        Date.now() < rouletteCooldownUntil
+    ) {
+        return;
     }
+
+    elements.spin.disabled = true;
+    elements.publish.disabled = true;
+    elements.result.textContent = 'Связываемся с шахтой...';
+
+    rouletteSessionId = null;
+    rouletteResult = null;
+    rouletteCompleted = false;
+    rouletteCompleting = false;
+    rouletteRerollUsed = false;
+    rouletteSelectedReelIndex = null;
+
+    updateRouletteRerollUI();
+
+    // Запрашиваем вращение у сервера.
+    function requestNewSpin() {
+        request(
+            'POST',
+            '/api/roulette/solo',
+            { playerId },
+            (error, result) => {
+                if (error || !result?.success) {
+                    elements.result.textContent =
+                        result?.error || 'Не удалось запустить рулетку.';
+
+                    if (result?.nextAt) {
+                        rouletteCooldownUntil = Number(result.nextAt);
+                    }
+
+                    rouletteSpinning = false;
+                    updateRouletteCooldownUI();
+                    updateRouletteRerollUI();
+                    return;
+                }
+
+                const nextAt = Number(result.nextAt || 0);
+
+                // Сервер вернул старую незавершённую сессию,
+                // а её кулдаун уже закончился.
+                if (result.pending && nextAt <= Date.now()) {
+                    rouletteSessionId = result.sessionId;
+                    rouletteResult = normalizeRouletteResult(result);
+                    rouletteRerollUsed = Boolean(result.rerollUsed);
+
+                    if (!rouletteSessionId) {
+                        elements.result.textContent =
+                            '😿 Не удалось восстановить предыдущую сессию.';
+                        rouletteSpinning = false;
+                        updateRouletteCooldownUI();
+                        return;
+                    }
+
+                    elements.result.textContent =
+                        '📦 Завершаем предыдущую добычу...';
+
+                    rouletteCompleting = true;
+                    updateRouletteRerollUI();
+
+                    request(
+                        'POST',
+                        '/api/roulette/solo/complete',
+                        {
+                            playerId,
+                            sessionId: rouletteSessionId
+                        },
+                        (completeError, completeResult) => {
+                            rouletteCompleting = false;
+
+                            if (
+                                completeError ||
+                                !completeResult?.success
+                            ) {
+                                elements.result.textContent =
+                                    completeResult?.error ||
+                                    'Не удалось сохранить предыдущую добычу.';
+
+                                elements.publish.disabled = false;
+                                updateRouletteCooldownUI();
+                                updateRouletteRerollUI();
+                                return;
+                            }
+
+                            // Предыдущая награда успешно начислена.
+                            rouletteCompleted = true;
+                            rouletteResult =
+                                normalizeRouletteResult(completeResult);
+
+                            rouletteBalance = Number(
+                                completeResult.balance ?? rouletteBalance
+                            );
+
+                            if (elements.balance) {
+                                elements.balance.textContent =
+                                    `💰 Баланс: ${rouletteBalance} мяукоинов`;
+                            }
+
+                            loadRouletteStatus();
+                            loadRouletteRerollAvailability();
+
+                            // Старая сессия закрыта.
+                            // Теперь запрашиваем совершенно новое вращение.
+                            rouletteSessionId = null;
+                            rouletteResult = null;
+                            rouletteCompleted = false;
+                            rouletteRerollUsed = false;
+                            rouletteSelectedReelIndex = null;
+
+                            elements.result.textContent =
+                                '⛏️ Предыдущая добыча сохранена! Начинаем новое вращение...';
+
+                            requestNewSpin();
+                        }
+                    );
+
+                    return;
+                }
+
+                // Получен новый результат.
+                rouletteResult = normalizeRouletteResult(result);
+                rouletteCooldownUntil = nextAt;
+                rouletteSessionId = result.sessionId;
+
+                if (!rouletteSessionId) {
+                    elements.result.textContent =
+                        '😿 Сервер не вернул ID вращения.';
+                    elements.publish.disabled = true;
+                    rouletteSpinning = false;
+                    updateRouletteCooldownUI();
+                    return;
+                }
+
+                rouletteCompleted = false;
+                rouletteCompleting = false;
+                rouletteRerollUsed = Boolean(result.rerollUsed);
+                rouletteSelectedReelIndex = null;
+
+                updateRouletteRerollUI();
+
+                animateRoulette(rouletteResult.reels, () => {
+                    const description =
+                        rouletteResourceText(rouletteResult.reels);
+
+                    const multiplier = Number(result.multiplier || 1);
+
+                    rouletteBalance = Number(
+                        result.balance ?? rouletteBalance
+                    );
+
+                    if (elements.balance) {
+                        elements.balance.textContent =
+                            `💰 Баланс: ${rouletteBalance} мяукоинов`;
+                    }
+
+                    const multiplierText = multiplier > 1
+                        ? ` · множитель ×${multiplier}`
+                        : '';
+
+                    elements.result.textContent =
+                        rouletteResult.jackpot
+                            ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`
+                            : `${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
+
+                    updateRouletteRerollUI();
+                    loadRouletteRerollAvailability();
+
+                    elements.publish.disabled = false;
+                });
+            }
+        );
+    }
+
+    requestNewSpin();
+}
 
     function rerollRouletteSolo(index) {
         const elements = rouletteElements();
