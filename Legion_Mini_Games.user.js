@@ -110,7 +110,8 @@
 
     const ROULETTE_COMPLETED_KEY = 'legion_mini_roulette_completed';
     const ROULETTE_PUBLISHED_KEY = 'legion_mini_roulette_published';
-
+    const ROULETTE_SOLO_PUBLISHED_KEY = 'legion_mini_roulette_solo_published';
+    
     function getStoredRouletteIds(key) {
         try {
             const value = JSON.parse(localStorage.getItem(key) || '[]');
@@ -122,6 +123,20 @@
 
     const completedRouletteMatches = getStoredRouletteIds(ROULETTE_COMPLETED_KEY);
     const publishedRouletteMatches = getStoredRouletteIds(ROULETTE_PUBLISHED_KEY);
+    const publishedSoloRouletteSessions = getStoredRouletteIds(
+        ROULETTE_SOLO_PUBLISHED_KEY
+    );
+    
+    function rememberPublishedSoloRouletteSession(sessionId) {
+        if (!sessionId) return;
+    
+        publishedSoloRouletteSessions.add(sessionId);
+    
+        localStorage.setItem(
+            ROULETTE_SOLO_PUBLISHED_KEY,
+            JSON.stringify([...publishedSoloRouletteSessions].slice(-100))
+        );
+    }
 
     function rememberRouletteMatch(key, set, matchId) {
         set.add(matchId);
@@ -3031,6 +3046,14 @@ function submitBet(amount) {
     
         const elements = rouletteElements();
         if (!elements) return;
+
+        if (
+            rouletteSessionId &&
+            publishedSoloRouletteSessions.has(rouletteSessionId)
+        ) {
+            elements.publish.disabled = true;
+            return;
+        }
     
         // Если сервер уже начислил награду,
         // повторно завершаем вращение не нужно.
@@ -3039,9 +3062,10 @@ function submitBet(amount) {
                 rouletteChatMessage(rouletteResult)
             );
     
-            if (sent) {
-                elements.publish.disabled = true;
-            }
+        if (sent) {
+            rememberPublishedSoloRouletteSession(rouletteSessionId);
+            elements.publish.disabled = true;
+        }
     
             return;
         }
@@ -3092,6 +3116,10 @@ function submitBet(amount) {
                     rouletteChatMessage(rouletteResult)
                 );
     
+                if (sent) {
+                    rememberPublishedSoloRouletteSession(rouletteSessionId);
+                }
+                
                 elements.publish.disabled = sent;
     
                 if (!sent) {
