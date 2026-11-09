@@ -3094,7 +3094,7 @@ function submitBet(amount) {
     
         const elements = rouletteElements();
         if (!elements) return;
-
+    
         if (
             rouletteSessionId &&
             publishedSoloRouletteSessions.has(rouletteSessionId)
@@ -3103,73 +3103,101 @@ function submitBet(amount) {
             return;
         }
     
-        // Если сервер уже начислил награду,
-        // повторно завершаем вращение не нужно.
+        // Если награда уже начислена, повторно отправляем только сообщение.
         if (rouletteCompleted) {
-            const sent = publishResultToChat(
-                rouletteChatMessage(rouletteResult)
-            );
+            let sent = false;
     
-        if (sent) {
-            rememberPublishedSoloRouletteSession(rouletteSessionId);
-            elements.publish.disabled = true;
-        }
+            try {
+                sent = publishResultToChat(
+                    rouletteChatMessage(rouletteResult)
+                );
+            } catch (error) {
+                console.error('[Legion] Chat publish failed:', error);
+            }
+    
+            if (sent) {
+                rememberPublishedSoloRouletteSession(rouletteSessionId);
+                elements.publish.disabled = true;
+            }
     
             return;
         }
     
         if (!rouletteSessionId) {
-            showToast('😿 Не найдена сессия вращения. Попробуйте обновить страницу.');
+            showToast('😿 Не найдена сессия вращения.');
             return;
         }
     
-        rouletteCompleted = true;
-        rouletteResult = normalizeRouletteResult(result);
-        rouletteBalance = Number(result.balance ?? rouletteBalance);
-        
-        // Сразу показываем, что награда получена
-        if (elements.balance) {
-            elements.balance.textContent =
-                `💰 Баланс: ${rouletteBalance} мяукоинов`;
-        }
-        
-        elements.result.textContent =
-            `🎉 Награда начислена: ${rouletteResult.score} мяукоинов!`;
-        
-        elements.publish.disabled = false;
-        
-        // Обновляем данные независимо от отправки сообщения в чат
-        loadRouletteStatus();
-        loadRouletteRerollAvailability();
-        
-        if (result.modifierDrop) {
-            showToast(
-                `🎁 Получен модификатор «${result.modifierDrop.name}»!`
-            );
-        }
-        
-        // Отправка сообщения в чат — отдельное действие.
-        // Ошибка чата не должна отменять получение награды.
-        let sent = false;
-        
-        try {
-            sent = publishResultToChat(
-                rouletteChatMessage(rouletteResult)
-            );
-        } catch (error) {
-            console.error(
-                '[Legion Кото-игры] Ошибка отправки результата в чат:',
-                error
-            );
-        }
-        
-        if (sent) {
-            rememberPublishedSoloRouletteSession(rouletteSessionId);
-            elements.publish.disabled = true;
-        } else {
-            elements.result.textContent =
-                `🎉 Награда начислена: ${rouletteResult.score} мяукоинов! Чат не отправил сообщение. Попробуй нажать «В чат» ещё раз.`;
-        }
+        rouletteCompleting = true;
+        elements.publish.disabled = true;
+        elements.result.textContent = '⛏️ Завершаем вращение...';
+    
+        request(
+            'POST',
+            '/api/roulette/solo/complete',
+            {
+                playerId,
+                sessionId: rouletteSessionId
+            },
+            (error, result) => {
+                rouletteCompleting = false;
+    
+                if (error || !result?.success) {
+                    elements.result.textContent =
+                        result?.error ||
+                        'Не удалось завершить вращение. Попробуйте ещё раз.';
+    
+                    // Разрешаем повторить запрос.
+                    elements.publish.disabled = false;
+                    return;
+                }
+    
+                // Сервер подтвердил начисление награды.
+                rouletteCompleted = true;
+                rouletteResult = normalizeRouletteResult(result);
+                rouletteBalance = Number(
+                    result.balance ?? rouletteBalance
+                );
+    
+                if (elements.balance) {
+                    elements.balance.textContent =
+                        `💰 Баланс: ${rouletteBalance} мяукоинов`;
+                }
+    
+                elements.result.textContent =
+                    `🎉 Награда начислена: ${rouletteResult.score} мяукоинов!`;
+    
+                if (result.modifierDrop?.granted) {
+                    showToast(
+                        `🎁 Получен модификатор «${result.modifierDrop.name}»!`
+                    );
+                }
+    
+                // Обновляем данные независимо от чата.
+                loadRouletteStatus();
+                loadRouletteRerollAvailability();
+    
+                // Отправляем результат в чат.
+                let sent = false;
+    
+                try {
+                    sent = publishResultToChat(
+                        rouletteChatMessage(rouletteResult)
+                    );
+                } catch (error) {
+                    console.error('[Legion] Chat publish failed:', error);
+                }
+    
+                if (sent) {
+                    rememberPublishedSoloRouletteSession(rouletteSessionId);
+                    elements.publish.disabled = true;
+                } else {
+                    elements.publish.disabled = false;
+                    elements.result.textContent =
+                        `🎉 Награда начислена: ${rouletteResult.score} мяукоинов! ` +
+                        'Не удалось отправить сообщение в чат. Попробуйте ещё раз.';
+                }
+            }
         );
     }
 
