@@ -1375,6 +1375,158 @@
                     font-size: 12px;
                     line-height: 1.6;
                 }
+
+                /* ========================================
+                   ПЕРЕКЛЮЧАЕМЫЕ КАТЕГОРИИ
+                ======================================== */
+                
+                .legion-shop-tabs {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-bottom: 17px;
+                    padding-bottom: 13px;
+                    border-bottom: 1px solid rgba(190, 145, 94, .35);
+                }
+                
+                .legion-shop-tab {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    padding: 10px 12px;
+                
+                    border: 1px solid #76583d;
+                    border-radius: 10px;
+                
+                    background: linear-gradient(145deg, #463426, #35291f);
+                
+                    color: #cbb69c;
+                    font-size: 12px;
+                    font-weight: 800;
+                
+                    cursor: pointer;
+                
+                    transition:
+                        background .18s,
+                        color .18s,
+                        border-color .18s,
+                        transform .18s;
+                }
+                
+                .legion-shop-tab:hover {
+                    border-color: #b18a5c;
+                    color: #ffe2b5;
+                    transform: translateY(-1px);
+                }
+                
+                .legion-shop-tab.active {
+                    border-color: #c49b65;
+                    background: linear-gradient(145deg, #80603e, #62472f);
+                    color: #fff0d9;
+                
+                    box-shadow:
+                        inset 0 1px rgba(255,255,255,.1),
+                        0 3px 10px rgba(0,0,0,.18);
+                }
+                
+                /* Описание выбранной категории */
+                
+                .legion-shop-tab-content {
+                    min-height: 100px;
+                    animation: legionShopFade .2s ease;
+                }
+                
+                @keyframes legionShopFade {
+                    from {
+                        opacity: 0;
+                        transform: translateY(5px);
+                    }
+                
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                /* Акценты товаров выбранной категории */
+                
+                .legion-shop-tab-content[data-category="unlock"]
+                .legion-shop-item {
+                    border-left: 3px solid #b9824e;
+                }
+                
+                .legion-shop-tab-content[data-category="cosmetic"]
+                .legion-shop-item {
+                    border-left: 3px solid #c49b65;
+                }
+                
+                .legion-shop-tab-content[data-category="other"]
+                .legion-shop-item {
+                    border-left: 3px solid #947456;
+                }
+
+                /* Заголовок карточки товара */
+
+                .legion-shop-item-heading {
+                    display: flex;
+                    align-items: center;
+                    gap: 11px;
+                    min-width: 0;
+                }
+                
+                /* Значок товара */
+                
+                .legion-shop-item-icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                
+                    width: 40px;
+                    height: 40px;
+                    flex-shrink: 0;
+                
+                    border: 1px solid #98734f;
+                    border-radius: 11px;
+                
+                    background: linear-gradient(
+                        145deg,
+                        #62472f,
+                        #403025
+                    );
+                
+                    font-size: 20px;
+                
+                    box-shadow:
+                        inset 0 1px rgba(255,255,255,.08),
+                        0 3px 8px rgba(0,0,0,.15);
+                }
+                
+                /* Название занимает оставшееся место */
+                
+                .legion-shop-item-heading .legion-shop-item-name {
+                    flex: 1;
+                    min-width: 0;
+                    overflow-wrap: anywhere;
+                }
+                
+                /* Разные оттенки значков */
+                
+                .legion-shop-tab-content[data-category="unlock"]
+                .legion-shop-item-icon {
+                    border-color: #b9824e;
+                    background: linear-gradient(145deg, #765034, #493326);
+                }
+                
+                .legion-shop-tab-content[data-category="cosmetic"]
+                .legion-shop-item-icon {
+                    border-color: #c49b65;
+                    background: linear-gradient(145deg, #75603e, #493b2b);
+                }
+                
+                .legion-shop-tab-content[data-category="other"]
+                .legion-shop-item-icon {
+                    border-color: #947456;
+                    background: linear-gradient(145deg, #65503b, #403025);
+                }
             }
 
             /* ========================================
@@ -1550,6 +1702,261 @@
             
             .legion-inventory-slot .legion-inventory-action {
                 margin-top: 0;
+            }
+
+            /* ========================================
+               ОКНО ПОКУПКИ КОТО-ЛАВКИ
+            ======================================== */
+            
+            #legion-purchase-modal {
+                position: fixed;
+                inset: 0;
+                z-index: 100002;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                background: rgba(25, 17, 12, 0.72);
+                backdrop-filter: blur(7px);
+            }
+            
+            #legion-purchase-modal.open {
+                display: flex;
+                animation: purchaseFadeIn 0.2s ease;
+            }
+            
+            #legion-purchase-card {
+                position: relative;
+                width: 100%;
+                max-width: 390px;
+                padding: 30px 25px 24px;
+                overflow: hidden;
+                text-align: center;
+                color: #563b27;
+                background: linear-gradient(145deg, #fff8e9, #f1dfbd);
+                border: 2px solid #c69a5c;
+                border-radius: 25px;
+                box-shadow:
+                    0 18px 55px rgba(0, 0, 0, 0.4),
+                    inset 0 0 25px rgba(255, 255, 255, 0.55);
+                animation: purchasePopIn 0.25s ease;
+            }
+            
+            .legion-purchase-decoration {
+                position: absolute;
+                top: 12px;
+                right: 17px;
+                font-size: 23px;
+                opacity: 0.35;
+                transform: rotate(15deg);
+            }
+            
+            .legion-purchase-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 76px;
+                height: 76px;
+                margin: 0 auto 15px;
+                font-size: 38px;
+                background: linear-gradient(145deg, #ffe7a9, #e8bd70);
+                border: 2px solid #c99b55;
+                border-radius: 23px;
+                box-shadow: 0 5px 12px rgba(115, 75, 30, 0.18);
+            }
+            
+            .legion-purchase-title {
+                font-size: 21px;
+                font-weight: 800;
+                color: #684527;
+            }
+            
+            .legion-purchase-name {
+                margin-top: 9px;
+                font-size: 18px;
+                font-weight: 800;
+                color: #9a672d;
+            }
+            
+            .legion-purchase-description {
+                margin-top: 7px;
+                font-size: 13px;
+                line-height: 1.5;
+                color: #856c52;
+            }
+            
+            .legion-purchase-info {
+                display: flex;
+                gap: 10px;
+                margin-top: 22px;
+            }
+            
+            .legion-purchase-price,
+            .legion-purchase-balance {
+                display: flex;
+                flex: 1;
+                flex-direction: column;
+                gap: 6px;
+                padding: 12px 8px;
+                background: rgba(255, 255, 255, 0.55);
+                border: 1px solid rgba(173, 129, 70, 0.3);
+                border-radius: 14px;
+            }
+            
+            .legion-purchase-info span {
+                font-size: 11px;
+                color: #987c5c;
+            }
+            
+            .legion-purchase-info strong {
+                font-size: 15px;
+                color: #76502d;
+            }
+            
+            .legion-purchase-question {
+                margin-top: 20px;
+                font-size: 13px;
+                color: #80664b;
+            }
+            
+            .legion-purchase-actions {
+                display: flex;
+                gap: 10px;
+                margin-top: 20px;
+            }
+            
+            .legion-purchase-actions button {
+                flex: 1;
+                padding: 12px 8px;
+                font-size: 14px;
+                font-weight: 800;
+                border: none;
+                border-radius: 13px;
+                cursor: pointer;
+                transition: 0.2s ease;
+            }
+            
+            #legion-purchase-cancel {
+                color: #795d42;
+                background: #e8d8bd;
+            }
+            
+            #legion-purchase-confirm {
+                color: #fff8e9;
+                background: linear-gradient(135deg, #bd8744, #95602d);
+                box-shadow: 0 4px 10px rgba(126, 79, 34, 0.2);
+            }
+            
+            #legion-purchase-confirm:hover {
+                filter: brightness(1.1);
+                transform: translateY(-2px);
+            }
+            
+            #legion-purchase-cancel:hover {
+                background: #ddc7a5;
+            }
+            
+            .legion-purchase-actions button:disabled {
+                opacity: 0.55;
+                cursor: not-allowed;
+                transform: none;
+            }
+            
+            @keyframes purchaseFadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes purchasePopIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(12px) scale(0.94);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+
+            /* ========================================
+               АНИМАЦИЯ УСПЕШНОЙ ПОКУПКИ
+            ======================================== */
+            
+            #legion-purchase-card.success {
+                animation: purchaseSuccess 0.5s ease;
+                border-color: #e2ad45;
+                box-shadow:
+                    0 0 20px rgba(255, 197, 77, 0.4),
+                    0 0 55px rgba(255, 176, 46, 0.25),
+                    0 18px 55px rgba(0, 0, 0, 0.4);
+            }
+            
+            #legion-purchase-card.success::before,
+            #legion-purchase-card.success::after {
+                position: absolute;
+                top: 20px;
+                font-size: 25px;
+                pointer-events: none;
+                animation: purchaseCoins 1.8s ease-in-out infinite;
+            }
+            
+            #legion-purchase-card.success::before {
+                content: '🪙';
+                left: 25px;
+            }
+            
+            #legion-purchase-card.success::after {
+                content: '✨';
+                right: 25px;
+                animation-delay: 0.4s;
+            }
+            
+            #legion-purchase-card.success .legion-purchase-icon {
+                animation: purchaseIconGlow 1.4s ease-in-out infinite alternate;
+                border-color: #e2ad45;
+                box-shadow: 0 0 25px rgba(255, 190, 65, 0.55);
+            }
+            
+            #legion-purchase-card.success .legion-purchase-name {
+                color: #b47a2c;
+            }
+            
+            #legion-purchase-card.success #legion-purchase-confirm {
+                background: linear-gradient(135deg, #d9a342, #a66b2e);
+            }
+            
+            @keyframes purchaseSuccess {
+                0% {
+                    transform: scale(0.94);
+                }
+                60% {
+                    transform: scale(1.035);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+            
+            @keyframes purchaseIconGlow {
+                from {
+                    transform: scale(1);
+                    filter: brightness(1);
+                }
+                to {
+                    transform: scale(1.09) rotate(5deg);
+                    filter: brightness(1.2);
+                }
+            }
+            
+            @keyframes purchaseCoins {
+                0%, 100% {
+                    transform: translateY(0) rotate(-10deg);
+                    opacity: 0.45;
+                }
+                50% {
+                    transform: translateY(-12px) rotate(15deg);
+                    opacity: 1;
+                }
             }
         `;
 
@@ -1757,6 +2164,50 @@
         
             </div>
         `;
+
+        const purchaseModal = document.createElement('div');
+        purchaseModal.id = 'legion-purchase-modal';
+        
+        purchaseModal.innerHTML = `
+            <div id="legion-purchase-card">
+                <div class="legion-purchase-decoration">🐾</div>
+        
+                <div class="legion-purchase-icon" id="legion-purchase-icon">
+                    📦
+                </div>
+        
+                <div class="legion-purchase-title">
+                    Покупка товара
+                </div>
+        
+                <div class="legion-purchase-name" id="legion-purchase-name"></div>
+        
+                <div class="legion-purchase-description" id="legion-purchase-description"></div>
+        
+                <div class="legion-purchase-info">
+                    <div class="legion-purchase-price">
+                        <span>Стоимость</span>
+                        <strong id="legion-purchase-price"></strong>
+                    </div>
+        
+                    <div class="legion-purchase-balance">
+                        <span>Ваш баланс</span>
+                        <strong id="legion-purchase-balance"></strong>
+                    </div>
+                </div>
+        
+                <div class="legion-purchase-question">
+                    Хочешь приобрести этот товар?
+                </div>
+        
+                <div class="legion-purchase-actions">
+                    <button id="legion-purchase-cancel">Отмена</button>
+                    <button id="legion-purchase-confirm">🐾 Купить</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(purchaseModal);
         
         document.body.appendChild(shopModal);
 
@@ -1857,6 +2308,12 @@
             }
         });
 
+        purchaseModal.addEventListener('click', event => {
+            if (event.target === purchaseModal) {
+                purchaseModal.classList.remove('open');
+            }
+        });
+
         inventoryModal.querySelector('#legion-inventory-close')
             .addEventListener('click', closeInventory);
         
@@ -1892,6 +2349,14 @@
             shopModal,
             shopBalance: shopModal.querySelector('#legion-shop-balance'),
             shopContent: shopModal.querySelector('#legion-shop-content'),
+            purchaseModal,
+            purchaseIcon: purchaseModal.querySelector('#legion-purchase-icon'),
+            purchaseName: purchaseModal.querySelector('#legion-purchase-name'),
+            purchaseDescription: purchaseModal.querySelector('#legion-purchase-description'),
+            purchasePrice: purchaseModal.querySelector('#legion-purchase-price'),
+            purchaseBalance: purchaseModal.querySelector('#legion-purchase-balance'),
+            purchaseCancel: purchaseModal.querySelector('#legion-purchase-cancel'),
+            purchaseConfirm: purchaseModal.querySelector('#legion-purchase-confirm'),
 
             inventoryModal,
             inventoryContent: inventoryModal.querySelector(
@@ -4443,249 +4908,279 @@ function renderInventory(data) {
 }
 
     function renderShop(data) {
-        ui.shopBalance.textContent =
-            `💰 Ваш баланс: ${data.balance} мяукоинов`;
-    
-        ui.shopContent.replaceChildren();
-    
-        if (!data.items || data.items.length === 0) {
-            const emptyState = createLeaderboardElement(
+    ui.shopBalance.textContent =
+        `💰 Ваш баланс: ${data.balance} мяукоинов`;
+
+    ui.shopContent.replaceChildren();
+
+    if (!data.items || data.items.length === 0) {
+        const emptyState = createLeaderboardElement(
+            'div',
+            'legion-shop-empty'
+        );
+
+        const icon = createLeaderboardElement(
+            'div',
+            'legion-shop-empty-icon',
+            '🐈'
+        );
+
+        const title = createLeaderboardElement(
+            'div',
+            'legion-shop-empty-title',
+            'Лавка пока пустует'
+        );
+
+        const description = createLeaderboardElement(
+            'div',
+            'legion-shop-empty-description',
+            'Наш котик ещё готовит товары для шахтёров. Загляни сюда немного позже!'
+        );
+
+        emptyState.append(icon, title, description);
+        ui.shopContent.appendChild(emptyState);
+
+        return;
+    }
+
+    const categories = [
+        {
+            id: 'unlock',
+            title: '⚙️ Механики',
+            description: 'Разблокировки игровых возможностей'
+        },
+        {
+            id: 'cosmetic',
+            title: '✨ Косметика',
+            description: 'Визуальные эффекты и оформление'
+        },
+        {
+            id: 'other',
+            title: '📦 Прочее',
+            description: 'Другие товары магазина'
+        }
+    ];
+
+    // Распределяем товары по категориям
+    const categoryItems = {
+        unlock: data.items.filter(item => item.category === 'unlock'),
+        cosmetic: data.items.filter(item => item.category === 'cosmetic'),
+        other: data.items.filter(item =>
+            !['unlock', 'cosmetic'].includes(item.category)
+        )
+    };
+
+    // Оставляем только категории, в которых есть товары
+    const availableCategories = categories.filter(
+        category => categoryItems[category.id].length > 0
+    );
+
+    let activeCategory = availableCategories[0].id;
+
+    // Панель переключения категорий
+    const tabs = createLeaderboardElement(
+        'div',
+        'legion-shop-tabs'
+    );
+
+    // Область содержимого выбранной категории
+    const content = createLeaderboardElement(
+        'div',
+        'legion-shop-tab-content'
+    );
+
+    function renderCategory(categoryId) {
+        const category = categories.find(
+            item => item.id === categoryId
+        );
+
+        const items = categoryItems[categoryId];
+
+        content.replaceChildren();
+        content.dataset.category = categoryId;
+
+        const description = createLeaderboardElement(
+            'div',
+            'legion-shop-section-description',
+            category.description
+        );
+
+        content.appendChild(description);
+
+        items.forEach(item => {
+            const card = createLeaderboardElement(
                 'div',
-                'legion-shop-empty'
+                'legion-shop-item'
             );
-        
+
+            const nameRow = createLeaderboardElement(
+                'div',
+                'legion-shop-item-heading'
+            );
+            
+            const categoryIcon = {
+                unlock: '⚙️',
+                cosmetic: '✨',
+                other: '📦'
+            };
+            
             const icon = createLeaderboardElement(
                 'div',
-                'legion-shop-empty-icon',
-                '🐈'
+                'legion-shop-item-icon',
+                categoryIcon[categoryId] || '🐾'
             );
-        
-            const title = createLeaderboardElement(
+            
+            const name = createLeaderboardElement(
                 'div',
-                'legion-shop-empty-title',
-                'Лавка пока пустует'
+                'legion-shop-item-name',
+                item.name
             );
-        
-            const description = createLeaderboardElement(
+            
+            nameRow.append(icon, name);
+
+            const itemDescription = createLeaderboardElement(
                 'div',
-                'legion-shop-empty-description',
-                'Наш котик ещё готовит товары для шахтёров. Загляни сюда немного позже!'
+                'legion-shop-item-description',
+                item.description
             );
-        
-            emptyState.append(icon, title, description);
-            ui.shopContent.appendChild(emptyState);
-        
-            return;
-        }
-    
-        const categories = [
-            {
-                id: 'unlock',
-                title: '⚙️ Механики',
-                description: 'Разблокировки игровых возможностей'
-            },
-            {
-                id: 'cosmetic',
-                title: '✨ Косметика',
-                description: 'Визуальные эффекты и оформление'
+
+            const price = createLeaderboardElement(
+                'div',
+                'legion-shop-item-price',
+                `💰 ${item.price} мяукоинов`
+            );
+
+            const status = createLeaderboardElement(
+                'div',
+                'legion-shop-item-status',
+                item.owned
+                    ? '✓ Уже куплено'
+                    : 'Доступно для покупки'
+            );
+
+            const buyButton = document.createElement('button');
+            buyButton.className = 'legion-shop-buy';
+
+            if (item.owned) {
+                buyButton.textContent = '✓ Куплено';
+                buyButton.disabled = true;
+            } else if (data.balance < item.price) {
+                buyButton.textContent = 'Недостаточно мяукоинов';
+                buyButton.disabled = true;
+            } else {
+                buyButton.textContent = 'Купить';
+
+                buyButton.addEventListener('click', () => {
+                    openPurchaseModal(item, data.balance, buyButton);
+                });
             }
-        ];
-    
-        categories.forEach(category => {
-            const items = data.items.filter(
-                item => item.category === category.id
-            );
-    
-            if (items.length === 0) return;
-    
-            const section = createLeaderboardElement(
-                'div',
-                'legion-shop-section'
+
+            card.append(
+                nameRow,
+                itemDescription,
+                price,
+                status,
+                buyButton
             );
 
-            section.classList.add(`legion-shop-section-${category.id}`);
-    
-            const title = createLeaderboardElement(
-                'div',
-                'legion-shop-section-title',
-                category.title
-            );
-    
-            const description = createLeaderboardElement(
-                'div',
-                'legion-shop-section-description',
-                category.description
-            );
-    
-            section.append(title, description);
-    
-            items.forEach(item => {
-                const card = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item'
-                );
-    
-                const name = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item-name',
-                    item.name
-                );
-    
-                const itemDescription = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item-description',
-                    item.description
-                );
-    
-                const price = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item-price',
-                    `💰 ${item.price} мяукоинов`
-                );
-    
-                const status = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item-status',
-                    item.owned ? '✓ Уже куплено' : 'Доступно для покупки'
-                );
-    
-                const buyButton = document.createElement('button');
-                buyButton.className = 'legion-shop-buy';
-    
-                if (item.owned) {
-                    buyButton.textContent = '✓ Куплено';
-                    buyButton.disabled = true;
-                } else if (data.balance < item.price) {
-                    buyButton.textContent = 'Недостаточно мяукоинов';
-                    buyButton.disabled = true;
-                } else {
-                    buyButton.textContent = 'Купить';
-    
-                    buyButton.addEventListener('click', () => {
-                        purchaseShopItem(item, buyButton);
-                    });
-                }
-    
-                card.append(
-                    name,
-                    itemDescription,
-                    price,
-                    status,
-                    buyButton
-                );
-    
-                section.appendChild(card);
-            });
-    
-            ui.shopContent.appendChild(section);
+            content.appendChild(card);
         });
-    
-        const uncategorizedItems = data.items.filter(
-            item => !categories.some(category => category.id === item.category)
-        );
-    
-        if (uncategorizedItems.length > 0) {
-            const section = createLeaderboardElement(
-                'div',
-                'legion-shop-section'
+    }
+
+    // Создаём кнопки вкладок
+    availableCategories.forEach(category => {
+        const tab = document.createElement('button');
+
+        tab.type = 'button';
+        tab.className = 'legion-shop-tab';
+        tab.textContent = category.title;
+
+        if (category.id === activeCategory) {
+            tab.classList.add('active');
+        }
+
+        tab.addEventListener('click', () => {
+            if (activeCategory === category.id) return;
+
+            activeCategory = category.id;
+
+            tabs.querySelectorAll('.legion-shop-tab').forEach(
+                button => button.classList.remove('active')
             );
 
-            section.classList.add('legion-shop-section-other');
+            tab.classList.add('active');
+
+            renderCategory(activeCategory);
+        });
+
+        tabs.appendChild(tab);
+    });
+
+    ui.shopContent.append(tabs, content);
+
+    // Показываем первую доступную категорию
+    renderCategory(activeCategory);
+}
+
+    function showPurchaseSuccess(item) {
+        const card = ui.purchaseModal.querySelector('#legion-purchase-card');
     
-            const title = createLeaderboardElement(
-                'div',
-                'legion-shop-section-title',
-                '📦 Прочее'
-            );
+        card.classList.add('success');
     
-            section.appendChild(title);
+        ui.purchaseIcon.textContent = '🎉';
     
-            uncategorizedItems.forEach(item => {
-                const card = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item'
-                );
+        ui.purchaseName.textContent = item.name;
     
-                const name = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item-name',
-                    item.name
-                );
+        ui.purchaseDescription.textContent =
+            'Поздравляем! Товар успешно приобретён и добавлен в твои владения.';
     
-                const description = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item-description',
-                    item.description
-                );
+        ui.purchaseModal.querySelector('.legion-purchase-title')
+            .textContent = 'Покупка совершена!';
     
-                const price = createLeaderboardElement(
-                    'div',
-                    'legion-shop-item-price',
-                    `💰 ${item.price} мяукоинов`
-                );
+        ui.purchaseModal.querySelector('.legion-purchase-info').style.display = 'none';
     
-                const buyButton = document.createElement('button');
-                buyButton.className = 'legion-shop-buy';
+        ui.purchaseModal.querySelector('.legion-purchase-question')
+            .textContent = 'Отличное приобретение!';
     
-                if (item.owned) {
-                    buyButton.textContent = '✓ Куплено';
-                    buyButton.disabled = true;
-                } else if (data.balance < item.price) {
-                    buyButton.textContent = 'Недостаточно мяукоинов';
-                    buyButton.disabled = true;
-                } else {
-                    buyButton.textContent = 'Купить';
+        ui.purchaseCancel.style.display = 'none';
     
-                    buyButton.addEventListener('click', () => {
-                        purchaseShopItem(item, buyButton);
-                    });
-                }
+        ui.purchaseConfirm.disabled = false;
+        ui.purchaseConfirm.textContent = '🐾 Замечательно!';
     
-                card.append(name, description, price, buyButton);
-                section.appendChild(card);
-            });
+        ui.purchaseConfirm.onclick = () => {
+            card.classList.remove('success');
+            ui.purchaseModal.classList.remove('open');
+            openShop();
+        };
     
-            ui.shopContent.appendChild(section);
-        }
+        ui.purchaseModal.classList.add('open');
     }
 
     function purchaseShopItem(item, button) {
-        const confirmed = confirm(
-            `Купить «${item.name}» за ${item.price} мяукоинов?\n\n` +
-            'После покупки деньги будут списаны с вашего баланса.'
-        );
-    
-        if (!confirmed) return;
-    
-        button.disabled = true;
-        button.textContent = 'Покупаем...';
-    
-        request(
-            'POST',
-            '/api/shop/purchase',
-            {
-                playerId,
-                itemCode: item.code
-            },
-            (error, result) => {
-                if (error || !result?.success) {
-                    showToast(
-                        result?.error || '😿 Не удалось совершить покупку.'
-                    );
-    
-                    openShop();
-                    return;
-                }
-    
-                if (item.category === 'unlock' || item.category === 'cosmetic') {
-                    showToast(`🐾 «${item.name}» куплено! Предмет добавлен в инвентарь.`);
-                } else {
-                    showToast(`🐾 «${item.name}» успешно куплено!`);
-                }
+    button.disabled = true;
+    button.textContent = 'Покупаем...';
+
+    request(
+        'POST',
+        '/api/shop/purchase',
+        {
+            playerId,
+            itemCode: item.code
+        },
+        (error, result) => {
+            if (error || !result?.success) {
+                showToast(
+                    result?.error || '😿 Не удалось совершить покупку.'
+                );
+
                 openShop();
+                return;
             }
-        );
-    }
+
+            showPurchaseSuccess(item);
+        }
+    );
+}
 
     function createLeaderboardElement(tag, className, text = '') {
         const element = document.createElement(tag);
