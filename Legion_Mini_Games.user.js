@@ -917,7 +917,7 @@
             }
 
             /* ========================================
-               SHOP
+               SHOP — уютная кото-лавка
             ======================================== */
             
             #legion-shop-modal {
@@ -928,9 +928,10 @@
                 align-items: center;
                 justify-content: center;
                 padding: 18px;
-                background: #100d0bcc;
+                background: rgba(17, 12, 9, .78);
+                backdrop-filter: blur(5px);
                 font-family: Arial, sans-serif;
-                color: #f4eadb;
+                color: #f5eadb;
             }
             
             #legion-shop-modal.open {
@@ -938,14 +939,35 @@
             }
             
             #legion-shop-card {
-                width: min(520px, calc(100vw - 36px));
+                position: relative;
+                width: min(540px, calc(100vw - 36px));
                 max-height: calc(100vh - 36px);
                 overflow-y: auto;
-                padding: 20px;
-                border: 1px solid #806044;
-                border-radius: 18px;
-                background: linear-gradient(145deg, #382d23, #292626);
-                box-shadow: 0 12px 45px #000a;
+                padding: 22px;
+                border: 1px solid #a47a50;
+                border-radius: 20px;
+                background:
+                    radial-gradient(ellipse at 8% 0%, rgba(218, 174, 111, .13), transparent 42%),
+                    linear-gradient(145deg, #493626 0%, #35291f 52%, #29231f 100%);
+                box-shadow:
+                    0 18px 55px rgba(0,0,0,.62),
+                    inset 0 0 0 3px rgba(224,183,126,.045);
+                scrollbar-width: thin;
+                scrollbar-color: #896746 #30251d;
+            }
+            
+            #legion-shop-card::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            #legion-shop-card::-webkit-scrollbar-track {
+                background: #30251d;
+                border-radius: 8px;
+            }
+            
+            #legion-shop-card::-webkit-scrollbar-thumb {
+                background: #896746;
+                border-radius: 8px;
             }
             
             #legion-shop-header {
@@ -953,114 +975,406 @@
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-                margin-bottom: 16px;
+                margin: -2px -2px 17px;
+                padding: 0 0 14px;
+                border-bottom: 1px solid rgba(205, 160, 105, .32);
             }
             
             #legion-shop-title {
-                color: #ffe0b8;
-                font-size: 19px;
-                font-weight: bold;
+                color: #ffe2b5;
+                font-size: 20px;
+                font-weight: 800;
+                letter-spacing: .2px;
+                text-shadow: 0 2px 10px rgba(226, 172, 103, .18);
             }
             
             #legion-shop-close {
-                width: 32px;
-                height: 30px;
-                border: 1px solid #806044;
-                border-radius: 8px;
-                background: #4a3a2b;
-                color: #fff0dc;
-                font-size: 18px;
+                flex: 0 0 34px;
+                width: 34px;
+                height: 34px;
+                border: 1px solid #98734f;
+                border-radius: 10px;
+                background: rgba(87, 63, 43, .85);
+                color: #ffe9d0;
+                font-size: 20px;
                 cursor: pointer;
+                transition: background .18s, transform .18s, border-color .18s;
+            }
+            
+            #legion-shop-close:hover {
+                background: #765438;
+                border-color: #d0a16c;
+                transform: rotate(5deg);
             }
             
             #legion-shop-balance {
-                margin-bottom: 16px;
-                padding: 12px;
-                border: 1px solid #68513d;
-                border-radius: 11px;
-                background: #302920;
-                color: #ffe0b8;
+                margin-bottom: 19px;
+                padding: 13px 15px;
+                border: 1px solid rgba(211, 166, 105, .55);
+                border-radius: 13px;
+                background: linear-gradient(
+                    110deg,
+                    rgba(111, 79, 45, .72),
+                    rgba(66, 52, 38, .9)
+                );
+                color: #ffe4ae;
                 font-size: 14px;
-                font-weight: bold;
+                font-weight: 800;
+                box-shadow:
+                    inset 0 1px rgba(255,255,255,.045),
+                    0 5px 14px rgba(0,0,0,.15);
             }
             
             #legion-shop-content {
                 font-size: 13px;
-                line-height: 1.5;
+                line-height: 1.55;
             }
-
+            
             .legion-shop-section {
-                margin-bottom: 20px;
+                margin-bottom: 22px;
             }
             
             .legion-shop-section-title {
-                margin-bottom: 4px;
-                padding-bottom: 8px;
-                border-bottom: 1px solid #68513d;
-                color: #ffe0b8;
+                margin-bottom: 5px;
+                padding: 0 0 9px 2px;
+                border-bottom: 1px solid rgba(190, 145, 94, .38);
+                color: #ffdda9;
                 font-size: 17px;
-                font-weight: bold;
+                font-weight: 800;
             }
             
             .legion-shop-section-description {
                 margin-bottom: 12px;
-                color: #b9a28b;
+                color: #cbb69c;
                 font-size: 12px;
             }
+            
+            /* Карточки товаров */
 
             .legion-shop-item {
-                margin-bottom: 10px;
-                padding: 13px;
-                border: 1px solid #68513d;
-                border-radius: 12px;
-                background: #302920;
+                position: relative;
+                margin-bottom: 13px;
+                padding: 15px;
+                overflow: hidden;
+            
+                border: 1px solid #806044;
+                border-radius: 15px;
+            
+                background:
+                    linear-gradient(
+                        135deg,
+                        rgba(117, 83, 54, .22),
+                        transparent 65%
+                    ),
+                    linear-gradient(145deg, #443326, #332820);
+            
+                box-shadow:
+                    0 4px 12px rgba(0, 0, 0, .18),
+                    inset 0 1px rgba(255, 255, 255, .035);
+            
+                transition:
+                    transform .2s ease,
+                    border-color .2s ease,
+                    box-shadow .2s ease;
             }
+            
+            .legion-shop-item:hover {
+                transform: translateY(-2px);
+                border-color: #bd9567;
+            
+                box-shadow:
+                    0 7px 18px rgba(0, 0, 0, .27),
+                    0 0 13px rgba(218, 174, 111, .08);
+            }
+            
+            /* Название товара */
             
             .legion-shop-item-name {
-                color: #ffe0b8;
+                color: #ffe3bd;
                 font-size: 15px;
-                font-weight: bold;
+                font-weight: 800;
+                line-height: 1.4;
             }
+            
+            /* Описание */
             
             .legion-shop-item-description {
-                margin-top: 6px;
-                color: #cdb99f;
+                margin-top: 7px;
+                color: #cbb69c;
                 font-size: 12px;
+                line-height: 1.5;
             }
+            
+            /* Цена */
             
             .legion-shop-item-price {
-                margin-top: 10px;
-                color: #f5d4a8;
-                font-weight: bold;
+                display: inline-block;
+                margin-top: 12px;
+                padding: 6px 10px;
+            
+                border: 1px solid rgba(205, 162, 105, .35);
+                border-radius: 8px;
+            
+                background: rgba(119, 83, 47, .32);
+            
+                color: #ffdc9e;
+                font-size: 12px;
+                font-weight: 800;
             }
             
+            /* Статус товара */
+            
             .legion-shop-item-status {
-                margin-top: 6px;
-                color: #b9a28b;
-                font-size: 12px;
+                margin-top: 9px;
+                color: #bda98f;
+                font-size: 11px;
             }
-
+            
+            /* Кнопка покупки */
+            
             .legion-shop-buy {
                 width: 100%;
                 margin-top: 12px;
-                padding: 10px;
-                border: 1px solid #8c6748;
-                border-radius: 9px;
-                background: #51402f;
-                color: #fff1df;
+                padding: 11px 13px;
+            
+                border: 1px solid #b18a5c;
+                border-radius: 10px;
+            
+                background: linear-gradient(
+                    180deg,
+                    #80603e,
+                    #63472f
+                );
+            
+                color: #fff0d9;
                 font-size: 13px;
-                font-weight: bold;
+                font-weight: 800;
+            
                 cursor: pointer;
-                transition: .18s;
+            
+                box-shadow:
+                    inset 0 1px rgba(255,255,255,.12),
+                    0 3px 8px rgba(0,0,0,.18);
+            
+                transition:
+                    filter .18s ease,
+                    transform .18s ease,
+                    box-shadow .18s ease;
             }
             
             .legion-shop-buy:hover:not(:disabled) {
-                background: #735638;
+                filter: brightness(1.16);
+                transform: translateY(-1px);
+            
+                box-shadow:
+                    0 5px 13px rgba(0,0,0,.25),
+                    0 0 12px rgba(218,174,111,.12);
+            }
+            
+            .legion-shop-buy:active:not(:disabled) {
+                transform: translateY(0);
             }
             
             .legion-shop-buy:disabled {
-                opacity: .55;
+                opacity: .48;
+                filter: grayscale(.3);
                 cursor: not-allowed;
+                box-shadow: none;
+            }
+
+            /* Заголовок кото-лавки */
+
+            .legion-shop-heading {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .legion-shop-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 46px;
+                height: 46px;
+                flex-shrink: 0;
+                border: 1px solid #a98258;
+                border-radius: 13px;
+                background: linear-gradient(145deg, #735338, #493526);
+                font-size: 25px;
+                box-shadow: inset 0 1px rgba(255,255,255,.1);
+            }
+            
+            .legion-shop-heading-text {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+            
+            .legion-shop-name {
+                color: #ffe2b5;
+                font-size: 20px;
+                font-weight: 800;
+            }
+            
+            .legion-shop-subtitle {
+                color: #c6ad91;
+                font-size: 11px;
+                font-weight: normal;
+            }
+
+            /* ========================================
+               ЦВЕТОВЫЕ АКЦЕНТЫ КАТЕГОРИЙ
+            ======================================== */
+            
+            /* Механики — медь и золото */
+            
+            .legion-shop-section-unlock .legion-shop-section-title {
+                color: #f0c58e;
+                border-bottom-color: rgba(196, 139, 83, .5);
+            }
+            
+            .legion-shop-section-unlock .legion-shop-item {
+                border-left: 3px solid #b9824e;
+            }
+            
+            .legion-shop-section-unlock .legion-shop-item-price {
+                border-color: rgba(196, 139, 83, .45);
+                background: rgba(142, 91, 48, .22);
+                color: #f5c58b;
+            }
+            
+            /* Косметика — мягкий янтарный оттенок */
+            
+            .legion-shop-section-cosmetic .legion-shop-section-title {
+                color: #f5d6a5;
+                border-bottom-color: rgba(213, 174, 112, .5);
+            }
+            
+            .legion-shop-section-cosmetic .legion-shop-item {
+                border-left: 3px solid #c49b65;
+            }
+            
+            .legion-shop-section-cosmetic .legion-shop-item-price {
+                border-color: rgba(213, 174, 112, .45);
+                background: rgba(164, 127, 74, .2);
+                color: #ffe0a9;
+            }
+            
+            /* Прочее — спокойный древесный стиль */
+            
+            .legion-shop-section-other .legion-shop-section-title {
+                color: #d9c2a6;
+                border-bottom-color: rgba(166, 132, 99, .4);
+            }
+            
+            .legion-shop-section-other .legion-shop-item {
+                border-left: 3px solid #947456;
+            }
+            
+            .legion-shop-section-other .legion-shop-item-price {
+                border-color: rgba(166, 132, 99, .4);
+                background: rgba(115, 86, 59, .2);
+                color: #e4c9a6;
+            }
+            
+            @media (max-width: 520px) {
+                #legion-shop-modal {
+                    padding: 10px;
+                }
+            
+                #legion-shop-card {
+                    width: calc(100vw - 20px);
+                    max-height: calc(100vh - 20px);
+                    padding: 17px;
+                    border-radius: 16px;
+                }
+            
+                #legion-shop-title {
+                    font-size: 18px;
+                }
+            
+                .legion-shop-item {
+                    padding: 12px;
+                }
+
+                /* Декоративное оформление категорий */
+
+                .legion-shop-section {
+                    position: relative;
+                    margin-bottom: 25px;
+                }
+                
+                .legion-shop-section-title {
+                    position: relative;
+                    padding-bottom: 10px;
+                }
+                
+                .legion-shop-section-title::after {
+                    content: "✦";
+                    position: absolute;
+                    right: 3px;
+                    bottom: -8px;
+                    padding: 0 7px;
+                    background: #35291f;
+                    color: #c49b65;
+                    font-size: 12px;
+                }
+                
+                .legion-shop-section-description {
+                    padding-left: 2px;
+                    line-height: 1.5;
+                }
+
+                /* Пустой магазин */
+
+                .legion-shop-empty {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                
+                    padding: 35px 20px;
+                    margin: 8px 0;
+                
+                    border: 1px dashed #806044;
+                    border-radius: 16px;
+                
+                    background: rgba(80, 57, 39, .28);
+                    text-align: center;
+                }
+                
+                .legion-shop-empty-icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                
+                    width: 68px;
+                    height: 68px;
+                    margin-bottom: 15px;
+                
+                    border: 1px solid #94704c;
+                    border-radius: 20px;
+                
+                    background: linear-gradient(145deg, #65482f, #403025);
+                
+                    font-size: 34px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,.2);
+                }
+                
+                .legion-shop-empty-title {
+                    color: #ffe2b5;
+                    font-size: 16px;
+                    font-weight: 800;
+                }
+                
+                .legion-shop-empty-description {
+                    max-width: 300px;
+                    margin-top: 8px;
+                
+                    color: #c6ad91;
+                    font-size: 12px;
+                    line-height: 1.6;
+                }
             }
 
             /* ========================================
@@ -1412,7 +1726,16 @@
         
                 <div id="legion-shop-header">
                     <div id="legion-shop-title">
-                        🛒 Магазин котиков
+                        <div class="legion-shop-heading">
+                            <span class="legion-shop-icon">🐱</span>
+                    
+                            <div class="legion-shop-heading-text">
+                                <div class="legion-shop-name">Кото-лавка</div>
+                                <div class="legion-shop-subtitle">
+                                    Магазин новых механик, косметики и прочего
+                                </div>
+                            </div>
+                        </div>
                     </div>
         
                     <button id="legion-shop-close"
@@ -4126,14 +4449,32 @@ function renderInventory(data) {
         ui.shopContent.replaceChildren();
     
         if (!data.items || data.items.length === 0) {
-            ui.shopContent.appendChild(
-                createLeaderboardElement(
-                    'div',
-                    'legion-leaderboard-empty',
-                    'Пока в магазине нет товаров.'
-                )
+            const emptyState = createLeaderboardElement(
+                'div',
+                'legion-shop-empty'
             );
-    
+        
+            const icon = createLeaderboardElement(
+                'div',
+                'legion-shop-empty-icon',
+                '🐈'
+            );
+        
+            const title = createLeaderboardElement(
+                'div',
+                'legion-shop-empty-title',
+                'Лавка пока пустует'
+            );
+        
+            const description = createLeaderboardElement(
+                'div',
+                'legion-shop-empty-description',
+                'Наш котик ещё готовит товары для шахтёров. Загляни сюда немного позже!'
+            );
+        
+            emptyState.append(icon, title, description);
+            ui.shopContent.appendChild(emptyState);
+        
             return;
         }
     
@@ -4161,6 +4502,8 @@ function renderInventory(data) {
                 'div',
                 'legion-shop-section'
             );
+
+            section.classList.add(`legion-shop-section-${category.id}`);
     
             const title = createLeaderboardElement(
                 'div',
@@ -4246,6 +4589,8 @@ function renderInventory(data) {
                 'div',
                 'legion-shop-section'
             );
+
+            section.classList.add('legion-shop-section-other');
     
             const title = createLeaderboardElement(
                 'div',
