@@ -1570,7 +1570,8 @@
                 font-size: 12px;
                 font-weight: 800;
                 letter-spacing: .3px;
-                text-transform: uppercase;
+                text-transform: none;
+                font-size: 13px;
             }
             
             .legion-inventory-slot-group-title::before {
@@ -1621,7 +1622,7 @@
                 position: absolute;
                 top: 9px;
                 left: 9px;
-                right: 38px;
+                right: 9px;
                 overflow: hidden;
                 color: #cbb18e;
                 font-size: 9px;
@@ -1633,10 +1634,23 @@
             
             .legion-inventory-slot-number {
                 position: absolute;
-                top: 8px;
-                right: 9px;
-                color: #a98c6b;
+                right: 8px;
+                bottom: 7px;
+                z-index: 3;
+            
+                min-width: 17px;
+                padding: 3px 5px;
+                box-sizing: border-box;
+            
+                border: 1px solid rgba(164,123,80,.3);
+                border-radius: 6px;
+            
+                background: rgba(29,23,19,.78);
+                color: #c6a780;
+            
                 font-size: 9px;
+                line-height: 1;
+                text-align: center;
             }
             
             /* Пустой слот */
@@ -6475,9 +6489,14 @@ function renderInventory(data) {
             );
     
             // Превращаем техническое название типа в читаемый заголовок
-            const groupName = String(type)
-                .replace(/[_-]+/g, ' ')
-                .replace(/\b\w/g, char => char.toUpperCase());
+            const groupNames = {
+                ROULETTE_MODIFIER: 'Модификаторы',
+                COSMETIC: 'Косметика',
+                ROULETTE_EFFECT: 'Эффекты',
+                ROULETTE_THEME: 'Тема'
+            };
+            
+            const groupName = groupNames[type] || 'Другие предметы';
     
             const groupTitle = createLeaderboardElement(
                 'div',
