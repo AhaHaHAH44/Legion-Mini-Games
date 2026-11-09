@@ -95,6 +95,7 @@
     let rouletteSessionId = null;
     let rouletteRerollAvailable = false;
     let rouletteRerollUsed = false;
+    let rouletteSelectedReelIndex = null;
     let rouletteCompleting = false;
     let rouletteCompleted = false;
     let rouletteInvite = null;
@@ -696,6 +697,25 @@
                 background: #241f1b;
                 font-size: 29px;
                 box-shadow: inset 0 0 12px #0006;
+                transition: border-color .16s ease, box-shadow .16s ease, background .16s ease, transform .16s ease;
+                cursor: default;
+                user-select: none;
+            }
+            
+            .legion-roulette-reel.selectable {
+                cursor: pointer;
+            }
+            
+            .legion-roulette-reel.selectable:hover {
+                border-color: #d6ad62;
+                background: #30271d;
+            }
+            
+            .legion-roulette-reel.selected {
+                border: 2px solid #f2c45f;
+                background: #3a2d1b;
+                box-shadow: 0 0 0 2px #f2c45f33, 0 0 14px #f2c45f66, inset 0 0 12px #0006;
+                transform: translateY(-2px);
             }
 
             .legion-roulette-reel.spinning {
@@ -722,6 +742,10 @@
                 flex-wrap: wrap;
                 gap: 7px;
                 margin: 9px 0;
+            }
+            
+            .legion-roulette-controls[hidden] {
+                display: none !important;
             }
 
             .legion-roulette-controls button {
@@ -2663,18 +2687,16 @@ function submitBet(amount) {
             <div class="legion-roulette-hint" data-role="balance">Баланс: загрузка...</div>
             <div class="legion-roulette-controls">
                 <button class="legion-mini-button" data-action="spin">⛏️ Копать!</button>
-                <button class="legion-mini-button" data-action="reroll" disabled>
-                    🔄 Использовать переброс
+                <button class="legion-mini-button" data-action="reroll" disabled hidden>
+                    🔄 Перебросить выбранный
                 </button>
                 <button class="legion-mini-button" data-action="publish" disabled>
                     📢 В чат
                 </button>
             </div>
             
-            <div class="legion-roulette-controls" data-role="reroll-slots" hidden>
-                <button class="legion-mini-button" data-reroll-index="0">1 слот</button>
-                <button class="legion-mini-button" data-reroll-index="1">2 слот</button>
-                <button class="legion-mini-button" data-reroll-index="2">3 слот</button>
+            <div class="legion-roulette-hint" data-role="reroll-hint" hidden>
+                Выбери символ выше, который хочешь заменить.
             </div>
             <div class="legion-roulette-hint" data-role="cooldown">
                 Попытка доступна раз в 5 минут.
@@ -2696,18 +2718,27 @@ function submitBet(amount) {
                     .addEventListener('click', publishRouletteSolo);
 
                 const rerollButton = container.querySelector('[data-action="reroll"]');
-                const rerollSlots = container.querySelector('[data-role="reroll-slots"]');
+
+                container.querySelectorAll('.legion-roulette-reel').forEach((reel, index) => {
+                    reel.setAttribute('role', 'button');
+                    reel.setAttribute('tabindex', '-1');
+                    reel.setAttribute('aria-label', `Выбрать ${index + 1}-й слот для переброса`);
                 
-                rerollButton.addEventListener('click', () => {
-                    if (rerollButton.disabled) return;
-                    rerollSlots.hidden = !rerollSlots.hidden;
+                    const selectReel = () => selectRouletteReel(index);
+                
+                    reel.addEventListener('click', selectReel);
+                
+                    reel.addEventListener('keydown', event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            selectReel();
+                        }
+                    });
                 });
                 
-                rerollSlots.querySelectorAll('[data-reroll-index]').forEach(button => {
-                    button.addEventListener('click', () => {
-                        const index = Number(button.dataset.rerollIndex);
-                        rerollRouletteSolo(index);
-                    });
+                rerollButton.addEventListener('click', () => {
+                    if (rerollButton.disabled || rouletteSelectedReelIndex === null) return;
+                    rerollRouletteSolo(rouletteSelectedReelIndex);
                 });
     }
 
@@ -2720,7 +2751,7 @@ function submitBet(amount) {
             result: container.querySelector('.legion-roulette-result'),
             spin: container.querySelector('[data-action="spin"]'),
             reroll: container.querySelector('[data-action="reroll"]'),
-            rerollSlots: container.querySelector('[data-role="reroll-slots"]'),
+            rerollHint: container.querySelector('[data-role="reroll-hint"]'),
             publish: container.querySelector('[data-action="publish"]'),
             cooldown: container.querySelector('[data-role="cooldown"]'),
             balance: container.querySelector('[data-role="balance"]')
@@ -2747,6 +2778,50 @@ function submitBet(amount) {
         }
     }
 
+    function updateRouletteRerollUI() {
+        const elements = rouletteElements();
+        if (!elements) return;
+    
+        const canReroll = Boolean(
+            rouletteRerollAvailable &&
+            rouletteResult &&
+            rouletteSessionId &&
+            !rouletteRerollUsed &&
+            !rouletteSpinning &&
+            !rouletteCompleting
+        );
+    
+        elements.reroll.hidden = !canReroll;
+        elements.reroll.disabled = !canReroll || rouletteSelectedReelIndex === null;
+        elements.rerollHint.hidden = !canReroll;
+    
+        elements.reels.forEach((reel, index) => {
+            reel.classList.toggle('selectable', canReroll);
+            reel.classList.toggle('selected', canReroll && rouletteSelectedReelIndex === index);
+            reel.setAttribute('aria-pressed', String(canReroll && rouletteSelectedReelIndex === index));
+            reel.setAttribute('tabindex', canReroll ? '0' : '-1');
+        });
+    }
+    
+    function selectRouletteReel(index) {
+        if (
+            ![0, 1, 2].includes(index) ||
+            !rouletteRerollAvailable ||
+            !rouletteResult ||
+            !rouletteSessionId ||
+            rouletteRerollUsed ||
+            rouletteSpinning ||
+            rouletteCompleting
+        ) {
+            return;
+        }
+    
+        rouletteSelectedReelIndex =
+            rouletteSelectedReelIndex === index ? null : index;
+    
+        updateRouletteRerollUI();
+    }
+
     function loadRouletteRerollAvailability() {
         request(
             'GET',
@@ -2755,6 +2830,7 @@ function submitBet(amount) {
             (error, result) => {
                 if (error || !result?.success) {
                     rouletteRerollAvailable = false;
+                    updateRouletteRerollUI();
                     return;
                 }
     
@@ -2768,11 +2844,7 @@ function submitBet(amount) {
                     Number(rerollItem.quantity) > 0
                 );
     
-                const elements = rouletteElements();
-    
-                if (elements?.reroll) {
-                    elements.reroll.hidden = !rouletteRerollAvailable;
-                }
+                updateRouletteRerollUI();
             }
         );
     }
@@ -2812,8 +2884,11 @@ function submitBet(amount) {
 
                 if (index === 2) {
                     rouletteSpinning = false;
+                
                     callback();
+                
                     updateRouletteCooldownUI();
+                    updateRouletteRerollUI();
                 }
             }, 900 + index * 650));
         });
@@ -2890,16 +2965,10 @@ function submitBet(amount) {
         rouletteResult = null;
         rouletteCompleted = false;
         rouletteCompleting = false;
+        
         rouletteRerollUsed = false;
-        
-        if (elements.reroll) {
-            elements.reroll.disabled = true;
-            elements.reroll.hidden = true;
-        }
-        
-        if (elements.rerollSlots) {
-            elements.rerollSlots.hidden = true;
-        }
+        rouletteSelectedReelIndex = null;
+        updateRouletteRerollUI();
 
         request('POST', '/api/roulette/solo', { playerId }, (error, result, status) => {
             if (error || !result?.success) {
@@ -2919,18 +2988,11 @@ function submitBet(amount) {
                 elements.publish.disabled = true;
                 return;
             }
-            rouletteRerollUsed = false;
             rouletteCompleted = false;
             rouletteCompleting = false;
-            
-            if (elements.reroll) {
-                elements.reroll.disabled = true;
-                elements.reroll.hidden = true;
-            }
-            
-            if (elements.rerollSlots) {
-                elements.rerollSlots.hidden = true;
-            }
+            rouletteRerollUsed = false;
+            rouletteSelectedReelIndex = null;
+            updateRouletteRerollUI();
 
             animateRoulette(rouletteResult.reels, () => {
                 const description = rouletteResourceText(rouletteResult.reels);
@@ -2948,11 +3010,9 @@ function submitBet(amount) {
                     );
                 }
 
-                if (elements.reroll) {
-                    elements.reroll.hidden = !rouletteRerollAvailable;
-                    elements.reroll.disabled = !rouletteRerollAvailable;
-                }
-                                
+                updateRouletteRerollUI();
+                loadRouletteRerollAvailability();
+                
                 elements.publish.disabled = false;
             });
         });
@@ -2976,7 +3036,8 @@ function submitBet(amount) {
         if (![0, 1, 2].includes(index)) return;
     
         elements.reroll.disabled = true;
-        elements.rerollSlots.hidden = true;
+        rouletteSelectedReelIndex = null;
+        updateRouletteRerollUI();
         elements.publish.disabled = true;
         elements.result.textContent = '🔄 Перебрасываем выбранный слот...';
     
@@ -2993,7 +3054,7 @@ function submitBet(amount) {
                     elements.result.textContent =
                         result?.error || 'Не удалось выполнить переброс.';
     
-                    elements.reroll.disabled = false;
+                    updateRouletteRerollUI();
                     elements.publish.disabled = false;
                     return;
                 }
@@ -3014,10 +3075,10 @@ function submitBet(amount) {
                         ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`
                         : `${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
     
-                    elements.reroll.disabled = true;
-                    elements.reroll.hidden = true;
+                    rouletteSelectedReelIndex = null;
+                    updateRouletteRerollUI();
                     elements.publish.disabled = false;
-    
+                    
                     loadRouletteRerollAvailability();
                 });
             }
