@@ -812,6 +812,283 @@
             }
 
             /* ========================================
+               ЗАЛ СЛАВЫ — НОВЫЙ ДИЗАЙН
+            ======================================== */
+            
+            /* Фон и карточка окна */
+            #legion-leaderboard-modal {
+                background: rgba(17, 12, 9, .82);
+                backdrop-filter: blur(6px);
+            }
+            
+            #legion-leaderboard-card {
+                padding: 22px;
+                border: 1px solid #a47a50;
+                border-radius: 20px;
+            
+                background:
+                    radial-gradient(
+                        ellipse at 8% 0%,
+                        rgba(218, 174, 111, .14),
+                        transparent 45%
+                    ),
+                    linear-gradient(145deg, #493626, #35291f 55%, #29231f);
+            
+                box-shadow:
+                    0 18px 55px rgba(0,0,0,.62),
+                    inset 0 0 0 3px rgba(224,183,126,.045);
+            
+                scrollbar-width: thin;
+                scrollbar-color: #98734f #30251d;
+            }
+            
+            /* Шапка */
+            #legion-leaderboard-header {
+                margin: -2px -2px 19px;
+                padding: 0 0 15px;
+                border-bottom: 1px solid rgba(205,160,105,.32);
+            }
+            
+            #legion-leaderboard-title {
+                color: #ffe2b5;
+                font-size: 21px;
+                font-weight: 800;
+                letter-spacing: .2px;
+                text-shadow: 0 2px 10px rgba(226,172,103,.18);
+            }
+            
+            #legion-leaderboard-close {
+                width: 35px;
+                height: 35px;
+                border: 1px solid #98734f;
+                border-radius: 10px;
+                background: rgba(87,63,43,.85);
+                color: #ffe9d0;
+                font-size: 21px;
+                transition: .2s ease;
+            }
+            
+            #legion-leaderboard-close:hover {
+                background: #765438;
+                border-color: #d0a16c;
+                transform: rotate(5deg);
+            }
+            
+            /* Заголовки разделов */
+            .legion-leaderboard-section {
+                margin-top: 20px;
+            }
+            
+            .legion-leaderboard-section-title {
+                margin-bottom: 10px;
+                padding: 0 0 9px 2px;
+                border-bottom: 1px solid rgba(190,145,94,.35);
+                color: #ffdda9;
+                font-size: 14px;
+                font-weight: 800;
+            }
+            
+            /* Личная статистика */
+            .legion-leaderboard-personal {
+                padding: 14px;
+                border: 1px solid rgba(196,151,99,.48);
+                border-radius: 14px;
+            
+                background:
+                    linear-gradient(
+                        135deg,
+                        rgba(117,83,54,.25),
+                        rgba(48,38,30,.65)
+                    );
+            
+                box-shadow:
+                    inset 0 1px rgba(255,255,255,.04),
+                    0 5px 14px rgba(0,0,0,.14);
+            }
+            
+            .legion-leaderboard-personal-row {
+                align-items: center;
+                padding: 8px 2px;
+                border-bottom: 1px solid rgba(196,151,99,.13);
+            }
+            
+            .legion-leaderboard-personal-row:last-child {
+                padding-bottom: 2px;
+                border-bottom: none;
+            }
+            
+            .legion-leaderboard-personal-row span:first-child {
+                color: #cbb69c;
+                font-size: 12px;
+            }
+            
+            .legion-leaderboard-personal-row strong {
+                color: #ffe0b0;
+                font-size: 12px;
+            }
+            
+            /* Строки рейтинга */
+            .legion-leaderboard-row {
+                position: relative;
+                gap: 11px;
+                margin-top: 6px;
+                padding: 11px 12px;
+            
+                border: 1px solid rgba(128,96,68,.32);
+                border-radius: 11px;
+            
+                background: linear-gradient(
+                    110deg,
+                    rgba(117,83,54,.2),
+                    rgba(48,38,30,.32)
+                );
+            
+                transition: .18s ease;
+            }
+            
+            .legion-leaderboard-row:hover {
+                border-color: rgba(196,151,99,.65);
+                background: rgba(117,83,54,.3);
+                transform: translateX(2px);
+            }
+            
+            .legion-leaderboard-rank {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 29px;
+                height: 29px;
+            
+                border: 1px solid rgba(196,151,99,.35);
+                border-radius: 9px;
+                background: rgba(117,83,54,.28);
+            
+                color: #e8cba8;
+                font-size: 12px;
+            }
+            
+            /* Первые три места */
+            .legion-leaderboard-row:nth-child(2)
+            .legion-leaderboard-rank {
+                border-color: #d6ad62;
+                background: linear-gradient(145deg, #8c693c, #604426);
+                color: #fff0c9;
+                box-shadow: 0 0 10px rgba(214,173,98,.15);
+            }
+            
+            .legion-leaderboard-row:nth-child(3)
+            .legion-leaderboard-rank {
+                border-color: #b7a18a;
+                background: linear-gradient(145deg, #74685b, #4b4037);
+                color: #f2e5d5;
+            }
+            
+            .legion-leaderboard-row:nth-child(4)
+            .legion-leaderboard-rank {
+                border-color: #a9794e;
+                background: linear-gradient(145deg, #805638, #503624);
+                color: #f5d1a9;
+            }
+            
+            .legion-leaderboard-name {
+                color: #f3dfc7;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .legion-leaderboard-value {
+                color: #ffdda9;
+                font-size: 12px;
+                font-weight: 800;
+            }
+            
+            /* Твоя строка в рейтинге */
+            .legion-leaderboard-self {
+                border-color: rgba(218,174,111,.65);
+                background:
+                    linear-gradient(
+                        110deg,
+                        rgba(196,151,99,.24),
+                        rgba(117,83,54,.22)
+                    );
+            
+                box-shadow:
+                    inset 3px 0 #c49b65,
+                    0 3px 12px rgba(0,0,0,.12);
+            }
+            
+            .legion-leaderboard-self .legion-leaderboard-name {
+                color: #ffe5b9;
+            }
+            
+            /* Мировой рекорд */
+            .legion-leaderboard-record {
+                margin-top: 9px;
+                padding: 15px;
+            
+                border: 1px solid rgba(207,165,101,.55);
+                border-radius: 14px;
+            
+                background:
+                    radial-gradient(
+                        ellipse at 100% 0%,
+                        rgba(218,174,111,.13),
+                        transparent 60%
+                    ),
+                    linear-gradient(145deg, #493727, #30271f);
+            
+                box-shadow: inset 0 1px rgba(255,255,255,.04);
+            }
+            
+            .legion-leaderboard-record-name {
+                color: #ffe0a6;
+                font-size: 16px;
+                font-weight: 800;
+                text-shadow: 0 2px 9px rgba(218,174,111,.17);
+            }
+            
+            .legion-leaderboard-record-details {
+                margin-top: 9px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(196,151,99,.2);
+                color: #d5bea0;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+            
+            /* Пустые состояния и загрузка */
+            .legion-leaderboard-loading,
+            .legion-leaderboard-empty {
+                padding: 20px 12px;
+                border: 1px dashed rgba(128,96,68,.45);
+                border-radius: 12px;
+                background: rgba(80,57,39,.15);
+                color: #c6ad91;
+                font-size: 12px;
+            }
+            
+            /* Узкие экраны */
+            @media (max-width: 520px) {
+                #legion-leaderboard-card {
+                    padding: 17px;
+                    border-radius: 16px;
+                }
+            
+                #legion-leaderboard-title {
+                    font-size: 18px;
+                }
+            
+                .legion-leaderboard-row {
+                    gap: 8px;
+                    padding: 9px;
+                }
+            
+                .legion-leaderboard-value {
+                    font-size: 11px;
+                }
+            }
+
+            /* ========================================
                SHOP — уютная кото-лавка
             ======================================== */
             
