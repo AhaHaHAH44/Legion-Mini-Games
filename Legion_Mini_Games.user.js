@@ -217,6 +217,28 @@
                 background: #51402f;
                 transform: translateY(-1px);
             }
+            
+            #legion-mini-inventory-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 43px;
+            padding: 0;
+            border: 1px solid #8c6748;
+            border-radius: 14px;
+            background: #34291f;
+            color: #fff1df;
+            cursor: pointer;
+            font-size: 19px;
+            box-shadow: 0 5px 18px #0006;
+            transition: .18s;
+        }
+        
+        #legion-mini-inventory-button:hover {
+            background: #51402f;
+            transform: translateY(-1px);
+        }
 
             #legion-mini-toggle {
                 border: 1px solid #8c6748;
@@ -1268,7 +1290,7 @@
             <button id="legion-mini-inventory-button"
                     type="button"
                     title="Инвентарь котика">
-                🎒
+                🧺
             </button>
         
             <button id="legion-mini-toggle">
@@ -1375,7 +1397,7 @@
         
                 <div id="legion-inventory-header">
                     <div id="legion-inventory-title">
-                        🎒 Инвентарь котика
+                        🧺 Инвентарь котика
                     </div>
         
                     <button id="legion-inventory-close"
