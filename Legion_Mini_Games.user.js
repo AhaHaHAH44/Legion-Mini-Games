@@ -2709,7 +2709,6 @@ function submitBet(amount) {
                         rerollRouletteSolo(index);
                     });
                 });
-            }
     }
 
     function rouletteElements() {
