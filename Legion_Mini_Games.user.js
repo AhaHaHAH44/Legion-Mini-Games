@@ -1089,6 +1089,483 @@
             }
 
             /* ========================================
+               INVENTORY — НОВАЯ ОБОЛОЧКА
+            ======================================== */
+            
+            #legion-inventory-modal {
+                background: rgba(17, 12, 9, .82);
+                backdrop-filter: blur(7px);
+            }
+            
+            #legion-inventory-card {
+                width: min(560px, calc(100vw - 36px));
+                max-height: calc(100vh - 36px);
+                overflow-y: auto;
+                padding: 21px;
+            
+                border: 1px solid #a47a50;
+                border-radius: 20px;
+            
+                background:
+                    radial-gradient(
+                        ellipse at 100% 0%,
+                        rgba(218,174,111,.13),
+                        transparent 45%
+                    ),
+                    linear-gradient(
+                        145deg,
+                        #493626,
+                        #35291f 58%,
+                        #29231f
+                    );
+            
+                box-shadow:
+                    0 18px 55px rgba(0,0,0,.62),
+                    inset 0 1px rgba(255,255,255,.06);
+            
+                scrollbar-width: thin;
+                scrollbar-color: #98734f #30251d;
+            }
+            
+            /* Шапка */
+            #legion-inventory-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+            
+                margin-bottom: 17px;
+                padding-bottom: 15px;
+            
+                border-bottom: 1px solid rgba(205,160,105,.3);
+            }
+            
+            .legion-inventory-heading {
+                min-width: 0;
+            }
+            
+            #legion-inventory-title {
+                color: #ffe2b8;
+                font-size: 21px;
+                font-weight: 800;
+            }
+            
+            .legion-inventory-subtitle {
+                margin-top: 5px;
+                color: #bda58a;
+                font-size: 11px;
+            }
+            
+            #legion-inventory-close {
+                flex-shrink: 0;
+                width: 35px;
+                height: 35px;
+            
+                border: 1px solid #98734f;
+                border-radius: 10px;
+            
+                background: rgba(87,63,43,.85);
+                color: #ffe9d0;
+            
+                font-size: 21px;
+                cursor: pointer;
+                transition: .2s ease;
+            }
+            
+            #legion-inventory-close:hover {
+                background: #765438;
+                border-color: #d1a875;
+                transform: rotate(5deg);
+            }
+            
+            /* Вкладки */
+            #legion-inventory-tabs {
+                display: flex;
+                gap: 7px;
+            
+                margin-bottom: 17px;
+                padding: 5px;
+            
+                border: 1px solid rgba(128,96,68,.45);
+                border-radius: 12px;
+            
+                background: rgba(29,23,19,.55);
+            }
+            
+            .legion-inventory-tab {
+                flex: 1;
+                min-width: 0;
+                padding: 11px 8px;
+            
+                border: 1px solid transparent;
+                border-radius: 9px;
+            
+                background: transparent;
+                color: #c6ad91;
+            
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                font-weight: bold;
+            
+                cursor: pointer;
+                transition: .2s ease;
+            }
+            
+            .legion-inventory-tab:hover {
+                background: rgba(117,83,54,.22);
+                color: #ffe0b8;
+            }
+            
+            .legion-inventory-tab.active {
+                border-color: #a47b50;
+            
+                background: linear-gradient(
+                    145deg,
+                    #765438,
+                    #59402e
+                );
+            
+                color: #fff0dc;
+            
+                box-shadow:
+                    inset 0 1px rgba(255,255,255,.08),
+                    0 3px 10px rgba(0,0,0,.18);
+            }
+            
+            /* Контент */
+            #legion-inventory-content {
+                display: grid;
+                gap: 10px;
+                min-height: 180px;
+            }
+            
+            /* Анимация переключения */
+            @keyframes inventoryViewAppear {
+                from {
+                    opacity: 0;
+                    transform: translateY(6px);
+                }
+            
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .legion-inventory-view {
+                animation: inventoryViewAppear .22s ease;
+            }
+            
+            /* Адаптация */
+            @media (max-width: 480px) {
+                #legion-inventory-card {
+                    padding: 15px;
+                }
+            
+                #legion-inventory-title {
+                    font-size: 18px;
+                }
+            
+                .legion-inventory-tab {
+                    font-size: 11px;
+                    padding: 10px 5px;
+                }
+            }
+
+            /* Описание вкладок */
+            .legion-inventory-view-description {
+                margin: -5px 0 15px;
+                color: #bda58a;
+                font-size: 11px;
+                line-height: 1.5;
+            }
+            
+            /* Сетка предметов */
+            .legion-inventory-items {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                gap: 10px;
+            }
+            
+            .legion-inventory-item {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            
+                min-width: 0;
+                aspect-ratio: 1;
+                padding: 7px;
+            
+                border: 1px solid #765a40;
+                border-radius: 13px;
+            
+                background: linear-gradient(145deg, #3c2e23, #28211c);
+                cursor: pointer;
+                transition: .2s ease;
+            }
+            
+            .legion-inventory-item:hover {
+                transform: translateY(-4px) scale(1.035);
+                border-color: #d1a875;
+            
+                background: linear-gradient(145deg, #57412e, #38291f);
+            
+                box-shadow:
+                    0 7px 17px rgba(0,0,0,.3),
+                    0 0 13px rgba(218,174,111,.12);
+            }
+            
+            .legion-inventory-item:active {
+                transform: scale(.96);
+            }
+            
+            .legion-inventory-item-icon {
+                font-size: 31px;
+                line-height: 1;
+                filter: drop-shadow(0 3px 5px rgba(0,0,0,.35));
+            }
+            
+            .legion-inventory-item-quantity {
+                position: absolute;
+                right: 5px;
+                bottom: 5px;
+            
+                min-width: 19px;
+                padding: 3px 5px;
+            
+                border: 1px solid rgba(218,174,111,.5);
+                border-radius: 7px;
+            
+                background: #241c17;
+                color: #ffe3b7;
+            
+                font-size: 10px;
+                font-weight: bold;
+                text-align: center;
+            }
+            
+            /* Подсказка предмета */
+            .legion-inventory-item-tooltip {
+                position: absolute;
+                left: 50%;
+                bottom: calc(100% + 9px);
+                z-index: 20;
+            
+                width: 190px;
+                padding: 10px 12px;
+            
+                border: 1px solid #a47b50;
+                border-radius: 11px;
+            
+                background: linear-gradient(145deg, #493626, #29211b);
+                color: #f5dfc5;
+            
+                box-shadow: 0 8px 22px rgba(0,0,0,.45);
+            
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            
+                transform: translate(-50%, 5px);
+                transition: .18s ease;
+            }
+            
+            .legion-inventory-item:hover .legion-inventory-item-tooltip {
+                opacity: 1;
+                visibility: visible;
+                transform: translate(-50%, 0);
+            }
+            
+            .legion-inventory-tooltip-name {
+                display: block;
+                margin-bottom: 5px;
+                color: #ffe0b8;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            
+            .legion-inventory-tooltip-description {
+                display: block;
+                color: #c6ad91;
+                font-size: 10px;
+                line-height: 1.45;
+            }
+            
+            /* Сетка слотов */
+            .legion-inventory-slots {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 11px;
+            }
+            
+            .legion-inventory-slot {
+                position: relative;
+            
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            
+                min-width: 0;
+                aspect-ratio: 1;
+                padding: 8px;
+            
+                border: 1px solid #765a40;
+                border-radius: 14px;
+            
+                background: linear-gradient(145deg, #29221d, #211d19);
+            
+                cursor: pointer;
+                transition: .2s ease;
+            }
+            
+            .legion-inventory-slot:hover {
+                transform: translateY(-3px);
+                border-color: #c49b65;
+                box-shadow: 0 5px 16px rgba(0,0,0,.3);
+            }
+            
+            /* Пустая клетка с плюсом */
+            .legion-inventory-slot-empty {
+                border-style: dashed;
+                border-color: rgba(164,123,80,.55);
+                background: rgba(24,20,17,.75);
+            }
+            
+            .legion-inventory-slot-empty::before {
+                content: "+";
+            
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            
+                width: 42px;
+                height: 42px;
+            
+                border: 1px solid rgba(164,123,80,.35);
+                border-radius: 13px;
+            
+                background: rgba(117,83,54,.15);
+                color: #a98a68;
+            
+                font-size: 27px;
+                font-weight: 300;
+            
+                transition: .2s ease;
+            }
+            
+            .legion-inventory-slot-empty:hover::before {
+                color: #ffe0b8;
+                border-color: #c49b65;
+                background: rgba(117,83,54,.35);
+                box-shadow: 0 0 17px rgba(218,174,111,.2);
+            }
+            
+            /* Установленный предмет */
+            .legion-inventory-slot-equipped {
+                border-color: #a47b50;
+            
+                background:
+                    radial-gradient(
+                        circle at 50% 40%,
+                        rgba(218,174,111,.19),
+                        transparent 65%
+                    ),
+                    linear-gradient(145deg, #493727, #30251e);
+            
+                box-shadow:
+                    inset 0 0 15px rgba(218,174,111,.07),
+                    0 0 12px rgba(196,151,99,.08);
+            }
+            
+            .legion-inventory-slot-equipped:hover {
+                border-color: #e0b66f;
+                box-shadow:
+                    0 0 18px rgba(218,174,111,.2),
+                    inset 0 0 17px rgba(218,174,111,.1);
+            }
+            
+            .legion-inventory-slot-icon {
+                font-size: 30px;
+                line-height: 1;
+                filter: drop-shadow(0 3px 5px rgba(0,0,0,.35));
+            }
+            
+            .legion-inventory-slot-name {
+                max-width: 100%;
+                margin-top: 8px;
+                overflow: hidden;
+            
+                color: #e8cba8;
+                font-size: 10px;
+                text-align: center;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .legion-inventory-slot-number {
+                position: absolute;
+                top: 6px;
+                left: 7px;
+            
+                color: #b99c7a;
+                font-size: 9px;
+            }
+            
+            /* Анимация появления установленного предмета */
+            @keyframes inventoryItemEquip {
+                0% {
+                    opacity: 0;
+                    transform: scale(.65) translateY(8px);
+                }
+            
+                65% {
+                    transform: scale(1.12) translateY(-3px);
+                }
+            
+                100% {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+            
+            .legion-inventory-slot-equipped .legion-inventory-slot-icon {
+                animation: inventoryItemEquip .4s ease;
+            }
+            
+            /* Пустое состояние */
+            .legion-inventory-empty {
+                grid-column: 1 / -1;
+                padding: 28px 12px;
+            
+                border: 1px dashed rgba(164,123,80,.4);
+                border-radius: 13px;
+            
+                color: #b9a28b;
+                font-size: 12px;
+                text-align: center;
+            }
+            
+            /* Мобильная сетка */
+            @media (max-width: 480px) {
+                .legion-inventory-items {
+                    grid-template-columns: repeat(4, minmax(0, 1fr));
+                    gap: 8px;
+                }
+            
+                .legion-inventory-slots {
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                    gap: 8px;
+                }
+            
+                .legion-inventory-item-icon,
+                .legion-inventory-slot-icon {
+                    font-size: 27px;
+                }
+            }
+
+            /* ========================================
                SHOP — уютная кото-лавка
             ======================================== */
             
@@ -3027,8 +3504,14 @@
             <div id="legion-inventory-card">
         
                 <div id="legion-inventory-header">
-                    <div id="legion-inventory-title">
-                        🧺 Инвентарь котика
+                    <div class="legion-inventory-heading">
+                        <div id="legion-inventory-title">
+                            🧺 Инвентарь котика
+                        </div>
+        
+                        <div class="legion-inventory-subtitle">
+                            Твои находки и снаряжение
+                        </div>
                     </div>
         
                     <button id="legion-inventory-close"
@@ -3038,11 +3521,29 @@
                     </button>
                 </div>
         
+                <div id="legion-inventory-tabs">
+        
+                    <button class="legion-inventory-tab active"
+                            type="button"
+                            data-tab="items">
+                        📦 Предметы
+                    </button>
+        
+                    <button class="legion-inventory-tab"
+                            type="button"
+                            data-tab="equipment">
+                        ⚙️ Экипировка
+                    </button>
+        
+                </div>
+        
                 <div id="legion-inventory-content">
                     <div class="legion-leaderboard-loading">
-                        Загружаем инвентарь...
+                        🐾 Загружаем вещи котика...
                     </div>
                 </div>
+        
+                <div id="legion-inventory-popup"></div>
         
             </div>
         `;
@@ -3122,6 +3623,29 @@
 
         inventoryModal.querySelector('#legion-inventory-close')
             .addEventListener('click', closeInventory);
+
+        // Переключение вкладок инвентаря
+        const inventoryTabs = inventoryModal.querySelectorAll(
+            '.legion-inventory-tab'
+        );
+        
+        inventoryTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                inventoryTabs.forEach(item => {
+                    item.classList.remove('active');
+                });
+        
+                tab.classList.add('active');
+        
+                inventoryModal.dataset.activeTab = tab.dataset.tab;
+
+                if (inventoryModal.inventoryData) {
+                    renderInventory(inventoryModal.inventoryData);
+                }
+            });
+        });
+        
+        inventoryModal.dataset.activeTab = 'items';
         
         inventoryModal.addEventListener('click', event => {
             if (event.target === inventoryModal) {
@@ -5543,19 +6067,134 @@ function unequipInventorySlot(slot) {
 }
 
 function renderInventory(data) {
-    ui.inventoryContent.replaceChildren();
+    const content = ui.inventoryContent;
+    const modal = ui.inventoryModal;
+
+    modal.inventoryData = data;
+
+    content.replaceChildren();
+
+    const activeTab = modal.dataset.activeTab || 'items';
 
     // ========================================
-    // СЛОТЫ ЭКИПИРОВКИ
+    // ВКЛАДКА ПРЕДМЕТОВ
     // ========================================
 
-    const slotsTitle = createLeaderboardElement(
+    if (activeTab === 'items') {
+        const view = createLeaderboardElement(
+            'div',
+            'legion-inventory-view'
+        );
+
+        const title = createLeaderboardElement(
+            'div',
+            'legion-inventory-section-title',
+            '🎒 Твои предметы'
+        );
+
+        const description = createLeaderboardElement(
+            'div',
+            'legion-inventory-view-description',
+            'Собранные вещи и полезные находки'
+        );
+
+        view.append(title, description);
+
+        const itemsContainer = createLeaderboardElement(
+            'div',
+            'legion-inventory-items'
+        );
+
+        if (!data.items || data.items.length === 0) {
+            itemsContainer.appendChild(
+                createLeaderboardElement(
+                    'div',
+                    'legion-inventory-empty',
+                    '🐾 Здесь пока пусто. Отправляйся за находками!'
+                )
+            );
+        } else {
+            data.items.forEach(item => {
+                const card = createLeaderboardElement(
+                    'button',
+                    'legion-inventory-item'
+                );
+
+                card.type = 'button';
+                card.title = item.name || 'Предмет';
+
+                const icon = createLeaderboardElement(
+                    'span',
+                    'legion-inventory-item-icon',
+                    item.icon || '📦'
+                );
+
+                const quantity = createLeaderboardElement(
+                    'span',
+                    'legion-inventory-item-quantity',
+                    String(item.quantity ?? 1)
+                );
+
+                const tooltip = createLeaderboardElement(
+                    'span',
+                    'legion-inventory-item-tooltip'
+                );
+
+                const tooltipName = createLeaderboardElement(
+                    'span',
+                    'legion-inventory-tooltip-name',
+                    item.name || 'Предмет'
+                );
+
+                const tooltipDescription = createLeaderboardElement(
+                    'span',
+                    'legion-inventory-tooltip-description',
+                    item.description || 'Описание отсутствует.'
+                );
+
+                tooltip.append(tooltipName, tooltipDescription);
+                card.append(icon, quantity, tooltip);
+
+                card.addEventListener('click', () => {
+                    if (item.equipped) {
+                        showToast('Этот предмет уже экипирован.');
+                        return;
+                    }
+
+                    equipInventoryItem(item, data.slots || []);
+                });
+
+                itemsContainer.appendChild(card);
+            });
+        }
+
+        view.appendChild(itemsContainer);
+        content.appendChild(view);
+        return;
+    }
+
+    // ========================================
+    // ВКЛАДКА ЭКИПИРОВКИ
+    // ========================================
+
+    const view = createLeaderboardElement(
         'div',
-        'legion-inventory-section-title',
-        '⚙️ Экипировка'
+        'legion-inventory-view'
     );
 
-    ui.inventoryContent.appendChild(slotsTitle);
+    const title = createLeaderboardElement(
+        'div',
+        'legion-inventory-section-title',
+        '⚙️ Снаряжение котика'
+    );
+
+    const description = createLeaderboardElement(
+        'div',
+        'legion-inventory-view-description',
+        'Устанавливай модификаторы и украшения в свободные ячейки'
+    );
+
+    view.append(title, description);
 
     const slotsContainer = createLeaderboardElement(
         'div',
@@ -5564,58 +6203,48 @@ function renderInventory(data) {
 
     if (data.slots && data.slots.length > 0) {
         data.slots.forEach(slot => {
+            const equipped = Boolean(slot.item_code);
+
             const slotElement = createLeaderboardElement(
-                'div',
-                'legion-inventory-slot'
+                'button',
+                equipped
+                    ? 'legion-inventory-slot legion-inventory-slot-equipped'
+                    : 'legion-inventory-slot legion-inventory-slot-empty'
             );
 
-            const info = createLeaderboardElement(
-                'div',
-                'legion-inventory-slot-info'
-            );
+            slotElement.type = 'button';
+            slotElement.title = equipped
+                ? `${slot.slot_name}: ${slot.item_name}. Нажми, чтобы снять.`
+                : `${slot.slot_name} — свободный слот`;
 
-            const slotName = createLeaderboardElement(
-                'div',
-                'legion-inventory-slot-name',
-                slot.slot_name
-            );
-
-            const slotNumber = createLeaderboardElement(
-                'div',
+            const number = createLeaderboardElement(
+                'span',
                 'legion-inventory-slot-number',
-                `Слот №${slot.slot_number}`
+                `№${slot.slot_number}`
             );
 
-            const itemName = createLeaderboardElement(
-                'div',
-                slot.item_code
-                    ? 'legion-inventory-slot-item'
-                    : 'legion-inventory-slot-item legion-inventory-slot-empty',
-                slot.item_code
-                    ? `${slot.item_icon || '📦'} ${slot.item_name}`
-                    : 'Пусто'
-            );
+            slotElement.appendChild(number);
 
-            info.append(slotName, slotNumber);
-            slotElement.append(info, itemName);
-            
-            // Кнопка снятия предмета
-            if (slot.item_code) {
-                const unequipButton = createLeaderboardElement(
-                    'button',
-                    'legion-inventory-action',
-                    'Снять'
+            if (equipped) {
+                const icon = createLeaderboardElement(
+                    'span',
+                    'legion-inventory-slot-icon',
+                    slot.item_icon || '📦'
                 );
-            
-                unequipButton.type = 'button';
-            
-                unequipButton.addEventListener('click', () => {
+
+                const name = createLeaderboardElement(
+                    'span',
+                    'legion-inventory-slot-name',
+                    slot.item_name || 'Предмет'
+                );
+
+                slotElement.append(icon, name);
+
+                slotElement.addEventListener('click', () => {
                     unequipInventorySlot(slot);
                 });
-            
-                slotElement.appendChild(unequipButton);
             }
-            
+
             slotsContainer.appendChild(slotElement);
         });
     } else {
@@ -5623,10 +6252,14 @@ function renderInventory(data) {
             createLeaderboardElement(
                 'div',
                 'legion-inventory-empty',
-                'Слоты экипировки не найдены.'
+                '😿 Слоты экипировки не найдены.'
             )
         );
     }
+
+    view.appendChild(slotsContainer);
+    content.appendChild(view);
+}
 
     ui.inventoryContent.appendChild(slotsContainer);
 
