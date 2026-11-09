@@ -192,105 +192,17 @@
                 font-family: Arial, sans-serif;
             }
 
-            .legion-mini-launcher {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 8px;
-            }
-            
-            #legion-mini-leaderboard-button {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 44px;
-                height: 43px;
-                padding: 0;
-                border: 1px solid #8c6748;
-                border-radius: 14px;
-                background: #34291f;
-                color: #fff1df;
-                cursor: pointer;
-                font-size: 19px;
-                box-shadow: 0 5px 18px #0006;
-                transition: .18s;
-            }
-            
-            #legion-mini-leaderboard-button:hover {
-                background: #51402f;
-                transform: translateY(-1px);
-            }
-
-            #legion-mini-shop-button {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 44px;
-                height: 43px;
-                padding: 0;
-                border: 1px solid #8c6748;
-                border-radius: 14px;
-                background: #34291f;
-                color: #fff1df;
-                cursor: pointer;
-                font-size: 19px;
-                box-shadow: 0 5px 18px #0006;
-                transition: .18s;
-            }
-            
-            #legion-mini-shop-button:hover {
-                background: #51402f;
-                transform: translateY(-1px);
-            }
-            
-            #legion-mini-inventory-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 43px;
-            padding: 0;
-            border: 1px solid #8c6748;
-            border-radius: 14px;
-            background: #34291f;
-            color: #fff1df;
-            cursor: pointer;
-            font-size: 19px;
-            box-shadow: 0 5px 18px #0006;
-            transition: .18s;
-        }
-        
-        #legion-mini-inventory-button:hover {
-            background: #51402f;
-            transform: translateY(-1px);
-        }
-
-            #legion-mini-toggle {
-                border: 1px solid #8c6748;
-                border-radius: 14px;
-                padding: 12px 17px;
-                background: #34291f;
-                color: #fff1df;
-                cursor: pointer;
-                font-size: 13px;
-                box-shadow: 0 5px 18px #0006;
-                transition: .18s;
-            }
-
-            #legion-mini-toggle:hover,
-            .legion-mini-button:hover {
-                background: #51402f;
-                transform: translateY(-1px);
-            }
-
             #legion-mini-panel {
                 display: none;
                 width: 310px;
                 max-width: calc(100vw - 40px);
+                position: absolute;
+                right: 0;
+                bottom: 55px;
+                margin-bottom: 0;
                 max-height: min(82vh, 760px);
                 overflow-y: auto;
                 overscroll-behavior: contain;
-                margin-bottom: 10px;
                 padding: 17px;
                 border: 1px solid #806044;
                 border-radius: 16px;
@@ -560,23 +472,6 @@
                 font-size: 18px;
                 line-height: 1;
                 cursor: pointer;
-            }
-
-            #legion-mini-restore {
-            display: none;
-            padding: 11px 15px;
-            border: 1px solid #a17b50;
-            border-radius: 12px;
-            background: #34291f;
-            color: #fff0dc;
-            font: 13px Arial, sans-serif;
-            box-shadow: 0 5px 18px #0008;
-            cursor: pointer;
-            white-space: nowrap;
-            }
-
-            #legion-mini-restore.open {
-                display: block;
             }
 
             #legion-mini-modal-body {
@@ -2004,6 +1899,212 @@
             #legion-shop-modal .legion-shop-tab.active:hover {
                 background: linear-gradient(145deg, #c89350, #986337) !important;
             }
+
+            /* ========================================
+               КОМПАКТНАЯ ПАНЕЛЬ КОТО-ИГР
+            ======================================== */
+            
+            #legion-mini-widget {
+                --launcher-bg: rgba(52, 41, 31, 0.68);
+                --launcher-bg-hover: rgba(81, 64, 47, 0.88);
+                --launcher-border: rgba(161, 123, 80, 0.85);
+                --launcher-text: #fff0dc;
+            }
+            
+            /* Убираем общую подложку */
+            
+            .legion-mini-launcher {
+                display: flex !important;
+                flex-direction: column;
+                align-items: center;
+                gap: 5px !important;
+                width: max-content;
+                margin-left: auto;
+            }
+            
+            /* Верхняя кнопка возврата */
+            
+            .legion-mini-return-row {
+                display: flex;
+                justify-content: center;
+                width: 100%;
+            }
+            
+            #legion-mini-widget #legion-mini-restore {
+                display: none;
+                width: auto;
+                height: 29px;
+                min-width: 0;
+                padding: 0 13px;
+            
+                border: 1px solid rgba(177, 138, 93, 0.85);
+                border-radius: 10px;
+            
+                background: rgba(52, 41, 31, 0.68);
+                color: var(--launcher-text);
+            
+                font: bold 11px Arial, sans-serif;
+                white-space: nowrap;
+            
+                backdrop-filter: blur(9px);
+                -webkit-backdrop-filter: blur(9px);
+            
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+                transition: 0.2s ease;
+            }
+            
+            #legion-mini-widget #legion-mini-restore.open {
+                display: block;
+            }
+            
+            #legion-mini-widget #legion-mini-restore:hover {
+                background: var(--launcher-bg-hover);
+                border-color: #d1a875;
+                transform: translateY(-1px);
+            }
+            
+            /* Нижний ряд */
+            
+            .legion-mini-button-row {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+            
+            .legion-mini-side {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+            
+            /* Маленькие кнопки */
+            
+            #legion-mini-widget .legion-mini-icon-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            
+                width: 37px;
+                height: 37px;
+                padding: 0;
+            
+                color: var(--launcher-text);
+                background: var(--launcher-bg);
+                border: 1px solid var(--launcher-border);
+                border-radius: 12px;
+            
+                font-size: 17px;
+                cursor: pointer;
+            
+                backdrop-filter: blur(9px);
+                -webkit-backdrop-filter: blur(9px);
+            
+                box-shadow: 0 4px 13px rgba(0, 0, 0, 0.25);
+                transition: 0.2s ease;
+            }
+            
+            #legion-mini-widget .legion-mini-icon-button:hover {
+                background: var(--launcher-bg-hover);
+                border-color: #d1a875;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 17px rgba(0, 0, 0, 0.3);
+            }
+            
+            #legion-mini-widget .legion-mini-icon-button:active {
+                transform: scale(0.94);
+            }
+            
+            /* Центральная кнопка */
+            
+            #legion-mini-widget .legion-mini-main-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            
+                min-width: 132px;
+                height: 43px;
+                padding: 0 16px;
+            
+                color: var(--launcher-text);
+            
+                background: linear-gradient(
+                    145deg,
+                    rgba(75, 57, 42, 0.86),
+                    rgba(48, 37, 29, 0.82)
+                );
+            
+                border: 1px solid #b18a5d;
+                border-radius: 14px;
+            
+                font: bold 13px Arial, sans-serif;
+                white-space: nowrap;
+                cursor: pointer;
+            
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            
+                box-shadow:
+                    0 4px 15px rgba(0, 0, 0, 0.28),
+                    inset 0 1px rgba(255, 255, 255, 0.09);
+            
+                transition: 0.2s ease;
+            }
+            
+            #legion-mini-widget .legion-mini-main-button:hover {
+                background: linear-gradient(
+                    145deg,
+                    rgba(99, 73, 51, 0.92),
+                    rgba(65, 48, 36, 0.9)
+                );
+            
+                border-color: #d1a875;
+                transform: translateY(-2px);
+            }
+            
+            #legion-mini-widget .legion-mini-main-button:active {
+                transform: scale(0.97);
+            }
+            
+            /* Узкие экраны */
+            
+            @media (max-width: 480px) {
+                .legion-mini-button-row {
+                    gap: 4px;
+                }
+            
+                .legion-mini-side {
+                    gap: 4px;
+                }
+            
+                #legion-mini-widget .legion-mini-icon-button {
+                    width: 34px;
+                    height: 34px;
+                    font-size: 15px;
+                }
+            
+                #legion-mini-widget .legion-mini-main-button {
+                    min-width: 116px;
+                    height: 40px;
+                    padding: 0 10px;
+                    font-size: 12px;
+                }
+            }
+
+            #legion-mini-widget .legion-mini-icon-button,
+            #legion-mini-widget .legion-mini-main-button {
+                box-sizing: border-box;
+                flex-shrink: 0;
+            }
+            
+            #legion-mini-widget .legion-mini-button-row {
+                width: max-content;
+                margin: 0 auto;
+            }
+            
+            #legion-mini-widget .legion-mini-return-row:empty {
+                display: none;
+            }
         `;
 
         document.head.appendChild(style);
@@ -2090,27 +2191,49 @@
             </div>
 
             <div class="legion-mini-launcher">
-            <button id="legion-mini-leaderboard-button"
-                    type="button"
-                    title="Зал славы котиков">
-                🏆
-            </button>
-        
-            <button id="legion-mini-shop-button"
-                    type="button"
-                    title="Магазин котиков">
-                🛒
-            </button>
 
-            <button id="legion-mini-inventory-button"
-                    type="button"
-                    title="Инвентарь котика">
-                🧺
-            </button>
-        
-            <button id="legion-mini-toggle">
-                🐾 Кото-игры
-            </button>
+                <div class="legion-mini-return-row">
+                    <!-- Кнопка добавляется сюда через JavaScript -->
+                </div>
+            
+                <div class="legion-mini-button-row">
+            
+                    <div class="legion-mini-side legion-mini-side-left">
+            
+                        <button id="legion-mini-leaderboard-button"
+                                class="legion-mini-icon-button"
+                                type="button"
+                                title="Зал славы котиков">
+                            🏆
+                        </button>
+            
+                        <button id="legion-mini-shop-button"
+                                class="legion-mini-icon-button"
+                                type="button"
+                                title="Магазин котиков">
+                            🛒
+                        </button>
+            
+                    </div>
+            
+                    <button id="legion-mini-toggle"
+                            class="legion-mini-main-button"
+                            type="button">
+                        🐾 Кото-игры
+                    </button>
+            
+                    <div class="legion-mini-side legion-mini-side-right">
+            
+                        <button id="legion-mini-inventory-button"
+                                class="legion-mini-icon-button"
+                                type="button"
+                                title="Инвентарь котика">
+                            🧺
+                        </button>
+            
+                    </div>
+            
+                </div>
             </div>
         `;
 
@@ -2291,11 +2414,8 @@
         restoreButton.type = 'button';
         restoreButton.textContent = '🐾 Вернуться к игре';
 
-        widget.querySelector('.legion-mini-launcher')
-        .insertBefore(
-            restoreButton,
-            widget.querySelector('#legion-mini-leaderboard-button')
-        );
+        widget.querySelector('.legion-mini-return-row')
+            .appendChild(restoreButton);
 
         const toast = document.createElement('div');
         toast.id = 'legion-mini-toast';
@@ -5499,7 +5619,7 @@ function openLeaderboard() {
         if (document.getElementById('legion-mini-widget')) return;
 
         console.log(
-            '[Legion Кото-игры] Version 2.0.7 loaded'
+            '[Legion Кото-игры] Version 2.1.2 loaded'
         );
 
         ui = createInterface();
