@@ -2976,9 +2976,16 @@ function submitBet(amount) {
 
         request('POST', '/api/roulette/solo', { playerId }, (error, result, status) => {
             if (error || !result?.success) {
-                elements.result.textContent = result?.error || 'Не удалось запустить рулетку.';
-                if (result?.nextAt) rouletteCooldownUntil = Number(result.nextAt);
+                elements.result.textContent =
+                    result?.error || 'Не удалось запустить рулетку.';
+            
+                if (result?.nextAt) {
+                    rouletteCooldownUntil = Number(result.nextAt);
+                }
+            
+                rouletteSpinning = false;
                 updateRouletteCooldownUI();
+                updateRouletteRerollUI();
                 return;
             }
 
