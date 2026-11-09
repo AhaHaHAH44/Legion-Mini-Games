@@ -2696,29 +2696,13 @@ function submitBet(amount) {
                     .addEventListener('click', publishRouletteSolo);
 
                 const rerollButton = container.querySelector('[data-action="reroll"]');
-                const rerollSlots = container.querySelector('[data-role="reroll-slots']');
-                
-                rerollButton.addEventListener('click', () => {
-                    if (rerollButton.disabled) return;
-                    rerollSlots.hidden = !rerollSlots.hidden;
-                });
-                
-                rerollSlots.querySelectorAll('[data-reroll-index]').forEach(button => {
-                    button.addEventListener('click', () => {
-                        const index = Number(button.dataset.rerollIndex);
-                        rerollRouletteSolo(index);
-                    });
-                });
-        
-                const rerollButton = container.querySelector('[data-action="reroll"]');
                 const rerollSlots = container.querySelector('[data-role="reroll-slots"]');
-        
+                
                 rerollButton.addEventListener('click', () => {
                     if (rerollButton.disabled) return;
-        
                     rerollSlots.hidden = !rerollSlots.hidden;
                 });
-        
+                
                 rerollSlots.querySelectorAll('[data-reroll-index]').forEach(button => {
                     button.addEventListener('click', () => {
                         const index = Number(button.dataset.rerollIndex);
