@@ -92,6 +92,11 @@
     let rouletteNegotiationShown = null;
     let rouletteResult = null;
     let rouletteSpinning = false;
+    let rouletteSessionId = null;
+    let rouletteRerollAvailable = false;
+    let rouletteRerollUsed = false;
+    let rouletteCompleting = false;
+    let rouletteCompleted = false;
     let rouletteInvite = null;
     let rouletteMatchId = null;
     let rouletteMatchShown = null;
@@ -2643,7 +2648,18 @@ function submitBet(amount) {
             <div class="legion-roulette-hint" data-role="balance">Баланс: загрузка...</div>
             <div class="legion-roulette-controls">
                 <button class="legion-mini-button" data-action="spin">⛏️ Копать!</button>
-                <button class="legion-mini-button" data-action="publish" disabled>📢 В чат</button>
+                <button class="legion-mini-button" data-action="reroll" disabled>
+                    🔄 Использовать переброс
+                </button>
+                <button class="legion-mini-button" data-action="publish" disabled>
+                    📢 В чат
+                </button>
+            </div>
+            
+            <div class="legion-roulette-controls" data-role="reroll-slots" hidden>
+                <button class="legion-mini-button" data-reroll-index="0">1 слот</button>
+                <button class="legion-mini-button" data-reroll-index="1">2 слот</button>
+                <button class="legion-mini-button" data-reroll-index="2">3 слот</button>
             </div>
             <div class="legion-roulette-hint" data-role="cooldown">
                 Попытка доступна раз в 5 минут.
@@ -2658,10 +2674,43 @@ function submitBet(amount) {
         const self = panel.querySelector('.legion-mini-self');
         self.before(container);
 
-        container.querySelector('[data-action="spin"]')
-            .addEventListener('click', spinRouletteSolo);
-        container.querySelector('[data-action="publish"]')
-            .addEventListener('click', publishRouletteSolo);
+                container.querySelector('[data-action="spin"]')
+                    .addEventListener('click', spinRouletteSolo);
+        
+                container.querySelector('[data-action="publish"]')
+                    .addEventListener('click', publishRouletteSolo);
+
+                const rerollButton = container.querySelector('[data-action="reroll"]');
+                const rerollSlots = container.querySelector('[data-role="reroll-slots']');
+                
+                rerollButton.addEventListener('click', () => {
+                    if (rerollButton.disabled) return;
+                    rerollSlots.hidden = !rerollSlots.hidden;
+                });
+                
+                rerollSlots.querySelectorAll('[data-reroll-index]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const index = Number(button.dataset.rerollIndex);
+                        rerollRouletteSolo(index);
+                    });
+                });
+        
+                const rerollButton = container.querySelector('[data-action="reroll"]');
+                const rerollSlots = container.querySelector('[data-role="reroll-slots"]');
+        
+                rerollButton.addEventListener('click', () => {
+                    if (rerollButton.disabled) return;
+        
+                    rerollSlots.hidden = !rerollSlots.hidden;
+                });
+        
+                rerollSlots.querySelectorAll('[data-reroll-index]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const index = Number(button.dataset.rerollIndex);
+                        rerollRouletteSolo(index);
+                    });
+                });
+            }
     }
 
     function rouletteElements() {
@@ -2672,6 +2721,8 @@ function submitBet(amount) {
             reels: [...container.querySelectorAll('.legion-roulette-reel')],
             result: container.querySelector('.legion-roulette-result'),
             spin: container.querySelector('[data-action="spin"]'),
+            reroll: container.querySelector('[data-action="reroll"]'),
+            rerollSlots: container.querySelector('[data-role="reroll-slots"]'),
             publish: container.querySelector('[data-action="publish"]'),
             cooldown: container.querySelector('[data-role="cooldown"]'),
             balance: container.querySelector('[data-role="balance"]')
@@ -2696,6 +2747,36 @@ function submitBet(amount) {
             elements.spin.disabled = false;
             elements.cooldown.textContent = '⛏️ Попытка доступна!';
         }
+    }
+
+    function loadRouletteRerollAvailability() {
+        request(
+            'GET',
+            '/api/inventory/' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                if (error || !result?.success) {
+                    rouletteRerollAvailable = false;
+                    return;
+                }
+    
+                const rerollItem = result.items?.find(item =>
+                    item.code === 'roulette_mod_reroll'
+                );
+    
+                rouletteRerollAvailable = Boolean(
+                    rerollItem &&
+                    rerollItem.equipped &&
+                    Number(rerollItem.quantity) > 0
+                );
+    
+                const elements = rouletteElements();
+    
+                if (elements?.reroll) {
+                    elements.reroll.hidden = !rouletteRerollAvailable;
+                }
+            }
+        );
     }
 
     function loadRouletteStatus() {
@@ -2806,6 +2887,21 @@ function submitBet(amount) {
         elements.spin.disabled = true;
         elements.publish.disabled = true;
         elements.result.textContent = 'Связываемся с шахтой...';
+        
+        rouletteSessionId = null;
+        rouletteResult = null;
+        rouletteCompleted = false;
+        rouletteCompleting = false;
+        rouletteRerollUsed = false;
+        
+        if (elements.reroll) {
+            elements.reroll.disabled = true;
+            elements.reroll.hidden = true;
+        }
+        
+        if (elements.rerollSlots) {
+            elements.rerollSlots.hidden = true;
+        }
 
         request('POST', '/api/roulette/solo', { playerId }, (error, result, status) => {
             if (error || !result?.success) {
@@ -2817,6 +2913,26 @@ function submitBet(amount) {
 
             rouletteResult = normalizeRouletteResult(result);
             rouletteCooldownUntil = Number(result.nextAt || 0);
+            
+            rouletteSessionId = result.sessionId;
+            if (!rouletteSessionId) {
+                elements.result.textContent =
+                    '😿 Сервер не вернул ID вращения. Награду пока нельзя получить.';
+                elements.publish.disabled = true;
+                return;
+            }
+            rouletteRerollUsed = false;
+            rouletteCompleted = false;
+            rouletteCompleting = false;
+            
+            if (elements.reroll) {
+                elements.reroll.disabled = true;
+                elements.reroll.hidden = true;
+            }
+            
+            if (elements.rerollSlots) {
+                elements.rerollSlots.hidden = true;
+            }
 
             animateRoulette(rouletteResult.reels, () => {
                 const description = rouletteResourceText(rouletteResult.reels);
@@ -2833,15 +2949,157 @@ function submitBet(amount) {
                         `🎁 Джекпот! Получен модификатор «${result.modifierDrop.name}»!`
                     );
                 }
-                
+
+                if (elements.reroll) {
+                    elements.reroll.hidden = !rouletteRerollAvailable;
+                    elements.reroll.disabled = !rouletteRerollAvailable;
+                }
+                                
                 elements.publish.disabled = false;
             });
         });
     }
 
+    function rerollRouletteSolo(index) {
+        const elements = rouletteElements();
+    
+        if (
+            !elements ||
+            !rouletteResult ||
+            !rouletteSessionId ||
+            rouletteRerollUsed ||
+            rouletteSpinning ||
+            rouletteCompleting ||
+            !rouletteRerollAvailable
+        ) {
+            return;
+        }
+    
+        if (![0, 1, 2].includes(index)) return;
+    
+        elements.reroll.disabled = true;
+        elements.rerollSlots.hidden = true;
+        elements.publish.disabled = true;
+        elements.result.textContent = '🔄 Перебрасываем выбранный слот...';
+    
+        request(
+            'POST',
+            '/api/roulette/solo/reroll',
+            {
+                playerId,
+                sessionId: rouletteSessionId,
+                index
+            },
+            (error, result) => {
+                if (error || !result?.success) {
+                    elements.result.textContent =
+                        result?.error || 'Не удалось выполнить переброс.';
+    
+                    elements.reroll.disabled = false;
+                    elements.publish.disabled = false;
+                    return;
+                }
+    
+                rouletteRerollUsed = true;
+                rouletteResult = normalizeRouletteResult(result);
+    
+                animateRoulette(rouletteResult.reels, () => {
+                    const description = rouletteResourceText(
+                        rouletteResult.reels
+                    );
+    
+                    const multiplierText = rouletteResult.multiplier > 1
+                        ? ` · множитель ×${rouletteResult.multiplier}`
+                        : '';
+    
+                    elements.result.textContent = rouletteResult.jackpot
+                        ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`
+                        : `${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
+    
+                    elements.reroll.disabled = true;
+                    elements.reroll.hidden = true;
+                    elements.publish.disabled = false;
+    
+                    loadRouletteRerollAvailability();
+                });
+            }
+        );
+    }
+
     function publishRouletteSolo() {
-        if (!rouletteResult) return;
-        publishResultToChat(rouletteChatMessage(rouletteResult));
+        if (!rouletteResult || rouletteCompleting) return;
+    
+        const elements = rouletteElements();
+        if (!elements) return;
+    
+        // Если сервер уже начислил награду,
+        // повторно завершаем вращение не нужно.
+        if (rouletteCompleted) {
+            const sent = publishResultToChat(
+                rouletteChatMessage(rouletteResult)
+            );
+    
+            if (sent) {
+                elements.publish.disabled = true;
+            }
+    
+            return;
+        }
+    
+        if (!rouletteSessionId) {
+            showToast('😿 Не найдена сессия вращения. Попробуйте обновить страницу.');
+            return;
+        }
+    
+        rouletteCompleting = true;
+        elements.publish.disabled = true;
+        elements.result.textContent = '⛏️ Завершаем вращение...';
+    
+        request(
+            'POST',
+            '/api/roulette/solo/complete',
+            {
+                playerId,
+                sessionId: rouletteSessionId
+            },
+            (error, result) => {
+                rouletteCompleting = false;
+    
+                if (error || !result?.success) {
+                    elements.result.textContent =
+                        result?.error || 'Не удалось завершить вращение.';
+    
+                    elements.publish.disabled = false;
+                    return;
+                }
+    
+                rouletteCompleted = true;
+                rouletteResult = normalizeRouletteResult(result);
+                rouletteBalance = Number(result.balance ?? rouletteBalance);
+    
+                if (elements.balance) {
+                    elements.balance.textContent =
+                        `💰 Баланс: ${rouletteBalance} мяукоинов`;
+                }
+    
+                if (result.modifierDrop) {
+                    showToast(
+                        `🎁 Получен модификатор «${result.modifierDrop.name}»!`
+                    );
+                }
+    
+                const sent = publishResultToChat(
+                    rouletteChatMessage(rouletteResult)
+                );
+    
+                elements.publish.disabled = sent;
+    
+                if (!sent) {
+                    elements.result.textContent =
+                        'Награда начислена! Откройте чат и нажмите «В чат» ещё раз.';
+                }
+            }
+        );
     }
 
     function publishResultToChat(message) {
@@ -4144,6 +4402,7 @@ function openLeaderboard() {
         updateDoNotDisturbUI();
         createRouletteUI();
         loadRouletteStatus();
+        loadRouletteRerollAvailability();
 
         heartbeat();
         refreshPlayers();
@@ -4178,6 +4437,7 @@ function openLeaderboard() {
         setInterval(refreshRouletteInvitations, CONFIG.invitationsRefreshInterval);
         setInterval(refreshRouletteMatch, CONFIG.rouletteRefreshInterval);
         setInterval(loadRouletteStatus, 30000);
+        setInterval(loadRouletteRerollAvailability, 30000);
         setInterval(updateRouletteCooldownUI, 1000);
     }
 
