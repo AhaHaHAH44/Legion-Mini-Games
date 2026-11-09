@@ -2692,7 +2692,7 @@ function submitBet(amount) {
             <div class="legion-roulette-controls">
                 <button class="legion-mini-button" data-action="spin">⛏️ Копать!</button>
                 <button class="legion-mini-button" data-action="reroll" disabled hidden>
-                    🔄 Перебросить выбранный
+                    🔄 Перебросить
                 </button>
                 <button class="legion-mini-button" data-action="publish" disabled>
                     📢 В чат
