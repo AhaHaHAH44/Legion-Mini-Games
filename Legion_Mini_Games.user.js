@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.1
+// @version      2.1.2
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -919,6 +919,25 @@
                 line-height: 1.5;
             }
 
+            .legion-shop-section {
+                margin-bottom: 20px;
+            }
+            
+            .legion-shop-section-title {
+                margin-bottom: 4px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #68513d;
+                color: #ffe0b8;
+                font-size: 17px;
+                font-weight: bold;
+            }
+            
+            .legion-shop-section-description {
+                margin-bottom: 12px;
+                color: #b9a28b;
+                font-size: 12px;
+            }
+
             .legion-shop-item {
                 margin-bottom: 10px;
                 padding: 13px;
@@ -972,6 +991,181 @@
             .legion-shop-buy:disabled {
                 opacity: .55;
                 cursor: not-allowed;
+            }
+
+            /* ========================================
+               INVENTORY
+            ======================================== */
+            
+            #legion-inventory-modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 1000005;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+                background: #100d0bcc;
+                font-family: Arial, sans-serif;
+                color: #f4eadb;
+            }
+            
+            #legion-inventory-modal.open {
+                display: flex;
+            }
+            
+            #legion-inventory-card {
+                width: min(560px, calc(100vw - 36px));
+                max-height: calc(100vh - 36px);
+                overflow-y: auto;
+                padding: 20px;
+                border: 1px solid #806044;
+                border-radius: 18px;
+                background: linear-gradient(145deg, #382d23, #292626);
+                box-shadow: 0 12px 45px #000a;
+            }
+            
+            #legion-inventory-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 18px;
+            }
+            
+            #legion-inventory-title {
+                color: #ffe0b8;
+                font-size: 19px;
+                font-weight: bold;
+            }
+            
+            #legion-inventory-close {
+                width: 32px;
+                height: 32px;
+                border: 1px solid #806044;
+                border-radius: 9px;
+                background: #34291f;
+                color: #fff1df;
+                font-size: 22px;
+                cursor: pointer;
+            }
+            
+            #legion-inventory-close:hover {
+                background: #51402f;
+            }
+            
+            #legion-inventory-content {
+                display: grid;
+                gap: 10px;
+            }
+            
+            .legion-inventory-item {
+                padding: 12px;
+                border: 1px solid #68513d;
+                border-radius: 11px;
+                background: #302920;
+            }
+            
+            .legion-inventory-item-name {
+                color: #ffe0b8;
+                font-weight: bold;
+            }
+            
+            .legion-inventory-item-description {
+                margin-top: 5px;
+                color: #cdb99f;
+                font-size: 12px;
+            }
+            
+            .legion-inventory-item-details {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                margin-top: 9px;
+                color: #e8cba8;
+                font-size: 12px;
+            }
+
+            /* ========================================
+               INVENTORY SLOTS
+            ======================================== */
+            
+            .legion-inventory-section-title {
+                margin: 12px 0 4px;
+                color: #ffe0b8;
+                font-size: 15px;
+                font-weight: bold;
+            }
+            
+            .legion-inventory-slots {
+                display: grid;
+                gap: 8px;
+            }
+            
+            .legion-inventory-slot {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 11px 12px;
+                border: 1px solid #68513d;
+                border-radius: 11px;
+                background: #302920;
+            }
+            
+            .legion-inventory-slot-info {
+                min-width: 0;
+            }
+            
+            .legion-inventory-slot-name {
+                color: #ffe0b8;
+                font-weight: bold;
+            }
+            
+            .legion-inventory-slot-number {
+                margin-top: 4px;
+                color: #b9a28b;
+                font-size: 11px;
+            }
+            
+            .legion-inventory-slot-item {
+                color: #e8cba8;
+                text-align: right;
+                font-size: 12px;
+            }
+            
+            .legion-inventory-slot-empty {
+                color: #99836c;
+                font-style: italic;
+            }
+
+            .legion-inventory-action {
+                margin-top: 10px;
+                padding: 8px 12px;
+                border: 1px solid #8c6748;
+                border-radius: 8px;
+                background: #51402f;
+                color: #fff1df;
+                font-size: 12px;
+                cursor: pointer;
+                transition: .18s;
+            }
+            
+            .legion-inventory-action:hover:not(:disabled) {
+                background: #735638;
+            }
+            
+            .legion-inventory-action:disabled {
+                opacity: .5;
+                cursor: not-allowed;
+            }
+            
+            .legion-inventory-slot {
+                flex-wrap: wrap;
+            }
+            
+            .legion-inventory-slot .legion-inventory-action {
+                margin-top: 0;
             }
         `;
 
@@ -1070,6 +1264,12 @@
                     title="Магазин котиков">
                 🛒
             </button>
+
+            <button id="legion-mini-inventory-button"
+                    type="button"
+                    title="Инвентарь котика">
+                🎒
+            </button>
         
             <button id="legion-mini-toggle">
                 🐾 Кото-игры
@@ -1167,6 +1367,35 @@
         
         document.body.appendChild(shopModal);
 
+        const inventoryModal = document.createElement('div');
+        inventoryModal.id = 'legion-inventory-modal';
+        
+        inventoryModal.innerHTML = `
+            <div id="legion-inventory-card">
+        
+                <div id="legion-inventory-header">
+                    <div id="legion-inventory-title">
+                        🎒 Инвентарь котика
+                    </div>
+        
+                    <button id="legion-inventory-close"
+                            type="button"
+                            title="Закрыть">
+                        ×
+                    </button>
+                </div>
+        
+                <div id="legion-inventory-content">
+                    <div class="legion-leaderboard-loading">
+                        Загружаем инвентарь...
+                    </div>
+                </div>
+        
+            </div>
+        `;
+        
+        document.body.appendChild(inventoryModal);
+
         const restoreButton = document.createElement('button');
         restoreButton.id = 'legion-mini-restore';
         restoreButton.type = 'button';
@@ -1194,6 +1423,9 @@
 
         widget.querySelector('#legion-mini-shop-button')
             .addEventListener('click', openShop);
+
+        widget.querySelector('#legion-mini-inventory-button')
+            .addEventListener('click', openInventory);
 
         widget.querySelector('#legion-mini-dnd-toggle')
             .addEventListener('click', toggleDoNotDisturb);
@@ -1232,6 +1464,15 @@
             }
         });
 
+        inventoryModal.querySelector('#legion-inventory-close')
+            .addEventListener('click', closeInventory);
+        
+        inventoryModal.addEventListener('click', event => {
+            if (event.target === inventoryModal) {
+                closeInventory();
+            }
+        });
+
         widget.querySelector('.legion-mini-self').textContent =
             'Вы играете как: ' + nickname;
 
@@ -1258,6 +1499,11 @@
             shopModal,
             shopBalance: shopModal.querySelector('#legion-shop-balance'),
             shopContent: shopModal.querySelector('#legion-shop-content'),
+
+            inventoryModal,
+            inventoryContent: inventoryModal.querySelector(
+                '#legion-inventory-content'
+            ),
 
             modalTitle: modal.querySelector('#legion-mini-modal-title'),
             modalBody: modal.querySelector('#legion-mini-modal-body'),
@@ -2559,6 +2805,13 @@ function submitBet(amount) {
                 elements.result.textContent = rouletteResult.jackpot
                     ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`
                     : `${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
+                
+                if (result.modifierDrop) {
+                    showToast(
+                        `🎁 Джекпот! Получен модификатор «${result.modifierDrop.name}»!`
+                    );
+                }
+                
                 elements.publish.disabled = false;
             });
         });
@@ -3090,6 +3343,283 @@ function submitBet(amount) {
         ui.shopModal.classList.remove('open');
     }
 
+    function openInventory() {
+    ui.inventoryModal.classList.add('open');
+
+    ui.inventoryContent.replaceChildren();
+
+    ui.inventoryContent.appendChild(
+        createLeaderboardElement(
+            'div',
+            'legion-leaderboard-loading',
+            '🎒 Загружаем вещи котика...'
+        )
+    );
+
+    request(
+        'GET',
+        '/api/inventory/' + encodeURIComponent(playerId),
+        null,
+        (error, result) => {
+            if (!ui.inventoryModal.classList.contains('open')) {
+                return;
+            }
+
+            if (error || !result?.success) {
+                ui.inventoryContent.replaceChildren();
+
+                ui.inventoryContent.appendChild(
+                    createLeaderboardElement(
+                        'div',
+                        'legion-leaderboard-empty',
+                        result?.error ||
+                        '😿 Не удалось загрузить инвентарь.'
+                    )
+                );
+
+                return;
+            }
+
+            renderInventory(result);
+        }
+    );
+}
+
+function closeInventory() {
+    ui.inventoryModal.classList.remove('open');
+}
+
+    function equipInventoryItem(item, slots) {
+    // Ищем свободный слот подходящей категории
+    const availableSlot = slots.find(slot =>
+        !slot.item_code &&
+        slot.accepted_categories.includes(item.category)
+    );
+
+    if (!availableSlot) {
+        showToast('😿 Нет свободного подходящего слота!');
+        return;
+    }
+
+    request(
+        'POST',
+        '/api/inventory/equip',
+        {
+            playerId,
+            itemCode: item.code,
+            slotType: availableSlot.slot_type,
+            slotNumber: availableSlot.slot_number
+        },
+        (error, result) => {
+            if (error || !result?.success) {
+                showToast(
+                    '😿 Не удалось экипировать предмет: ' +
+                    (result?.error || 'ошибка соединения')
+                );
+                return;
+            }
+
+            showToast('🐾 Предмет успешно экипирован!');
+            openInventory();
+        }
+    );
+}
+
+function unequipInventorySlot(slot) {
+    request(
+        'POST',
+        '/api/inventory/unequip',
+        {
+            playerId,
+            slotType: slot.slot_type,
+            slotNumber: slot.slot_number
+        },
+        (error, result) => {
+            if (error || !result?.success) {
+                showToast(
+                    '😿 Не удалось снять предмет: ' +
+                    (result?.error || 'ошибка соединения')
+                );
+                return;
+            }
+
+            showToast('🎒 Предмет возвращён в инвентарь!');
+            openInventory();
+        }
+    );
+}
+
+function renderInventory(data) {
+    ui.inventoryContent.replaceChildren();
+
+    // ========================================
+    // СЛОТЫ ЭКИПИРОВКИ
+    // ========================================
+
+    const slotsTitle = createLeaderboardElement(
+        'div',
+        'legion-inventory-section-title',
+        '⚙️ Экипировка'
+    );
+
+    ui.inventoryContent.appendChild(slotsTitle);
+
+    const slotsContainer = createLeaderboardElement(
+        'div',
+        'legion-inventory-slots'
+    );
+
+    if (data.slots && data.slots.length > 0) {
+        data.slots.forEach(slot => {
+            const slotElement = createLeaderboardElement(
+                'div',
+                'legion-inventory-slot'
+            );
+
+            const info = createLeaderboardElement(
+                'div',
+                'legion-inventory-slot-info'
+            );
+
+            const slotName = createLeaderboardElement(
+                'div',
+                'legion-inventory-slot-name',
+                slot.slot_name
+            );
+
+            const slotNumber = createLeaderboardElement(
+                'div',
+                'legion-inventory-slot-number',
+                `Слот №${slot.slot_number}`
+            );
+
+            const itemName = createLeaderboardElement(
+                'div',
+                slot.item_code
+                    ? 'legion-inventory-slot-item'
+                    : 'legion-inventory-slot-item legion-inventory-slot-empty',
+                slot.item_code
+                    ? `${slot.item_icon || '📦'} ${slot.item_name}`
+                    : 'Пусто'
+            );
+
+            info.append(slotName, slotNumber);
+            slotElement.append(info, itemName);
+            
+            // Кнопка снятия предмета
+            if (slot.item_code) {
+                const unequipButton = createLeaderboardElement(
+                    'button',
+                    'legion-inventory-action',
+                    'Снять'
+                );
+            
+                unequipButton.type = 'button';
+            
+                unequipButton.addEventListener('click', () => {
+                    unequipInventorySlot(slot);
+                });
+            
+                slotElement.appendChild(unequipButton);
+            }
+            
+            slotsContainer.appendChild(slotElement);
+        });
+    } else {
+        slotsContainer.appendChild(
+            createLeaderboardElement(
+                'div',
+                'legion-inventory-empty',
+                'Слоты экипировки не найдены.'
+            )
+        );
+    }
+
+    ui.inventoryContent.appendChild(slotsContainer);
+
+    // ========================================
+    // ПРЕДМЕТЫ В ИНВЕНТАРЕ
+    // ========================================
+
+    const itemsTitle = createLeaderboardElement(
+        'div',
+        'legion-inventory-section-title',
+        '🎒 Предметы'
+    );
+
+    ui.inventoryContent.appendChild(itemsTitle);
+
+    if (!data.items || data.items.length === 0) {
+        ui.inventoryContent.appendChild(
+            createLeaderboardElement(
+                'div',
+                'legion-leaderboard-empty',
+                'Пока в инвентаре нет предметов.'
+            )
+        );
+
+        return;
+    }
+
+    data.items.forEach(item => {
+        const card = createLeaderboardElement(
+            'div',
+            'legion-inventory-item'
+        );
+
+        const name = createLeaderboardElement(
+            'div',
+            'legion-inventory-item-name',
+            `${item.icon || '📦'} ${item.name}`
+        );
+
+        const description = createLeaderboardElement(
+            'div',
+            'legion-inventory-item-description',
+            item.description || 'Описание отсутствует.'
+        );
+
+        const details = createLeaderboardElement(
+            'div',
+            'legion-inventory-item-details'
+        );
+
+        const quantity = createLeaderboardElement(
+            'span',
+            '',
+            `Количество: ${item.quantity}`
+        );
+
+        const status = createLeaderboardElement(
+            'span',
+            '',
+            item.equipped ? '✓ Экипировано' : 'В инвентаре'
+        );
+
+        details.append(quantity, status);
+        card.append(name, description, details);
+        
+        // Не показываем кнопку, если предмет уже экипирован
+        if (!item.equipped) {
+            const equipButton = createLeaderboardElement(
+                'button',
+                'legion-inventory-action',
+                'Экипировать'
+            );
+        
+            equipButton.type = 'button';
+        
+            equipButton.addEventListener('click', () => {
+                equipInventoryItem(item, data.slots || []);
+            });
+        
+            card.appendChild(equipButton);
+        }
+        
+        ui.inventoryContent.appendChild(card);
+    });
+}
+
     function renderShop(data) {
         ui.shopBalance.textContent =
             `💰 Ваш баланс: ${data.balance} мяукоинов`;
@@ -3108,63 +3638,171 @@ function submitBet(amount) {
             return;
         }
     
-        data.items.forEach(item => {
-            const card = createLeaderboardElement(
-                'div',
-                'legion-shop-item'
+        const categories = [
+            {
+                id: 'unlock',
+                title: '⚙️ Механики',
+                description: 'Разблокировки игровых возможностей'
+            },
+            {
+                id: 'cosmetic',
+                title: '✨ Косметика',
+                description: 'Визуальные эффекты и оформление'
+            }
+        ];
+    
+        categories.forEach(category => {
+            const items = data.items.filter(
+                item => item.category === category.id
             );
     
-            const name = createLeaderboardElement(
+            if (items.length === 0) return;
+    
+            const section = createLeaderboardElement(
                 'div',
-                'legion-shop-item-name',
-                item.name
+                'legion-shop-section'
+            );
+    
+            const title = createLeaderboardElement(
+                'div',
+                'legion-shop-section-title',
+                category.title
             );
     
             const description = createLeaderboardElement(
                 'div',
-                'legion-shop-item-description',
-                item.description
+                'legion-shop-section-description',
+                category.description
             );
     
-            const price = createLeaderboardElement(
-                'div',
-                'legion-shop-item-price',
-                `💰 ${item.price} мяукоинов`
-            );
+            section.append(title, description);
     
-            const status = createLeaderboardElement(
-                'div',
-                'legion-shop-item-status',
-                item.owned ? '✓ Уже куплено' : 'Доступно для покупки'
-            );
+            items.forEach(item => {
+                const card = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item'
+                );
     
-            const buyButton = document.createElement('button');
-            buyButton.className = 'legion-shop-buy';
-            
-            if (item.owned) {
-                buyButton.textContent = '✓ Куплено';
-                buyButton.disabled = true;
-            } else if (data.balance < item.price) {
-                buyButton.textContent = 'Недостаточно мяукоинов';
-                buyButton.disabled = true;
-            } else {
-                buyButton.textContent = 'Купить';
-            
-                buyButton.addEventListener('click', () => {
-                    purchaseShopItem(item, buyButton);
-                });
-            }
-            
-            card.append(
-                name,
-                description,
-                price,
-                status,
-                buyButton
-            );
-            
-            ui.shopContent.appendChild(card);
+                const name = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item-name',
+                    item.name
+                );
+    
+                const itemDescription = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item-description',
+                    item.description
+                );
+    
+                const price = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item-price',
+                    `💰 ${item.price} мяукоинов`
+                );
+    
+                const status = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item-status',
+                    item.owned ? '✓ Уже куплено' : 'Доступно для покупки'
+                );
+    
+                const buyButton = document.createElement('button');
+                buyButton.className = 'legion-shop-buy';
+    
+                if (item.owned) {
+                    buyButton.textContent = '✓ Куплено';
+                    buyButton.disabled = true;
+                } else if (data.balance < item.price) {
+                    buyButton.textContent = 'Недостаточно мяукоинов';
+                    buyButton.disabled = true;
+                } else {
+                    buyButton.textContent = 'Купить';
+    
+                    buyButton.addEventListener('click', () => {
+                        purchaseShopItem(item, buyButton);
+                    });
+                }
+    
+                card.append(
+                    name,
+                    itemDescription,
+                    price,
+                    status,
+                    buyButton
+                );
+    
+                section.appendChild(card);
+            });
+    
+            ui.shopContent.appendChild(section);
         });
+    
+        const uncategorizedItems = data.items.filter(
+            item => !categories.some(category => category.id === item.category)
+        );
+    
+        if (uncategorizedItems.length > 0) {
+            const section = createLeaderboardElement(
+                'div',
+                'legion-shop-section'
+            );
+    
+            const title = createLeaderboardElement(
+                'div',
+                'legion-shop-section-title',
+                '📦 Прочее'
+            );
+    
+            section.appendChild(title);
+    
+            uncategorizedItems.forEach(item => {
+                const card = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item'
+                );
+    
+                const name = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item-name',
+                    item.name
+                );
+    
+                const description = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item-description',
+                    item.description
+                );
+    
+                const price = createLeaderboardElement(
+                    'div',
+                    'legion-shop-item-price',
+                    `💰 ${item.price} мяукоинов`
+                );
+    
+                const buyButton = document.createElement('button');
+                buyButton.className = 'legion-shop-buy';
+    
+                if (item.owned) {
+                    buyButton.textContent = '✓ Куплено';
+                    buyButton.disabled = true;
+                } else if (data.balance < item.price) {
+                    buyButton.textContent = 'Недостаточно мяукоинов';
+                    buyButton.disabled = true;
+                } else {
+                    buyButton.textContent = 'Купить';
+    
+                    buyButton.addEventListener('click', () => {
+                        purchaseShopItem(item, buyButton);
+                    });
+                }
+    
+                card.append(name, description, price, buyButton);
+                section.appendChild(card);
+            });
+    
+            ui.shopContent.appendChild(section);
+        }
     }
 
     function purchaseShopItem(item, button) {
@@ -3195,7 +3833,11 @@ function submitBet(amount) {
                     return;
                 }
     
-                showToast('🐾 Покупка успешно совершена!');
+                if (item.category === 'unlock' || item.category === 'cosmetic') {
+                    showToast(`🐾 «${item.name}» куплено! Предмет добавлен в инвентарь.`);
+                } else {
+                    showToast(`🐾 «${item.name}» успешно куплено!`);
+                }
                 openShop();
             }
         );
