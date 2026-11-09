@@ -1623,6 +1623,7 @@
                 top: 9px;
                 left: 9px;
                 right: 9px;
+            
                 overflow: hidden;
                 color: #cbb18e;
                 font-size: 9px;
@@ -2571,6 +2572,29 @@
                 margin-top: 4px;
                 color: #b9a28b;
                 font-size: 11px;
+            }
+
+            /* Номер слота — строго в правом нижнем углу */
+            .legion-inventory-slot > .legion-inventory-slot-number {
+                position: absolute !important;
+                top: auto !important;
+                left: auto !important;
+                right: 8px !important;
+                bottom: 7px !important;
+            
+                z-index: 5;
+                min-width: 17px;
+                padding: 3px 5px;
+            
+                border: 1px solid rgba(164,123,80,.35);
+                border-radius: 6px;
+            
+                background: rgba(29,23,19,.9);
+                color: #d6b68e;
+            
+                font-size: 10px;
+                line-height: 1;
+                text-align: center;
             }
             
             .legion-inventory-slot-item {
@@ -6490,13 +6514,18 @@ function renderInventory(data) {
     
             // Превращаем техническое название типа в читаемый заголовок
             const groupNames = {
-                ROULETTE_MODIFIER: 'Модификаторы',
+                ROULETTE_MODIFIER: 'Модификаторы рулетки',
                 COSMETIC: 'Косметика',
-                ROULETTE_EFFECT: 'Эффекты',
-                ROULETTE_THEME: 'Тема'
+                ROULETTE_EFFECT: 'Эффекты рулетки',
+                ROULETTE_THEME: 'Темы оформления'
             };
             
-            const groupName = groupNames[type] || 'Другие предметы';
+            const typeKey = String(type)
+                .trim()
+                .replace(/[\s-]+/g, '_')
+                .toUpperCase();
+            
+            const groupName = groupNames[typeKey] || 'Другие предметы';
     
             const groupTitle = createLeaderboardElement(
                 'div',
@@ -6534,7 +6563,7 @@ function renderInventory(data) {
                 const number = createLeaderboardElement(
                     'span',
                     'legion-inventory-slot-number',
-                    `№${slot.slot_number}`
+                    String(slot.slot_number)
                 );
     
                 slotElement.append(label, number);
