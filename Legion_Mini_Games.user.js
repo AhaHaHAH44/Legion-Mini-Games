@@ -2898,49 +2898,80 @@
             }
 
             /* ========================================
-               КОТО-ЛАВКА — СТИЛИ ВКЛАДОК КАТЕГОРИЙ
+               КОТО-ЛАВКА — ВКЛАДКИ КАТЕГОРИЙ
             ======================================== */
             
             #legion-shop-modal .legion-shop-tabs {
                 display: flex;
-                flex-wrap: wrap;
-                gap: 9px;
+                flex-wrap: nowrap;
+                gap: 8px;
                 margin: 18px 0;
+                padding: 5px;
+            
+                border: 1px solid rgba(164,123,80,.38);
+                border-radius: 14px;
+            
+                background: rgba(29,23,19,.58);
             }
             
             #legion-shop-modal .legion-shop-tab {
-                flex: 1;
-                min-width: 100px;
-                padding: 11px 14px;
+                flex: 1 1 0;
+                min-width: 0;
+                padding: 11px 10px;
             
-                color: #76502f !important;
-                background: linear-gradient(145deg, #f8e8cb, #e8d1aa) !important;
+                border: 1px solid transparent !important;
+                border-radius: 10px !important;
             
-                border: 1px solid #c9a16b !important;
-                border-radius: 13px !important;
+                background: transparent !important;
+                color: #bda58a !important;
             
+                font-family: Arial, sans-serif;
+                font-size: 12px;
                 font-weight: 700;
+            
                 cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 3px 7px rgba(91, 57, 25, 0.12);
+                box-shadow: none !important;
+            
+                transition:
+                    background .2s ease,
+                    color .2s ease,
+                    border-color .2s ease,
+                    transform .2s ease;
             }
             
+            /* Наведение — лёгкое выделение */
             #legion-shop-modal .legion-shop-tab:hover {
-                color: #5b381e !important;
-                background: linear-gradient(145deg, #ffefd2, #f0d5a8) !important;
-                border-color: #b98543 !important;
-                transform: translateY(-2px);
+                background: rgba(117,83,54,.25) !important;
+                color: #f0d5b1 !important;
+                border-color: rgba(164,123,80,.35) !important;
+                transform: translateY(-1px);
             }
             
+            /* Активная категория */
             #legion-shop-modal .legion-shop-tab.active {
-                color: #fff8e9 !important;
-                background: linear-gradient(145deg, #b98242, #87552d) !important;
-                border: 1px solid #87552d !important;
-                box-shadow: 0 4px 12px rgba(117, 72, 31, 0.25);
+                border: 1px solid #a47b50 !important;
+            
+                background: linear-gradient(
+                    145deg,
+                    #795536,
+                    #59402d
+                ) !important;
+            
+                color: #fff0dc !important;
+            
+                box-shadow:
+                    inset 0 1px rgba(255,255,255,.08),
+                    0 3px 9px rgba(0,0,0,.2) !important;
             }
             
+            /* Наведение на активную категорию */
             #legion-shop-modal .legion-shop-tab.active:hover {
-                background: linear-gradient(145deg, #c89350, #986337) !important;
+                background: linear-gradient(
+                    145deg,
+                    #896443,
+                    #684b34
+                ) !important;
+                border-color: #c49b65 !important;
             }
 
             /* ========================================
