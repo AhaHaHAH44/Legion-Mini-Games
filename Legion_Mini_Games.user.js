@@ -5128,10 +5128,18 @@ function submitBet(amount) {
             <div class="legion-roulette-result">🍀 Испытайте удачу, котик!</div>
             <div class="legion-roulette-hint" data-role="balance">Баланс: загрузка...</div>
             <div class="legion-roulette-controls">
-                <button class="legion-mini-button" data-action="spin">⛏️ Копать!</button>
+                <button class="legion-mini-button" data-action="spin">
+                    ⛏️ Копать!
+                </button>
+            
                 <button class="legion-mini-button" data-action="reroll" disabled hidden>
                     🔄 Перебросить
                 </button>
+            
+                <button class="legion-mini-button" data-action="complete" disabled>
+                    💰 Забрать награду
+                </button>
+            
                 <button class="legion-mini-button" data-action="publish" disabled>
                     📢 В чат
                 </button>
@@ -5156,6 +5164,9 @@ function submitBet(amount) {
                 container.querySelector('[data-action="spin"]')
                     .addEventListener('click', spinRouletteSolo);
         
+                container.querySelector('[data-action="complete"]')
+                    .addEventListener('click', completeRouletteSolo);
+
                 container.querySelector('[data-action="publish"]')
                     .addEventListener('click', publishRouletteSolo);
 
@@ -5195,6 +5206,7 @@ function submitBet(amount) {
             reroll: container.querySelector('[data-action="reroll"]'),
             rerollHint: container.querySelector('[data-role="reroll-hint"]'),
             publish: container.querySelector('[data-action="publish"]'),
+            complete: container.querySelector('[data-action="complete"]'),
             cooldown: container.querySelector('[data-role="cooldown"]'),
             balance: container.querySelector('[data-role="balance"]')
         };
@@ -5571,7 +5583,8 @@ function submitBet(amount) {
                     updateRouletteRerollUI();
                     loadRouletteRerollAvailability();
 
-                    elements.publish.disabled = false;
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
                 });
             }
         );
@@ -5617,7 +5630,8 @@ function submitBet(amount) {
                         result?.error || 'Не удалось выполнить переброс.';
     
                     updateRouletteRerollUI();
-                    elements.publish.disabled = false;
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
                     return;
                 }
     
@@ -5639,7 +5653,8 @@ function submitBet(amount) {
     
                     rouletteSelectedReelIndex = null;
                     updateRouletteRerollUI();
-                    elements.publish.disabled = false;
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
                     
                     loadRouletteRerollAvailability();
                 });
@@ -5647,48 +5662,24 @@ function submitBet(amount) {
         );
     }
 
-    function publishRouletteSolo() {
-        if (!rouletteResult || rouletteCompleting) return;
+    function completeRouletteSolo() {
+        if (
+            !rouletteResult ||
+            rouletteCompleting ||
+            rouletteCompleted ||
+            !rouletteSessionId
+        ) {
+            return;
+        }
     
         const elements = rouletteElements();
         if (!elements) return;
     
-        if (
-            rouletteSessionId &&
-            publishedSoloRouletteSessions.has(rouletteSessionId)
-        ) {
-            elements.publish.disabled = true;
-            return;
-        }
-    
-        // Если награда уже начислена, повторно отправляем только сообщение.
-        if (rouletteCompleted) {
-            let sent = false;
-    
-            try {
-                sent = publishResultToChat(
-                    rouletteChatMessage(rouletteResult)
-                );
-            } catch (error) {
-                console.error('[Legion] Chat publish failed:', error);
-            }
-    
-            if (sent) {
-                rememberPublishedSoloRouletteSession(rouletteSessionId);
-                elements.publish.disabled = true;
-            }
-    
-            return;
-        }
-    
-        if (!rouletteSessionId) {
-            showToast('😿 Не найдена сессия вращения.');
-            return;
-        }
-    
         rouletteCompleting = true;
+        elements.complete.disabled = true;
         elements.publish.disabled = true;
-        elements.result.textContent = '⛏️ Завершаем вращение...';
+    
+        elements.result.textContent = '⛏️ Сохраняем добычу...';
     
         request(
             'POST',
@@ -5703,16 +5694,16 @@ function submitBet(amount) {
                 if (error || !result?.success) {
                     elements.result.textContent =
                         result?.error ||
-                        'Не удалось завершить вращение. Попробуйте ещё раз.';
+                        'Не удалось получить награду. Попробуйте ещё раз.';
     
-                    // Разрешаем повторить запрос.
-                    elements.publish.disabled = false;
+                    elements.complete.disabled = false;
                     return;
                 }
     
-                // Сервер подтвердил начисление награды.
                 rouletteCompleted = true;
+    
                 rouletteResult = normalizeRouletteResult(result);
+    
                 rouletteBalance = Number(
                     result.balance ?? rouletteBalance
                 );
@@ -5723,7 +5714,14 @@ function submitBet(amount) {
                 }
     
                 elements.result.textContent =
-                    `🎉 Награда начислена: ${rouletteResult.score} мяукоинов!`;
+                    `🎉 Награда получена: ${rouletteResult.score} мяукоинов!`;
+    
+                elements.complete.disabled = true;
+                elements.publish.disabled =
+                    publishedSoloRouletteSessions.has(rouletteSessionId);
+    
+                loadRouletteStatus();
+                loadRouletteRerollAvailability();
     
                 if (result.modifierDrop?.granted) {
                     showToast(
@@ -5731,32 +5729,43 @@ function submitBet(amount) {
                     );
                 }
     
-                // Обновляем данные независимо от чата.
-                loadRouletteStatus();
-                loadRouletteRerollAvailability();
-    
-                // Отправляем результат в чат.
-                let sent = false;
-    
-                try {
-                    sent = publishResultToChat(
-                        rouletteChatMessage(rouletteResult)
-                    );
-                } catch (error) {
-                    console.error('[Legion] Chat publish failed:', error);
-                }
-    
-                if (sent) {
-                    rememberPublishedSoloRouletteSession(rouletteSessionId);
-                    elements.publish.disabled = true;
-                } else {
-                    elements.publish.disabled = false;
-                    elements.result.textContent =
-                        `🎉 Награда начислена: ${rouletteResult.score} мяукоинов! ` +
-                        'Не удалось отправить сообщение в чат. Попробуйте ещё раз.';
-                }
+                showToast('🐾 Награда начислена!');
             }
         );
+    }
+    
+    
+    function publishRouletteSolo() {
+        if (!rouletteResult || !rouletteCompleted) return;
+    
+        const elements = rouletteElements();
+        if (!elements) return;
+    
+        if (
+            rouletteSessionId &&
+            publishedSoloRouletteSessions.has(rouletteSessionId)
+        ) {
+            elements.publish.disabled = true;
+            return;
+        }
+    
+        let sent = false;
+    
+        try {
+            sent = publishResultToChat(
+                rouletteChatMessage(rouletteResult)
+            );
+        } catch (error) {
+            console.error(
+                '[Legion] Ошибка отправки результата в чат:',
+                error
+            );
+        }
+    
+        if (sent) {
+            rememberPublishedSoloRouletteSession(rouletteSessionId);
+            elements.publish.disabled = true;
+        }
     }
 
     function publishResultToChat(message) {
