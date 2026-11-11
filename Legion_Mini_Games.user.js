@@ -3726,8 +3726,8 @@
         widget.innerHTML = `
             <div id="legion-mini-panel">
                 <div class="legion-mini-heading">
-                    <span>Legion — Кото-игры</span>
-                    <span>🐾</span>
+                    <span>Легион: Кото-игры</span>
+                    <span>😼</span>
                 </div>
 
                 <div class="legion-mini-subtitle">
@@ -3793,7 +3793,7 @@
                             class="legion-mini-main-button"
                             type="button"
                             title="Кото-игры">
-                        <span class="legion-mini-main-icon">🐾</span>
+                        <span class="legion-mini-main-icon">😼</span>
                         <span class="legion-mini-main-text">Кото-игры</span>
                     </button>
             
