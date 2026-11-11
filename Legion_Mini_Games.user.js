@@ -3686,6 +3686,28 @@
                     bottom: 80px;
                 }
             }
+
+            /* Перетаскивание лобби за заголовок */
+            #legion-mini-panel .legion-mini-heading {
+                cursor: grab;
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: none;
+            }
+            
+            #legion-mini-panel .legion-mini-heading:active {
+                cursor: grabbing;
+            }
+            
+            /* Перетаскивание основной кнопки */
+            #legion-mini-widget #legion-mini-toggle {
+                cursor: grab;
+                touch-action: none;
+            }
+            
+            #legion-mini-widget #legion-mini-toggle:active {
+                cursor: grabbing;
+            }
         `;
 
         document.head.appendChild(style);
@@ -3725,6 +3747,129 @@
         tools.style.top = `${Math.max(8, rect.bottom - tools.offsetHeight)}px`;
         tools.style.right = 'auto';
         tools.style.bottom = 'auto';
+    }
+
+    function makeElementDraggable(element, handle, storageKey) {
+        if (!element || !handle) return;
+    
+        // Восстанавливаем сохранённую позицию
+        try {
+            const saved = JSON.parse(
+                localStorage.getItem(storageKey)
+            );
+    
+            if (
+                saved &&
+                Number.isFinite(saved.left) &&
+                Number.isFinite(saved.top)
+            ) {
+                element.style.left = `${saved.left}px`;
+                element.style.top = `${saved.top}px`;
+                element.style.right = 'auto';
+                element.style.bottom = 'auto';
+            }
+        } catch (_) {
+            console.warn('Legion: ошибка загрузки позиции', storageKey);
+        }
+    
+        let dragging = false;
+        let moved = false;
+        let startX = 0;
+        let startY = 0;
+        let initialLeft = 0;
+        let initialTop = 0;
+    
+        handle.addEventListener('pointerdown', event => {
+            if (event.button !== 0) return;
+    
+            const rect = element.getBoundingClientRect();
+    
+            dragging = true;
+            moved = false;
+    
+            startX = event.clientX;
+            startY = event.clientY;
+    
+            initialLeft = rect.left;
+            initialTop = rect.top;
+    
+            handle.setPointerCapture(event.pointerId);
+        });
+    
+        handle.addEventListener('pointermove', event => {
+            if (!dragging) return;
+    
+            const deltaX = event.clientX - startX;
+            const deltaY = event.clientY - startY;
+    
+            if (
+                !moved &&
+                Math.abs(deltaX) + Math.abs(deltaY) < 5
+            ) {
+                return;
+            }
+    
+            moved = true;
+    
+            const maxLeft = Math.max(
+                0,
+                window.innerWidth - element.offsetWidth
+            );
+    
+            const maxTop = Math.max(
+                0,
+                window.innerHeight - element.offsetHeight
+            );
+    
+            const left = Math.min(
+                maxLeft,
+                Math.max(0, initialLeft + deltaX)
+            );
+    
+            const top = Math.min(
+                maxTop,
+                Math.max(0, initialTop + deltaY)
+            );
+    
+            element.style.left = `${left}px`;
+            element.style.top = `${top}px`;
+            element.style.right = 'auto';
+            element.style.bottom = 'auto';
+        });
+    
+        const stopDragging = () => {
+            if (!dragging) return;
+    
+            dragging = false;
+    
+            if (!moved) return;
+    
+            const rect = element.getBoundingClientRect();
+    
+            localStorage.setItem(
+                storageKey,
+                JSON.stringify({
+                    left: rect.left,
+                    top: rect.top
+                })
+            );
+    
+            // Не допускаем открытия лобби после перетаскивания
+            setTimeout(() => {
+                moved = false;
+            }, 250);
+        };
+    
+        handle.addEventListener('pointerup', stopDragging);
+        handle.addEventListener('pointercancel', stopDragging);
+    
+        handle.addEventListener('click', event => {
+            if (!moved) return;
+    
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            moved = false;
+        }, true);
     }
 
     function makeToolsDraggable(tools) {
@@ -3840,7 +3985,7 @@
             <div id="legion-mini-panel">
                 <div class="legion-mini-heading">
                     <span>Легион: Кото-игры</span>
-                    <span>😼</span>
+                    <span>🐾</span>
                 </div>
 
                 <div class="legion-mini-subtitle">
@@ -3942,6 +4087,22 @@
         const toolsPanel = widget.querySelector('#legion-mini-tools');
 
         makeToolsDraggable(toolsPanel);
+
+        // Независимое перемещение основной кнопки
+        makeElementDraggable(
+            widget,
+            widget.querySelector('#legion-mini-toggle'),
+            'legion_ui_launcher_position'
+        );
+        
+        // Независимое перемещение лобби за заголовок
+        const lobbyPanel = widget.querySelector('#legion-mini-panel');
+        
+        makeElementDraggable(
+            lobbyPanel,
+            lobbyPanel.querySelector('.legion-mini-heading'),
+            'legion_ui_lobby_position'
+        );
 
         const modal = document.createElement('div');
         modal.id = 'legion-mini-modal';
