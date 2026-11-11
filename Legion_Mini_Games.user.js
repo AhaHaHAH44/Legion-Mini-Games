@@ -3549,24 +3549,27 @@
 
             #legion-mini-tools {
                 position: fixed;
-                right: 350px;
-                bottom: 20px;
-                z-index: 999999;
-
-                display: flex;
+                display: none;
+            
                 flex-direction: column;
                 gap: 8px;
-
+            
                 padding: 8px;
-
+            
                 border: 1px solid rgba(161, 123, 80, .55);
                 border-radius: 15px;
-
+            
                 background: rgba(48, 38, 30, .58);
                 backdrop-filter: blur(12px);
                 -webkit-backdrop-filter: blur(12px);
-
+            
                 box-shadow: 0 5px 18px rgba(0, 0, 0, .22);
+            
+                z-index: 999999;
+            }
+            
+            #legion-mini-tools.open {
+                display: flex;
             }
 
             #legion-mini-tools .legion-mini-icon-button {
@@ -3692,6 +3695,26 @@
             () => toast.classList.remove('open'),
             4000
         );
+    }
+
+    function positionLegionTools() {
+        const panel = document.querySelector('#legion-mini-panel');
+        const tools = document.querySelector('#legion-mini-tools');
+    
+        if (!panel || !tools) return;
+    
+        // Если пользователь уже переместил панель,
+        // не меняем её положение
+        if (localStorage.getItem('legion_ui_tools_position')) {
+            return;
+        }
+    
+        const rect = panel.getBoundingClientRect();
+    
+        tools.style.left = `${Math.max(8, rect.left - tools.offsetWidth - 10)}px`;
+        tools.style.top = `${Math.max(8, rect.bottom - tools.offsetHeight)}px`;
+        tools.style.right = 'auto';
+        tools.style.bottom = 'auto';
     }
 
     function createInterface() {
@@ -4012,8 +4035,18 @@
 
         widget.querySelector('#legion-mini-toggle')
             .addEventListener('click', () => {
-                widget.querySelector('#legion-mini-panel')
-                    .classList.toggle('open');
+                const panel = widget.querySelector('#legion-mini-panel');
+                const tools = document.querySelector('#legion-mini-tools');
+        
+                const isOpen = panel.classList.toggle('open');
+        
+                tools.classList.toggle('open', isOpen);
+        
+                if (isOpen) {
+                    requestAnimationFrame(() => {
+                        positionLegionTools();
+                    });
+                }
             });
 
         widget.querySelector('#legion-mini-leaderboard-button')
