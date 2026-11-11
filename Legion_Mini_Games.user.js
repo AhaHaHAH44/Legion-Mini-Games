@@ -2998,7 +2998,6 @@
                 flex-direction: column;
                 align-items: center;
                 gap: 5px !important;
-            
                 width: 155px;
                 margin-left: auto;
             }
@@ -3677,6 +3676,29 @@
                 min-width: 155px;
                 gap: 8px;
             }
+            
+            /* Кнопка справа — раскрывается влево */
+            #legion-mini-widget.expand-left .legion-mini-main-button {
+                flex-direction: row-reverse;
+                justify-content: flex-start;
+            }
+            
+            #legion-mini-widget.expand-left .legion-mini-main-button:hover {
+                gap: 8px;
+            }
+            
+            /* Текст слева от иконки */
+            #legion-mini-widget.expand-left .legion-mini-main-text {
+                margin-left: 0;
+                margin-right: 5px;
+            }
+            
+            /* Кнопка слева — раскрывается вправо */
+            #legion-mini-widget.expand-right .legion-mini-main-button {
+                flex-direction: row;
+                justify-content: flex-start;
+            }
+
 
             #legion-mini-widget .legion-mini-main-button:hover .legion-mini-main-text {
                 max-width: 105px;
@@ -4244,24 +4266,19 @@
         document.body.appendChild(widget);
 
         function updateLauncherDirection() {
-            const rect = widget.getBoundingClientRect();
+            const button = widget.querySelector('#legion-mini-toggle');
+            const rect = button.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
         
-            widget.classList.toggle(
-                'expand-left',
-                centerX >= window.innerWidth / 2
-            );
+            const expandLeft = centerX > window.innerWidth / 2;
         
-            widget.classList.toggle(
-                'expand-right',
-                centerX < window.innerWidth / 2
-            );
+            widget.classList.toggle('expand-left', expandLeft);
+            widget.classList.toggle('expand-right', !expandLeft);
         }
         
         updateLauncherDirection();
         
         window.addEventListener('resize', updateLauncherDirection);
-        
         widget.addEventListener('pointermove', updateLauncherDirection);
         widget.addEventListener('pointerup', updateLauncherDirection);
 
