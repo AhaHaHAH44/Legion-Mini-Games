@@ -3548,6 +3548,11 @@
             ======================================== */
 
             #legion-mini-tools {
+                cursor: grab;
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: none;
+                                
                 position: fixed;
                 display: none;
             
@@ -3566,6 +3571,11 @@
                 box-shadow: 0 5px 18px rgba(0, 0, 0, .22);
             
                 z-index: 999999;
+            }
+
+            #legion-mini-tools button {
+                cursor: pointer;
+                touch-action: auto;
             }
             
             #legion-mini-tools.open {
@@ -3717,6 +3727,109 @@
         tools.style.bottom = 'auto';
     }
 
+    function makeToolsDraggable(tools) {
+        if (!tools) return;
+    
+        const storageKey = 'legion_ui_tools_position';
+    
+        // Восстанавливаем сохранённую позицию
+        try {
+            const saved = JSON.parse(
+                localStorage.getItem(storageKey)
+            );
+    
+            if (
+                saved &&
+                Number.isFinite(saved.left) &&
+                Number.isFinite(saved.top)
+            ) {
+                tools.style.left = `${saved.left}px`;
+                tools.style.top = `${saved.top}px`;
+                tools.style.right = 'auto';
+                tools.style.bottom = 'auto';
+            }
+        } catch (_) {
+            console.warn('Legion: не удалось загрузить позицию панели');
+        }
+    
+        let dragging = false;
+        let startX = 0;
+        let startY = 0;
+        let initialLeft = 0;
+        let initialTop = 0;
+    
+        tools.addEventListener('pointerdown', event => {
+            // Нажатия на кнопки не запускают перетаскивание
+            if (event.target.closest('button')) return;
+    
+            if (event.button !== 0) return;
+    
+            const rect = tools.getBoundingClientRect();
+    
+            dragging = true;
+    
+            startX = event.clientX;
+            startY = event.clientY;
+    
+            initialLeft = rect.left;
+            initialTop = rect.top;
+    
+            tools.setPointerCapture(event.pointerId);
+        });
+    
+        tools.addEventListener('pointermove', event => {
+            if (!dragging) return;
+    
+            const deltaX = event.clientX - startX;
+            const deltaY = event.clientY - startY;
+    
+            const maxLeft = Math.max(
+                0,
+                window.innerWidth - tools.offsetWidth
+            );
+    
+            const maxTop = Math.max(
+                0,
+                window.innerHeight - tools.offsetHeight
+            );
+    
+            const left = Math.min(
+                maxLeft,
+                Math.max(0, initialLeft + deltaX)
+            );
+    
+            const top = Math.min(
+                maxTop,
+                Math.max(0, initialTop + deltaY)
+            );
+    
+            tools.style.left = `${left}px`;
+            tools.style.top = `${top}px`;
+    
+            tools.style.right = 'auto';
+            tools.style.bottom = 'auto';
+        });
+    
+        const stopDragging = () => {
+            if (!dragging) return;
+    
+            dragging = false;
+    
+            const rect = tools.getBoundingClientRect();
+    
+            localStorage.setItem(
+                storageKey,
+                JSON.stringify({
+                    left: rect.left,
+                    top: rect.top
+                })
+            );
+        };
+    
+        tools.addEventListener('pointerup', stopDragging);
+        tools.addEventListener('pointercancel', stopDragging);
+    }
+
     function createInterface() {
         addStyles();
 
@@ -3825,6 +3938,10 @@
         `;
 
         document.body.appendChild(widget);
+
+        const toolsPanel = widget.querySelector('#legion-mini-tools');
+
+        makeToolsDraggable(toolsPanel);
 
         const modal = document.createElement('div');
         modal.id = 'legion-mini-modal';
