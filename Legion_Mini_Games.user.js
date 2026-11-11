@@ -196,9 +196,15 @@
                 display: none;
                 width: 310px;
                 max-width: calc(100vw - 40px);
-                position: absolute;
-                right: 0;
-                bottom: 55px;
+                box-sizing: border-box;
+            
+                position: fixed;
+                right: 20px;
+                bottom: 80px;
+                left: auto;
+                top: auto;
+            
+                z-index: 999998;
                 margin-bottom: 0;
                 max-height: min(82vh, 760px);
                 overflow-y: auto;
@@ -4219,7 +4225,12 @@
 
         document.body.appendChild(widget);
 
+        // Отделяем лобби от основного виджета
+        const lobbyPanel = widget.querySelector('#legion-mini-panel');
         const toolsPanel = widget.querySelector('#legion-mini-tools');
+        
+        document.body.appendChild(lobbyPanel);
+        document.body.appendChild(toolsPanel);
 
         makeToolsDraggable(toolsPanel);
 
@@ -4229,9 +4240,6 @@
             widget.querySelector('#legion-mini-toggle'),
             'legion_ui_launcher_position'
         );
-        
-        // Независимое перемещение лобби за заголовок
-        const lobbyPanel = widget.querySelector('#legion-mini-panel');
         
         makeElementDraggable(
             lobbyPanel,
@@ -4448,7 +4456,7 @@
 
         widget.querySelector('#legion-mini-toggle')
             .addEventListener('click', () => {
-                const panel = widget.querySelector('#legion-mini-panel');
+                const panel = lobbyPanel;
                 const tools = document.querySelector('#legion-mini-tools');
         
                 const isOpen = panel.classList.toggle('open');
@@ -4462,13 +4470,13 @@
                 }
             });
 
-        widget.querySelector('#legion-mini-leaderboard-button')
+        toolsPanel.querySelector('#legion-mini-leaderboard-button')
             .addEventListener('click', openLeaderboard);
-
-        widget.querySelector('#legion-mini-shop-button')
+        
+        toolsPanel.querySelector('#legion-mini-shop-button')
             .addEventListener('click', openShop);
-
-        widget.querySelector('#legion-mini-inventory-button')
+        
+        toolsPanel.querySelector('#legion-mini-inventory-button')
             .addEventListener('click', openInventory);
 
         widget.querySelector('#legion-mini-dnd-toggle')
@@ -4553,7 +4561,7 @@
 
         return {
             widget,
-            panel: widget.querySelector('#legion-mini-panel'),
+            panel: lobbyPanel,
             status: widget.querySelector('#legion-mini-status'),
             count: widget.querySelector('#legion-mini-count'),
             players: playersElement,
