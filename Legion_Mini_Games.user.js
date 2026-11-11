@@ -3195,8 +3195,17 @@
             }
             
             #legion-mini-widget .legion-mini-button-row {
-                width: max-content;
-                margin: 0 auto;
+                display: flex;
+                width: 100%;
+                margin: 0;
+            }
+            
+            #legion-mini-widget.expand-left .legion-mini-button-row {
+                justify-content: flex-end;
+            }
+            
+            #legion-mini-widget.expand-right .legion-mini-button-row {
+                justify-content: flex-start;
             }
             
             #legion-mini-widget .legion-mini-return-row:empty {
@@ -4267,7 +4276,7 @@
 
         function updateLauncherDirection() {
             const button = widget.querySelector('#legion-mini-toggle');
-            const rect = button.getBoundingClientRect();
+            const rect = widget.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
         
             const expandLeft = centerX > window.innerWidth / 2;
