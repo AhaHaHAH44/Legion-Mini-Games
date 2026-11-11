@@ -3542,6 +3542,137 @@
                 color: #c6ad91;
                 font-size: 11px;
             }
+
+            /* ========================================
+               ПЛАВАЮЩАЯ ПАНЕЛЬ ИНСТРУМЕНТОВ
+            ======================================== */
+
+            #legion-mini-tools {
+                position: fixed;
+                right: 350px;
+                bottom: 20px;
+                z-index: 999999;
+
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+
+                padding: 8px;
+
+                border: 1px solid rgba(161, 123, 80, .55);
+                border-radius: 15px;
+
+                background: rgba(48, 38, 30, .58);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+
+                box-shadow: 0 5px 18px rgba(0, 0, 0, .22);
+            }
+
+            #legion-mini-tools .legion-mini-icon-button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                width: 39px;
+                height: 39px;
+                padding: 0;
+
+                border: 1px solid rgba(161, 123, 80, .65);
+                border-radius: 11px;
+
+                background: rgba(75, 57, 42, .65);
+                color: #fff0dc;
+
+                font-size: 17px;
+                cursor: pointer;
+
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+
+                transition: .2s ease;
+            }
+
+            #legion-mini-tools .legion-mini-icon-button:hover {
+                background: rgba(105, 77, 52, .85);
+                border-color: #d1a875;
+                transform: translateX(2px);
+            }
+
+            /* Компактная кнопка Кото-игр */
+
+            #legion-mini-widget .legion-mini-main-button {
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 0;
+
+                width: 48px;
+                min-width: 48px;
+                height: 48px;
+                padding: 0 13px;
+
+                overflow: hidden;
+                transition: width .25s ease, background .2s ease;
+            }
+
+            .legion-mini-main-icon {
+                display: inline-flex;
+                flex: 0 0 20px;
+                align-items: center;
+                justify-content: center;
+                font-size: 19px;
+            }
+
+            .legion-mini-main-text {
+                display: inline-block;
+                margin-left: 0;
+                max-width: 0;
+                opacity: 0;
+                overflow: hidden;
+                white-space: nowrap;
+                transition: max-width .25s ease, opacity .2s ease, margin-left .25s ease;
+            }
+
+            #legion-mini-widget .legion-mini-main-button:hover {
+                width: 155px;
+                min-width: 155px;
+                gap: 8px;
+            }
+
+            #legion-mini-widget .legion-mini-main-button:hover .legion-mini-main-text {
+                max-width: 105px;
+                margin-left: 5px;
+                opacity: 1;
+            }
+
+            /* Немного прозрачности у лобби */
+
+            #legion-mini-panel {
+                background:
+                    radial-gradient(
+                        ellipse at 100% 0%,
+                        rgba(205, 157, 94, .12),
+                        transparent 42%
+                    ),
+                    linear-gradient(
+                        145deg,
+                        rgba(65, 48, 35, .94),
+                        rgba(43, 35, 29, .94) 55%,
+                        rgba(35, 32, 30, .95)
+                    );
+
+                backdrop-filter: blur(14px);
+                -webkit-backdrop-filter: blur(14px);
+            }
+
+            @media (max-width: 600px) {
+                #legion-mini-tools {
+                    right: 75px;
+                    bottom: 80px;
+                }
+            }
         `;
 
         document.head.appendChild(style);
@@ -3628,49 +3759,45 @@
             </div>
 
             <div class="legion-mini-launcher">
-
+            
                 <div class="legion-mini-return-row">
                     <!-- Кнопка добавляется сюда через JavaScript -->
                 </div>
             
                 <div class="legion-mini-button-row">
             
-                    <div class="legion-mini-side legion-mini-side-left">
-            
-                        <button id="legion-mini-leaderboard-button"
-                                class="legion-mini-icon-button"
-                                type="button"
-                                title="Зал славы котиков">
-                            🏆
-                        </button>
-            
-                        <button id="legion-mini-shop-button"
-                                class="legion-mini-icon-button"
-                                type="button"
-                                title="Магазин котиков">
-                            🛒
-                        </button>
-            
-                    </div>
-            
                     <button id="legion-mini-toggle"
                             class="legion-mini-main-button"
-                            type="button">
-                        🐾 Кото-игры
+                            type="button"
+                            title="Кото-игры">
+                        <span class="legion-mini-main-icon">🐾</span>
+                        <span class="legion-mini-main-text">Кото-игры</span>
                     </button>
             
-                    <div class="legion-mini-side legion-mini-side-right">
-            
-                        <button id="legion-mini-inventory-button"
-                                class="legion-mini-icon-button"
-                                type="button"
-                                title="Инвентарь котика">
-                            🧺
-                        </button>
-            
-                    </div>
-            
                 </div>
+            </div>
+            
+            <div id="legion-mini-tools">
+                <button id="legion-mini-shop-button"
+                        class="legion-mini-icon-button"
+                        type="button"
+                        title="Магазин котиков">
+                    🛒
+                </button>
+            
+                <button id="legion-mini-leaderboard-button"
+                        class="legion-mini-icon-button"
+                        type="button"
+                        title="Зал славы котиков">
+                    🏆
+                </button>
+            
+                <button id="legion-mini-inventory-button"
+                        class="legion-mini-icon-button"
+                        type="button"
+                        title="Инвентарь котика">
+                    🧺
+                </button>
             </div>
         `;
 
