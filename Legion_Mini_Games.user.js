@@ -2998,8 +2998,26 @@
                 flex-direction: column;
                 align-items: center;
                 gap: 5px !important;
-                width: max-content;
+            
+                width: 155px;
                 margin-left: auto;
+            }
+            
+            #legion-mini-widget .legion-mini-button-row {
+                display: flex;
+                width: 100%;
+            }
+            
+            #legion-mini-widget.expand-left .legion-mini-button-row {
+                justify-content: flex-end;
+            }
+            
+            #legion-mini-widget.expand-right .legion-mini-button-row {
+                justify-content: flex-start;
+            }
+            
+            #legion-mini-widget .legion-mini-return-row {
+                width: 100%;
             }
             
             /* Верхняя кнопка возврата */
@@ -4225,6 +4243,28 @@
 
         document.body.appendChild(widget);
 
+        function updateLauncherDirection() {
+            const rect = widget.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+        
+            widget.classList.toggle(
+                'expand-left',
+                centerX >= window.innerWidth / 2
+            );
+        
+            widget.classList.toggle(
+                'expand-right',
+                centerX < window.innerWidth / 2
+            );
+        }
+        
+        updateLauncherDirection();
+        
+        window.addEventListener('resize', updateLauncherDirection);
+        
+        widget.addEventListener('pointermove', updateLauncherDirection);
+        widget.addEventListener('pointerup', updateLauncherDirection);
+
         // Отделяем лобби от основного виджета
         const lobbyPanel = widget.querySelector('#legion-mini-panel');
         const toolsPanel = widget.querySelector('#legion-mini-tools');
@@ -4479,12 +4519,12 @@
         toolsPanel.querySelector('#legion-mini-inventory-button')
             .addEventListener('click', openInventory);
 
-        widget.querySelector('#legion-mini-dnd-toggle')
+        lobbyPanel.querySelector('#legion-mini-dnd-toggle')
             .addEventListener('click', toggleDoNotDisturb);
-
-        const playersElement = widget.querySelector('#legion-mini-players');
-        const playersToggle = widget.querySelector('#legion-mini-player-toggle');
-        const playerSearch = widget.querySelector('#legion-mini-player-search');
+        
+        const playersElement = lobbyPanel.querySelector('#legion-mini-players');
+        const playersToggle = lobbyPanel.querySelector('#legion-mini-player-toggle');
+        const playerSearch = lobbyPanel.querySelector('#legion-mini-player-search');
 
         playersToggle.addEventListener('click', () => {
             const collapsed = playersElement.classList.toggle('collapsed');
@@ -4554,7 +4594,7 @@
             }
         });
 
-        widget.querySelector('.legion-mini-self').textContent =
+        lobbyPanel.querySelector('.legion-mini-self').textContent =
             'Вы играете как: ' + nickname;
 
         window.addEventListener('resize', clampLegionUIPositions);
@@ -4562,14 +4602,14 @@
         return {
             widget,
             panel: lobbyPanel,
-            status: widget.querySelector('#legion-mini-status'),
-            count: widget.querySelector('#legion-mini-count'),
+            status: lobbyPanel.querySelector('#legion-mini-status'),
+            count: lobbyPanel.querySelector('#legion-mini-count'),
             players: playersElement,
             playerSearch,
             playersToggle,
-            dndTitle: widget.querySelector('#legion-mini-dnd-title'),
-            dndHint: widget.querySelector('#legion-mini-dnd-hint'),
-            dndButton: widget.querySelector('#legion-mini-dnd-toggle'),
+            dndTitle: lobbyPanel.querySelector('#legion-mini-dnd-title'),
+            dndHint: lobbyPanel.querySelector('#legion-mini-dnd-hint'),
+            dndButton: lobbyPanel.querySelector('#legion-mini-dnd-toggle'),
 
             modal,
             restoreButton,
