@@ -3708,6 +3708,105 @@
             #legion-mini-widget #legion-mini-toggle:active {
                 cursor: grabbing;
             }
+
+            /* ========================================
+               HOLOGRAM UI — ОБЩИЙ СТИЛЬ
+            ======================================== */
+
+            /* Основное лобби */
+            #legion-mini-panel {
+                background:
+                    radial-gradient(
+                        ellipse at 100% 0%,
+                        rgba(218, 174, 111, .10),
+                        transparent 45%
+                    ),
+                    linear-gradient(
+                        145deg,
+                        rgba(65, 48, 35, .91),
+                        rgba(43, 35, 29, .92) 55%,
+                        rgba(35, 32, 30, .93)
+                    );
+
+                border-color: rgba(190, 151, 105, .78);
+
+                box-shadow:
+                    0 12px 38px rgba(0, 0, 0, .36),
+                    0 0 18px rgba(218, 174, 111, .07),
+                    inset 0 1px rgba(255, 255, 255, .07);
+
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+            }
+
+            /* Обычные кнопки лобби */
+            #legion-mini-panel .legion-mini-button,
+            #legion-mini-panel .legion-mini-dnd-button,
+            #legion-mini-panel .legion-player-toggle {
+                background: rgba(82, 62, 45, .76);
+                border-color: rgba(161, 123, 80, .72);
+
+                backdrop-filter: blur(7px);
+                -webkit-backdrop-filter: blur(7px);
+
+                transition:
+                    background .2s ease,
+                    border-color .2s ease,
+                    box-shadow .2s ease,
+                    transform .2s ease;
+            }
+
+            #legion-mini-panel .legion-mini-button:hover:not(:disabled),
+            #legion-mini-panel .legion-mini-dnd-button:hover:not(:disabled),
+            #legion-mini-panel .legion-player-toggle:hover {
+                background: rgba(112, 82, 55, .84);
+                border-color: #d1a875;
+                box-shadow: 0 0 12px rgba(218, 174, 111, .10);
+            }
+
+            /* Поле поиска */
+            #legion-mini-panel .legion-player-search {
+                background: rgba(35, 29, 24, .78);
+                border-color: rgba(128, 96, 68, .72);
+
+                backdrop-filter: blur(7px);
+                -webkit-backdrop-filter: blur(7px);
+            }
+
+            /* Блоки внутри лобби */
+            #legion-mini-panel .legion-mini-dnd,
+            #legion-mini-panel .legion-roulette {
+                background: rgba(58, 44, 33, .72);
+                border-color: rgba(161, 123, 80, .65);
+
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+
+            /* Панель дополнительных действий */
+            #legion-mini-tools {
+                background: rgba(48, 38, 30, .52);
+                border-color: rgba(190, 151, 105, .65);
+
+                box-shadow:
+                    0 6px 20px rgba(0, 0, 0, .22),
+                    0 0 13px rgba(218, 174, 111, .06);
+            }
+
+            /* Плавное появление лобби */
+            #legion-mini-panel {
+                transition:
+                    opacity .2s ease,
+                    border-color .2s ease,
+                    box-shadow .2s ease;
+            }
+
+            /* Отключаем выделение при перетаскивании */
+            #legion-mini-panel .legion-mini-heading,
+            #legion-mini-tools {
+                -webkit-user-select: none;
+                user-select: none;
+            }
         `;
 
         document.head.appendChild(style);
@@ -3973,6 +4072,42 @@
     
         tools.addEventListener('pointerup', stopDragging);
         tools.addEventListener('pointercancel', stopDragging);
+    }
+
+    function clampLegionUIPositions() {
+        const elements = [
+            ['#legion-mini-widget', 'legion_ui_launcher_position'],
+            ['#legion-mini-panel', 'legion_ui_lobby_position'],
+            ['#legion-mini-tools', 'legion_ui_tools_position']
+        ];
+    
+        elements.forEach(([selector, storageKey]) => {
+            const element = document.querySelector(selector);
+    
+            if (!element) return;
+    
+            const rect = element.getBoundingClientRect();
+    
+            const left = Math.min(
+                Math.max(0, rect.left),
+                Math.max(0, window.innerWidth - element.offsetWidth)
+            );
+    
+            const top = Math.min(
+                Math.max(0, rect.top),
+                Math.max(0, window.innerHeight - element.offsetHeight)
+            );
+    
+            element.style.left = `${left}px`;
+            element.style.top = `${top}px`;
+            element.style.right = 'auto';
+            element.style.bottom = 'auto';
+    
+            localStorage.setItem(
+                storageKey,
+                JSON.stringify({ left, top })
+            );
+        });
     }
 
     function createInterface() {
@@ -4413,6 +4548,8 @@
 
         widget.querySelector('.legion-mini-self').textContent =
             'Вы играете как: ' + nickname;
+
+        window.addEventListener('resize', clampLegionUIPositions);
 
         return {
             widget,
