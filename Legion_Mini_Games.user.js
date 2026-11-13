@@ -7399,7 +7399,7 @@ function submitBet(amount) {
     // МАГАЗИН КОТИКОВ
     // ========================================
     
-    function openShop() {
+    function openShop(initialCategory = null, initialSubcategory = 'all') {
     ui.shopModal.classList.add('open');
 
     ui.shopBalance.textContent = '💰 Баланс: загружаем...';
@@ -7439,7 +7439,7 @@ function submitBet(amount) {
                 return;
             }
 
-            renderShop(result);
+            renderShop(result, initialCategory, initialSubcategory);
         }
     );
 }
@@ -7748,10 +7748,30 @@ function renderInventory(data) {
         slotElement.append(label, number);
 
         if (!unlocked) {
-            slotElement.disabled = true;
             slotElement.style.opacity = '0.5';
-            slotElement.style.cursor = 'not-allowed';
-            slotElement.title = '🔒 Эта ячейка ещё не открыта';
+            slotElement.style.cursor = 'pointer';
+            slotElement.title = '🔒 Нажми, чтобы открыть ячейку';
+
+            slotElement.addEventListener('click', () => {
+                openModal(
+                    '🔒 Ячейка закрыта',
+                    'Эта ячейка пока недоступна. Открой её в магазине, чтобы установить ещё один модификатор.',
+                    [
+                        {
+                            label: 'Позже',
+                            onClick: closeModal
+                        },
+                        {
+                            label: 'Переместиться в магазин',
+                            className: 'primary',
+                            onClick: () => {
+                                closeModal();
+                                openShop('unlock', 'Ячейки');
+                            }
+                        }
+                    ]
+                );
+            });
 
             const lockIcon = createLeaderboardElement(
                 'span',
@@ -7917,7 +7937,7 @@ function renderInventory(data) {
     content.appendChild(view);
 }
     
-    function renderShop(data) {
+    function renderShop(data, preferredCategory = null, preferredSubcategory = 'all') {
         ui.shopBalance.textContent =
             `💰 Ваш баланс: ${data.balance} мяукоинов`;
     
@@ -7985,7 +8005,11 @@ function renderInventory(data) {
             category => categoryItems[category.id].length > 0
         );
     
-        let activeCategory = availableCategories[0].id;
+        let activeCategory = availableCategories.some(
+            category => category.id === preferredCategory
+        )
+            ? preferredCategory
+            : availableCategories[0].id;
     
         // Панель переключения категорий
         const tabs = createLeaderboardElement(
@@ -7999,48 +8023,53 @@ function renderInventory(data) {
             'legion-shop-tab-content'
         );
     
-        function renderCategory(categoryId) {
-    const category = categories.find(
-        item => item.id === categoryId
-    );
+    function renderCategory(categoryId, preferredSubcategory = 'all') {
+        const category = categories.find(
+            item => item.id === categoryId
+        );
+    
+        const items = categoryItems[categoryId];
+    
+        content.replaceChildren();
+        content.dataset.category = categoryId;
+    
+        const description = createLeaderboardElement(
+            'div',
+            'legion-shop-section-description',
+            category.description
+        );
+    
+        content.appendChild(description);
+    
+        // Подкатегории формируются из metadata товаров
+        const subcategoryNames = {
+            jackpots: '💎 Джекпоты',
+            modes: '🎮 Режимы',
+            Ячейки: '🔒 Ячейки'
+        };
+    
+        const subcategories = [
+            {
+                id: 'all',
+                title: 'Все'
+            },
+            ...[
+                ...new Set(
+                    items
+                        .map(item => item.metadata?.subcategory)
+                        .filter(Boolean)
+                )
+            ].map(id => ({
+                id,
+                title: subcategoryNames[id] || id
+            }))
+        ];
 
-    const items = categoryItems[categoryId];
-
-    content.replaceChildren();
-    content.dataset.category = categoryId;
-
-    const description = createLeaderboardElement(
-        'div',
-        'legion-shop-section-description',
-        category.description
-    );
-
-    content.appendChild(description);
-
-    // Подкатегории формируются из metadata товаров
-    const subcategoryNames = {
-        jackpots: '💎 Джекпоты',
-        modes: '🎮 Режимы'
-    };
-
-    const subcategories = [
-        {
-            id: 'all',
-            title: 'Все'
-        },
-        ...[
-            ...new Set(
-                items
-                    .map(item => item.metadata?.subcategory)
-                    .filter(Boolean)
-            )
-        ].map(id => ({
-            id,
-            title: subcategoryNames[id] || id
-        }))
-    ];
-
-    let activeSubcategory = 'all';
+    let activeSubcategory = subcategories.some(
+        subcategory => subcategory.id === preferredSubcategory
+    )
+        ? preferredSubcategory
+        : 'all';
 
     // Контейнер подкатегорий
     const subTabs = createLeaderboardElement(
@@ -8214,7 +8243,12 @@ function renderInventory(data) {
     ui.shopContent.append(tabs, content);
 
     // Показываем первую доступную категорию
-    renderCategory(activeCategory);
+    renderCategory(
+        activeCategory,
+        activeCategory === preferredCategory
+            ? preferredSubcategory
+            : 'all'
+    );
 }
 
     
