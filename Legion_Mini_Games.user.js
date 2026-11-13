@@ -77,6 +77,7 @@
     let moveSubmitted = false;
     let ui;
     let lastInventorySnapshot = null;
+    let lastInventoryItems = null;
     let inventoryPollingInProgress = false;
 
     const ROULETTE_RESOURCES = {
@@ -662,35 +663,80 @@
             .legion-roulette-reel-area {
                 position: relative;
                 display: flex;
+                flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 margin: 15px 0;
             }
             
-            /* Убираем внешний отступ барабанов — его задаёт область */
+            /* Барабаны */
             .legion-roulette-reel-area .legion-roulette-reels {
+                order: 0;
                 margin: 0;
             }
             
-            /* Лёгкое затемнение слотов при выборе модификатора */
-            .legion-roulette-reel-area::before {
-                content: "";
-                position: absolute;
-                inset: -5px;
-                z-index: 2;
-                border-radius: 15px;
-                background: rgba(12, 9, 6, .38);
-                backdrop-filter: blur(1px);
-                -webkit-backdrop-filter: blur(1px);
+            /* Плавающая подсказка над барабанами */
+            .legion-roulette-modifier-popup {
+                position: relative;
+                order: -1;
+                z-index: 3;
+            
+                width: min(290px, 100%);
+                box-sizing: border-box;
+                padding: 0 12px;
+                margin: 0;
+            
+                border: none;
+                border-radius: 10px;
+            
+                background: rgba(28, 23, 19, .48);
+                color: #f5dfc4;
+                text-align: center;
+            
+                text-shadow: 0 1px 5px rgba(0, 0, 0, .7);
+            
+                backdrop-filter: blur(9px);
+                -webkit-backdrop-filter: blur(9px);
+            
                 opacity: 0;
                 visibility: hidden;
-                transition: opacity .22s ease, visibility .22s ease;
                 pointer-events: none;
+            
+                max-height: 0;
+                overflow: hidden;
+            
+                transform: translateY(6px);
+            
+                transition:
+                    opacity .22s ease,
+                    transform .22s ease,
+                    max-height .22s ease,
+                    margin .22s ease,
+                    padding .22s ease,
+                    visibility .22s ease;
             }
             
-            .legion-roulette-reel-area.is-modifier-active::before {
+            .legion-roulette-modifier-popup.is-visible {
                 opacity: 1;
                 visibility: visible;
+            
+                max-height: 75px;
+                padding: 5px 12px;
+                margin-bottom: 6px;
+            
+                transform: translateY(0);
+            }
+            
+            .legion-roulette-modifier-popup [data-role="modifier-popup-title"] {
+                margin-bottom: 3px;
+                font-size: 12px;
+                font-weight: bold;
+                color: #ffe0b8;
+            }
+            
+            .legion-roulette-modifier-popup [data-role="modifier-popup-text"] {
+                font-size: 11px;
+                line-height: 1.4;
             }
             
             /* Плавающая подсказка */
@@ -9210,7 +9256,13 @@ function startInventoryPolling() {
                 // Первоначальная загрузка — запоминаем состояние
                 if (lastInventorySnapshot === null) {
                     lastInventorySnapshot = snapshot;
-                    console.log('[Legion] Инвентарь синхронизирован');
+                
+                    lastInventoryItems = (result.items || []).map(item => ({
+                        code: item.code,
+                        quantity: Number(item.quantity ?? 1)
+                    }));
+                
+                    console.log('[Legion Кото-игры] Инвентарь синхронизирован');
                     return;
                 }
 
@@ -9219,17 +9271,47 @@ function startInventoryPolling() {
                     return;
                 }
 
-                // Запоминаем новое состояние
+                // Проверяем, появились ли новые предметы или увеличилось количество
+                const previousItems = new Map(
+                    (lastInventoryItems || []).map(item => [
+                        item.code,
+                        item.quantity
+                    ])
+                );
+                
+                const currentItems = Array.isArray(result.items)
+                    ? result.items
+                    : [];
+                
+                const hasNewItems = currentItems.some(item => {
+                    const previousQuantity = previousItems.get(item.code);
+                    const currentQuantity = Number(item.quantity ?? 1);
+                
+                    // Новый предмет
+                    if (previousQuantity === undefined) {
+                        return true;
+                    }
+                
+                    // Количество увеличилось
+                    return currentQuantity > previousQuantity;
+                });
+                
+                // Обновляем сохранённое состояние
                 lastInventorySnapshot = snapshot;
-
-                console.log('[Legion] Обнаружены изменения инвентаря');
-
+                
+                lastInventoryItems = currentItems.map(item => ({
+                    code: item.code,
+                    quantity: Number(item.quantity ?? 1)
+                }));
+                
+                console.log('[Legion Кото-игры] Обнаружены изменения инвентаря');
+                
                 // Если инвентарь открыт — обновляем его
                 if (ui.inventoryModal.classList.contains('open')) {
                     renderInventory(result);
                     setInventoryNotification(false);
-                } else {
-                    // Если закрыт — показываем уведомление
+                } else if (hasNewItems) {
+                    // Уведомляем только о приобретении предметов
                     setInventoryNotification(true);
                 }
             }
