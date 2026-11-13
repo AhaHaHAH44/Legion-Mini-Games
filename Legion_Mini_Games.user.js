@@ -7766,6 +7766,7 @@ function renderInventory(data) {
                             className: 'primary',
                             onClick: () => {
                                 closeModal();
+                                closeInventory();
                                 openShop('unlock', 'Ячейки');
                             }
                         }
