@@ -7692,119 +7692,225 @@ function renderInventory(data) {
         'legion-inventory-slot-groups'
     );
     
-    if (data.slots && data.slots.length > 0) {
-    
-        // Группируем слоты по типу, полученному от сервера
+    // ========================================
+    // ЯЧЕЙКИ МОДИФИКАТОРОВ
+    // ========================================
+
+    const modifierGroup = createLeaderboardElement(
+        'div',
+        'legion-inventory-slot-group'
+    );
+
+    const modifierTitle = createLeaderboardElement(
+        'div',
+        'legion-inventory-slot-group-title',
+        '🎰 Модификаторы рулетки'
+    );
+
+    const modifierGrid = createLeaderboardElement(
+        'div',
+        'legion-inventory-slots'
+    );
+
+    const modifierSlots = Array.isArray(data.modifierSlots)
+        ? [...data.modifierSlots].sort(
+            (a, b) => Number(a.slot_number) - Number(b.slot_number)
+        )
+        : [];
+
+    modifierSlots.forEach(slot => {
+        const unlocked = Boolean(slot.unlocked);
+        const equipped = Boolean(slot.item_code);
+
+        const slotElement = createLeaderboardElement(
+            'button',
+            equipped
+                ? 'legion-inventory-slot legion-inventory-slot-equipped'
+                : unlocked
+                    ? 'legion-inventory-slot legion-inventory-slot-empty'
+                    : 'legion-inventory-slot'
+        );
+
+        slotElement.type = 'button';
+
+        const label = createLeaderboardElement(
+            'span',
+            'legion-inventory-slot-label',
+            `Модификатор ${slot.slot_number}`
+        );
+
+        const number = createLeaderboardElement(
+            'span',
+            'legion-inventory-slot-number',
+            String(slot.slot_number)
+        );
+
+        slotElement.append(label, number);
+
+        if (!unlocked) {
+            slotElement.disabled = true;
+            slotElement.style.opacity = '0.5';
+            slotElement.style.cursor = 'not-allowed';
+            slotElement.title = '🔒 Эта ячейка ещё не открыта';
+
+            const lockIcon = createLeaderboardElement(
+                'span',
+                'legion-inventory-slot-icon',
+                '🔒'
+            );
+
+            const lockName = createLeaderboardElement(
+                'span',
+                'legion-inventory-slot-name',
+                'Закрыта'
+            );
+
+            slotElement.append(lockIcon, lockName);
+        } else if (equipped) {
+            slotElement.title =
+                `${slot.item_name}. Нажми, чтобы снять модификатор.`;
+
+            const icon = createLeaderboardElement(
+                'span',
+                'legion-inventory-slot-icon',
+                slot.item_icon || '📦'
+            );
+
+            const name = createLeaderboardElement(
+                'span',
+                'legion-inventory-slot-name',
+                slot.item_name || 'Модификатор'
+            );
+
+            slotElement.append(icon, name);
+
+            slotElement.addEventListener('click', () => {
+                unequipInventorySlot({
+                    ...slot,
+                    slot_type: 'roulette_modifier',
+                    slot_name: 'Модификатор'
+                });
+            });
+        } else {
+            slotElement.title = 'Свободная ячейка для модификатора';
+        }
+
+        modifierGrid.appendChild(slotElement);
+    });
+
+    modifierGroup.append(modifierTitle, modifierGrid);
+    slotsContainer.appendChild(modifierGroup);
+
+    // ========================================
+    // ОСТАЛЬНЫЕ СЛОТЫ ЭКИПИРОВКИ
+    // ========================================
+
+    const regularSlots = (data.slots || []).filter(
+        slot => slot.slot_type !== 'roulette_modifier'
+    );
+
+    if (regularSlots.length > 0) {
+
+        // Группируем слоты по типу
         const slotGroups = new Map();
-    
-        data.slots.forEach(slot => {
+
+        regularSlots.forEach(slot => {
             const type = slot.slot_type || 'other';
-    
+
             if (!slotGroups.has(type)) {
                 slotGroups.set(type, []);
             }
-    
+
             slotGroups.get(type).push(slot);
         });
-    
+
         slotGroups.forEach((slots, type) => {
-    
+
             const group = createLeaderboardElement(
                 'div',
                 'legion-inventory-slot-group'
             );
-    
-            // Превращаем техническое название типа в читаемый заголовок
+
             const groupNames = {
-                ROULETTE_MODIFIER: 'Модификаторы рулетки',
                 COSMETIC: 'Косметика',
                 ROULETTE_EFFECT: 'Эффекты рулетки',
                 ROULETTE_THEME: 'Темы оформления'
             };
-            
+
             const typeKey = String(type)
                 .trim()
                 .replace(/[\s-]+/g, '_')
                 .toUpperCase();
-            
+
             const groupName = groupNames[typeKey] || 'Другие предметы';
-    
+
             const groupTitle = createLeaderboardElement(
                 'div',
                 'legion-inventory-slot-group-title',
                 groupName
             );
-    
+
             const grid = createLeaderboardElement(
                 'div',
                 'legion-inventory-slots'
             );
-    
+
             slots.forEach(slot => {
                 const equipped = Boolean(slot.item_code);
-    
+
                 const slotElement = createLeaderboardElement(
                     'button',
                     equipped
                         ? 'legion-inventory-slot legion-inventory-slot-equipped'
                         : 'legion-inventory-slot legion-inventory-slot-empty'
                 );
-    
+
                 slotElement.type = 'button';
-    
+
                 slotElement.title = equipped
                     ? `${slot.slot_name}: ${slot.item_name}. Нажми, чтобы снять.`
                     : `${slot.slot_name} — свободный слот`;
-    
+
                 const label = createLeaderboardElement(
                     'span',
                     'legion-inventory-slot-label',
                     slot.slot_name || 'Слот'
                 );
-    
+
                 const number = createLeaderboardElement(
                     'span',
                     'legion-inventory-slot-number',
                     String(slot.slot_number)
                 );
-    
+
                 slotElement.append(label, number);
-    
+
                 if (equipped) {
                     const icon = createLeaderboardElement(
                         'span',
                         'legion-inventory-slot-icon',
                         slot.item_icon || '📦'
                     );
-    
+
                     const name = createLeaderboardElement(
                         'span',
                         'legion-inventory-slot-name',
                         slot.item_name || 'Предмет'
                     );
-    
+
                     slotElement.append(icon, name);
-    
+
                     slotElement.addEventListener('click', () => {
                         unequipInventorySlot(slot);
                     });
                 }
-    
+
                 grid.appendChild(slotElement);
             });
-    
+
             group.append(groupTitle, grid);
             slotsContainer.appendChild(group);
         });
-    
-    } else {
-        slotsContainer.appendChild(
-            createLeaderboardElement(
-                'div',
-                'legion-inventory-empty',
-                '😿 Слоты экипировки не найдены.'
-            )
-        );
     }
     
     view.appendChild(slotsContainer);
