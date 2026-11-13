@@ -739,67 +739,6 @@
                 line-height: 1.4;
             }
             
-            /* Плавающая подсказка */
-            .legion-roulette-modifier-popup {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, calc(-50% + 7px));
-                z-index: 3;
-            
-                width: min(270px, calc(100% - 12px));
-                box-sizing: border-box;
-                padding: 11px 14px;
-            
-                border: 1px solid rgba(224, 181, 111, .85);
-                border-radius: 12px;
-            
-                background: linear-gradient(
-                    145deg,
-                    rgba(75, 54, 35, .94),
-                    rgba(42, 32, 25, .96)
-                );
-            
-                color: #f5dfc4;
-                text-align: center;
-            
-                box-shadow:
-                    0 5px 18px rgba(0, 0, 0, .45),
-                    0 0 14px rgba(218, 174, 111, .2),
-                    inset 0 1px rgba(255, 255, 255, .08);
-            
-                backdrop-filter: blur(9px);
-                -webkit-backdrop-filter: blur(9px);
-            
-                opacity: 0;
-                visibility: hidden;
-                pointer-events: none;
-            
-                transition:
-                    opacity .22s ease,
-                    transform .22s ease,
-                    visibility .22s ease;
-            }
-            
-            .legion-roulette-modifier-popup.is-visible {
-                opacity: 1;
-                visibility: visible;
-                transform: translate(-50%, -50%);
-            }
-            
-            .legion-roulette-modifier-popup [data-role="modifier-popup-title"] {
-                margin-bottom: 4px;
-                font-size: 12px;
-                font-weight: bold;
-                color: #ffe0b8;
-            }
-            
-            .legion-roulette-modifier-popup [data-role="modifier-popup-text"] {
-                font-size: 11px;
-                line-height: 1.45;
-            }
-            
-
             .legion-roulette-result {
                 min-height: 34px;
                 margin: 8px 0;
