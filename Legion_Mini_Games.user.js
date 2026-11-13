@@ -3143,6 +3143,12 @@
                 width: 100%;
                 pointer-events: none;
             }
+
+            /* Если лаунчер находится в верхней половине экрана — кнопка снизу */
+            #legion-mini-widget.restore-below .legion-mini-return-row {
+                top: calc(100% + 5px);
+                bottom: auto;
+            }
             
             #legion-mini-widget .legion-mini-return-row #legion-mini-restore {
                 pointer-events: auto;
