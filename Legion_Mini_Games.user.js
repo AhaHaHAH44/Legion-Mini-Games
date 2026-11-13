@@ -8508,6 +8508,9 @@ function setInventoryNotification(visible) {
 }
 
 // Подключение к серверу уведомлений
+// Проверка изменений инвентаря
+function startInventoryPolling() {
+
     function checkInventoryChanges() {
         if (inventoryPollingInProgress) return;
 
