@@ -3850,6 +3850,28 @@
                 display: flex;
             }
 
+            /* Изменение формы панели инструментов */
+            #legion-mini-tools {
+                box-sizing: border-box;
+            }
+            
+            #legion-mini-tools::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 8px;
+                right: 8px;
+                height: 7px;
+                cursor: ns-resize;
+                z-index: 2;
+            }
+            
+            #legion-mini-tools.horizontal {
+                flex-direction: row;
+                width: max-content;
+                height: auto;
+            }
+
             #legion-mini-tools .legion-mini-icon-button {
                 display: flex;
                 align-items: center;
@@ -4312,14 +4334,17 @@
     
         const storageKey = 'legion_ui_tools_position';
     
-        // Восстанавливаем сохранённую позицию
-        try {
-            const saved = JSON.parse(
-                localStorage.getItem(storageKey)
-            );
+        let saved = null;
     
+        try {
+            saved = JSON.parse(localStorage.getItem(storageKey));
+        } catch (_) {
+            console.warn('Legion: не удалось загрузить настройки панели');
+        }
+    
+        // Восстанавливаем позицию и форму панели
+        if (saved) {
             if (
-                saved &&
                 Number.isFinite(saved.left) &&
                 Number.isFinite(saved.top)
             ) {
@@ -4328,36 +4353,96 @@
                 tools.style.right = 'auto';
                 tools.style.bottom = 'auto';
             }
-        } catch (_) {
-            console.warn('Legion: не удалось загрузить позицию панели');
+    
+            if (saved.horizontal) {
+                tools.classList.add('horizontal');
+            } else if (Number.isFinite(saved.height)) {
+                tools.style.height = `${saved.height}px`;
+            }
         }
     
         let dragging = false;
+        let resizing = false;
+    
         let startX = 0;
         let startY = 0;
+    
         let initialLeft = 0;
         let initialTop = 0;
+        let initialBottom = 0;
     
         tools.addEventListener('pointerdown', event => {
-            // Нажатия на кнопки не запускают перетаскивание
-            if (event.target.closest('button')) return;
-    
             if (event.button !== 0) return;
     
             const rect = tools.getBoundingClientRect();
     
-            dragging = true;
-    
             startX = event.clientX;
             startY = event.clientY;
-    
             initialLeft = rect.left;
             initialTop = rect.top;
+            initialBottom = rect.bottom;
+    
+            // Верхний край — изменение высоты
+            if (event.clientY <= rect.top + 8) {
+                resizing = true;
+                dragging = false;
+    
+                tools.style.height = `${rect.height}px`;
+    
+                tools.setPointerCapture(event.pointerId);
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+    
+            // Кнопки не запускают перемещение панели
+            if (event.target.closest('button')) return;
+    
+            dragging = true;
+            resizing = false;
     
             tools.setPointerCapture(event.pointerId);
         });
     
         tools.addEventListener('pointermove', event => {
+            if (resizing) {
+                const desiredHeight = Math.max(
+                    58,
+                    initialBottom - event.clientY
+                );
+    
+                // При небольшой высоте переключаемся в горизонтальный режим
+                if (desiredHeight <= 125) {
+                    tools.classList.add('horizontal');
+                    tools.style.height = '';
+                } else {
+                    tools.classList.remove('horizontal');
+                    tools.style.height = `${desiredHeight}px`;
+                }
+    
+                const actualHeight = tools.offsetHeight;
+    
+                tools.style.top = `${Math.max(
+                    0,
+                    initialBottom - actualHeight
+                )}px`;
+    
+                const maxLeft = Math.max(
+                    0,
+                    window.innerWidth - tools.offsetWidth
+                );
+    
+                tools.style.left = `${Math.min(
+                    maxLeft,
+                    Math.max(0, initialLeft)
+                )}px`;
+    
+                tools.style.right = 'auto';
+                tools.style.bottom = 'auto';
+    
+                return;
+            }
+    
             if (!dragging) return;
     
             const deltaX = event.clientX - startX;
@@ -4385,15 +4470,15 @@
     
             tools.style.left = `${left}px`;
             tools.style.top = `${top}px`;
-    
             tools.style.right = 'auto';
             tools.style.bottom = 'auto';
         });
     
-        const stopDragging = () => {
-            if (!dragging) return;
+        const stopInteraction = () => {
+            if (!dragging && !resizing) return;
     
             dragging = false;
+            resizing = false;
     
             const rect = tools.getBoundingClientRect();
     
@@ -4401,13 +4486,15 @@
                 storageKey,
                 JSON.stringify({
                     left: rect.left,
-                    top: rect.top
+                    top: rect.top,
+                    height: rect.height,
+                    horizontal: tools.classList.contains('horizontal')
                 })
             );
         };
     
-        tools.addEventListener('pointerup', stopDragging);
-        tools.addEventListener('pointercancel', stopDragging);
+        tools.addEventListener('pointerup', stopInteraction);
+        tools.addEventListener('pointercancel', stopInteraction);
     }
 
     function clampLegionUIPositions() {
