@@ -7873,6 +7873,47 @@ function renderInventory(data) {
     renderCategory(activeCategory);
 }
 
+    
+function openPurchaseModal(item, balance, buyButton) {
+    const card = ui.purchaseModal.querySelector('#legion-purchase-card');
+
+    card.classList.remove('success');
+
+    ui.purchaseIcon.textContent = '📦';
+    ui.purchaseName.textContent = item.name;
+    ui.purchaseDescription.textContent = item.description;
+
+    ui.purchasePrice.textContent = `${item.price} мяукоинов`;
+    ui.purchaseBalance.textContent = `${balance} мяукоинов`;
+
+    ui.purchaseModal.querySelector('.legion-purchase-title')
+        .textContent = 'Покупка товара';
+
+    ui.purchaseModal.querySelector('.legion-purchase-info')
+        .style.display = '';
+
+    ui.purchaseModal.querySelector('.legion-purchase-question')
+        .textContent = 'Хочешь приобрести этот товар?';
+
+    ui.purchaseCancel.style.display = '';
+
+    ui.purchaseCancel.onclick = () => {
+        ui.purchaseModal.classList.remove('open');
+    };
+
+    ui.purchaseConfirm.disabled = false;
+    ui.purchaseConfirm.textContent = '🐾 Купить';
+
+    ui.purchaseConfirm.onclick = () => {
+        ui.purchaseConfirm.disabled = true;
+        ui.purchaseConfirm.textContent = 'Покупаем...';
+
+        purchaseShopItem(item, buyButton);
+    };
+
+    ui.purchaseModal.classList.add('open');
+}
+
     function showPurchaseSuccess(item) {
         const card = ui.purchaseModal.querySelector('#legion-purchase-card');
     
@@ -7920,10 +7961,12 @@ function renderInventory(data) {
         },
         (error, result) => {
             if (error || !result?.success) {
+                ui.purchaseModal.classList.remove('open');
+            
                 showToast(
                     result?.error || '😿 Не удалось совершить покупку.'
                 );
-
+            
                 openShop();
                 return;
             }
