@@ -8,7 +8,6 @@
 // @supportURL   https://github.com/AhaHaHAH44/Legion-Mini-Games/issues
 // @updateURL    https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
 // @downloadURL  https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
-// @require      https://cdn.socket.io/4.8.1/socket.io.min.js
 // @match        https://play.multidonate.ru/*
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -77,7 +76,8 @@
     let currentKnbMatch = null;
     let moveSubmitted = false;
     let ui;
-    let inventorySocket = null;
+    let lastInventorySnapshot = null;
+    let inventoryPollingInProgress = false;
 
     const ROULETTE_RESOURCES = {
         pebble: { id: 'pebble', name: 'Камушек', emoji: '🪨', points: 1 },
@@ -5009,19 +5009,6 @@
                             STORAGE.playerId,
                             playerId
                         );
-                       
-                       // Обновляем подписку на уведомления с новым ID игрока
-                        if (inventorySocket?.connected) {
-                            inventorySocket.emit(
-                                'inventory:subscribe',
-                                playerId
-                            );
-                        
-                            console.log(
-                                '[Legion] Подписка на инвентарь обновлена:',
-                                playerId
-                            );
-                        }
                     }
                     if (
                         typeof result.doNotDisturb === 'boolean' &&
@@ -8521,49 +8508,61 @@ function setInventoryNotification(visible) {
 }
 
 // Подключение к серверу уведомлений
-function connectInventorySocket() {
-    if (typeof io !== 'function') {
-        console.error(
-            '[Legion] Socket.IO client не загружен'
+    function checkInventoryChanges() {
+        if (inventoryPollingInProgress) return;
+
+        inventoryPollingInProgress = true;
+
+        request(
+            'GET',
+            '/api/inventory/' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                inventoryPollingInProgress = false;
+
+                if (error || !result?.success) {
+                    return;
+                }
+
+                const snapshot = JSON.stringify({
+                    items: result.items,
+                    slots: result.slots
+                });
+
+                // Первоначальная загрузка — запоминаем состояние
+                if (lastInventorySnapshot === null) {
+                    lastInventorySnapshot = snapshot;
+                    console.log('[Legion] Инвентарь синхронизирован');
+                    return;
+                }
+
+                // Изменений нет
+                if (lastInventorySnapshot === snapshot) {
+                    return;
+                }
+
+                // Запоминаем новое состояние
+                lastInventorySnapshot = snapshot;
+
+                console.log('[Legion] Обнаружены изменения инвентаря');
+
+                // Если инвентарь открыт — обновляем его
+                if (ui.inventoryModal.classList.contains('open')) {
+                    renderInventory(result);
+                    setInventoryNotification(false);
+                } else {
+                    // Если закрыт — показываем уведомление
+                    setInventoryNotification(true);
+                }
+            }
         );
-        return;
     }
 
-    inventorySocket = io(CONFIG.serverUrl, {
-        reconnection: true,
-        reconnectionDelay: 2000,
-        reconnectionAttempts: Infinity
-    });
+    // Первая проверка сразу после запуска
+    checkInventoryChanges();
 
-    inventorySocket.on('connect', () => {
-        console.log('[Legion] Inventory Socket.IO connected');
-
-        inventorySocket.emit(
-            'inventory:subscribe',
-            playerId
-        );
-    });
-
-    inventorySocket.on('inventory:updated', (data) => {
-        console.log(
-            '[Legion] Получено уведомление об изменении инвентаря:',
-            data
-        );
-
-        setInventoryNotification(true);
-
-        // Если инвентарь уже открыт — сразу обновляем его
-        if (ui.inventoryModal.classList.contains('open')) {
-            openInventory();
-        }
-    });
-
-    inventorySocket.on('connect_error', (error) => {
-        console.warn(
-            '[Legion] Inventory Socket.IO connection error:',
-            error.message
-        );
-    });
+    // Последующие проверки каждые 7 секунд
+    setInterval(checkInventoryChanges, 7000);
 }
 
     function init() {
@@ -8574,7 +8573,7 @@ function connectInventorySocket() {
         );
 
         ui = createInterface();
-        connectInventorySocket();
+        startInventoryPolling();
 
         updateDoNotDisturbUI();
         createRouletteUI();
