@@ -90,6 +90,7 @@
 
     let rouletteCooldownUntil = 0;
     let rouletteBalance = 0;
+    let rouletteBalanceAnimation = null;
     let rouletteLastTieRoundShown = 0;
     let rouletteNegotiationShown = null;
     let rouletteResult = null;
@@ -597,6 +598,17 @@
                 line-height: 1.45;
             }
 
+            .legion-roulette [data-role="balance"] {
+                transition: color .2s ease, text-shadow .2s ease;
+            }
+            
+            .legion-roulette [data-role="balance"].balance-counting {
+                color: #ffe0a1;
+                text-shadow:
+                    0 0 6px rgba(255, 190, 80, .45),
+                    0 0 13px rgba(255, 170, 50, .25);
+            }
+
             .legion-roulette-reels {
                 display: flex;
                 justify-content: center;
@@ -646,20 +658,87 @@
                 to { transform: translateY(2px); }
             }
 
-            .legion-roulette-modifier-popup {
-                margin: 10px 0;
-                padding: 10px 12px;
-                border: 1px solid #b58b55;
-                border-radius: 10px;
-                background: linear-gradient(145deg, #59432f, #3b2d23);
-                color: #f5dfc4;
-                text-align: center;
-                box-shadow: 0 3px 12px #0005;
-                animation: modifier-popup-in .18s ease-out;
+            /* Область слотов и плавающей подсказки */
+            .legion-roulette-reel-area {
+                position: relative;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 15px 0;
             }
             
-            .legion-roulette-modifier-popup[hidden] {
-                display: none !important;
+            /* Убираем внешний отступ барабанов — его задаёт область */
+            .legion-roulette-reel-area .legion-roulette-reels {
+                margin: 0;
+            }
+            
+            /* Лёгкое затемнение слотов при выборе модификатора */
+            .legion-roulette-reel-area::before {
+                content: "";
+                position: absolute;
+                inset: -5px;
+                z-index: 2;
+                border-radius: 15px;
+                background: rgba(12, 9, 6, .38);
+                backdrop-filter: blur(1px);
+                -webkit-backdrop-filter: blur(1px);
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity .22s ease, visibility .22s ease;
+                pointer-events: none;
+            }
+            
+            .legion-roulette-reel-area.is-modifier-active::before {
+                opacity: 1;
+                visibility: visible;
+            }
+            
+            /* Плавающая подсказка */
+            .legion-roulette-modifier-popup {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, calc(-50% + 7px));
+                z-index: 3;
+            
+                width: min(270px, calc(100% - 12px));
+                box-sizing: border-box;
+                padding: 11px 14px;
+            
+                border: 1px solid rgba(224, 181, 111, .85);
+                border-radius: 12px;
+            
+                background: linear-gradient(
+                    145deg,
+                    rgba(75, 54, 35, .94),
+                    rgba(42, 32, 25, .96)
+                );
+            
+                color: #f5dfc4;
+                text-align: center;
+            
+                box-shadow:
+                    0 5px 18px rgba(0, 0, 0, .45),
+                    0 0 14px rgba(218, 174, 111, .2),
+                    inset 0 1px rgba(255, 255, 255, .08);
+            
+                backdrop-filter: blur(9px);
+                -webkit-backdrop-filter: blur(9px);
+            
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            
+                transition:
+                    opacity .22s ease,
+                    transform .22s ease,
+                    visibility .22s ease;
+            }
+            
+            .legion-roulette-modifier-popup.is-visible {
+                opacity: 1;
+                visibility: visible;
+                transform: translate(-50%, -50%);
             }
             
             .legion-roulette-modifier-popup [data-role="modifier-popup-title"] {
@@ -674,16 +753,6 @@
                 line-height: 1.45;
             }
             
-            @keyframes modifier-popup-in {
-                from {
-                    opacity: 0;
-                    transform: translateY(-5px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
 
             .legion-roulette-result {
                 min-height: 34px;
@@ -6352,10 +6421,17 @@ function submitBet(amount) {
             <div class="legion-roulette-hint">
                 Три слота, шесть ресурсов и шанс на джекпот!
             </div>
-            <div class="legion-roulette-reels">
-                <div class="legion-roulette-reel">❔</div>
-                <div class="legion-roulette-reel">❔</div>
-                <div class="legion-roulette-reel">❔</div>
+            <div class="legion-roulette-reel-area">
+                <div class="legion-roulette-reels">
+                    <div class="legion-roulette-reel">❔</div>
+                    <div class="legion-roulette-reel">❔</div>
+                    <div class="legion-roulette-reel">❔</div>
+                </div>
+            
+                <div class="legion-roulette-modifier-popup" data-role="modifier-popup" aria-hidden="true">
+                    <div data-role="modifier-popup-title"></div>
+                    <div data-role="modifier-popup-text"></div>
+                </div>
             </div>
             <div class="legion-roulette-result">🍀 Испытайте удачу, котик!</div>
             <div class="legion-roulette-hint" data-role="balance">Баланс: загрузка...</div>
@@ -6381,10 +6457,6 @@ function submitBet(amount) {
                 </button>
             </div>
             
-            <div class="legion-roulette-modifier-popup" data-role="modifier-popup" hidden>
-                <div data-role="modifier-popup-title"></div>
-                <div data-role="modifier-popup-text"></div>
-            </div>
             <div class="legion-roulette-hint" data-role="cooldown">
                 Попытка доступна раз в 5 минут.
             </div>
@@ -6482,11 +6554,73 @@ function submitBet(amount) {
             publish: container.querySelector('[data-action="publish"]'),
             complete: container.querySelector('[data-action="complete"]'),
             cooldown: container.querySelector('[data-role="cooldown"]'),
+            reelArea: container.querySelector('.legion-roulette-reel-area'),
             modifierPopup: container.querySelector('[data-role="modifier-popup"]'),
             modifierPopupTitle: container.querySelector('[data-role="modifier-popup-title"]'),
             modifierPopupText: container.querySelector('[data-role="modifier-popup-text"]'),
             balance: container.querySelector('[data-role="balance"]')
         };
+    }
+
+    function animateRouletteBalance(targetBalance) {
+        const elements = rouletteElements();
+        if (!elements?.balance) return;
+    
+        const target = Math.max(0, Math.floor(Number(targetBalance) || 0));
+        const start = rouletteBalance;
+    
+        // Сохраняем итоговый баланс сразу
+        rouletteBalance = target;
+    
+        // Останавливаем предыдущую анимацию
+        if (rouletteBalanceAnimation) {
+            clearInterval(rouletteBalanceAnimation);
+            rouletteBalanceAnimation = null;
+        }
+    
+        // При первой загрузке просто показываем баланс
+        if (elements.balance.textContent.includes('загрузка')) {
+            elements.balance.textContent =
+                `💰 Баланс: ${target} мяукоинов`;
+            return;
+        }
+    
+        const difference = target - start;
+    
+        if (difference === 0) {
+            elements.balance.textContent =
+                `💰 Баланс: ${target} мяукоинов`;
+            return;
+        }
+    
+        const direction = difference > 0 ? 1 : -1;
+        const totalSteps = Math.abs(difference);
+    
+        let current = start;
+        const step = totalSteps > 80
+            ? Math.ceil(totalSteps / 80)
+            : 1;
+    
+        elements.balance.classList.remove('balance-counting');
+        void elements.balance.offsetWidth;
+        elements.balance.classList.add('balance-counting');
+    
+        rouletteBalanceAnimation = setInterval(() => {
+            current += direction * step;
+    
+            if (
+                (direction > 0 && current >= target) ||
+                (direction < 0 && current <= target)
+            ) {
+                current = target;
+                clearInterval(rouletteBalanceAnimation);
+                rouletteBalanceAnimation = null;
+                elements.balance.classList.remove('balance-counting');
+            }
+    
+            elements.balance.textContent =
+                `💰 Баланс: ${current} мяукоинов`;
+        }, 25);
     }
 
     function updateRouletteCooldownUI() {
@@ -6567,7 +6701,9 @@ function submitBet(amount) {
             (canReroll && rouletteModifierSelectionMode === 'reroll') ||
             (canInsurance && rouletteModifierSelectionMode === 'insurance');
         
-        elements.modifierPopup.hidden = !popupVisible;
+        elements.reelArea.classList.toggle('is-modifier-active', popupVisible);
+        elements.modifierPopup.classList.toggle('is-visible', popupVisible);
+        elements.modifierPopup.setAttribute('aria-hidden', String(!popupVisible));
         
         if (popupVisible) {
             const isInsurance = rouletteModifierSelectionMode === 'insurance';
@@ -6716,9 +6852,7 @@ function submitBet(amount) {
             (error, result) => {
                 if (error || !result?.success) return;
                 rouletteCooldownUntil = Number(result.nextAt || 0);
-                rouletteBalance = Number(result.balance || 0);
-                const elements = rouletteElements();
-                if (elements?.balance) elements.balance.textContent = `💰 Баланс: ${rouletteBalance} мяукоинов`;
+                animateRouletteBalance(Number(result.balance || 0));
                 updateRouletteCooldownUI();
             }
         );
@@ -6956,14 +7090,9 @@ function submitBet(amount) {
 
                     const multiplier = Number(result.multiplier || 1);
 
-                    rouletteBalance = Number(
-                        result.balance ?? rouletteBalance
+                    animateRouletteBalance(
+                        Number(result.balance ?? rouletteBalance)
                     );
-
-                    if (elements.balance) {
-                        elements.balance.textContent =
-                            `💰 Баланс: ${rouletteBalance} мяукоинов`;
-                    }
 
                     const multiplierText = multiplier > 1
                         ? ` · множитель ×${multiplier}`
@@ -7184,17 +7313,13 @@ function submitBet(amount) {
                 }
     
                 rouletteCompleted = true;
+                updateRouletteGlow(0);
     
                 rouletteResult = normalizeRouletteResult(result);
     
-                rouletteBalance = Number(
-                    result.balance ?? rouletteBalance
+                animateRouletteBalance(
+                    Number(result.balance ?? rouletteBalance)
                 );
-    
-                if (elements.balance) {
-                    elements.balance.textContent =
-                        `💰 Баланс: ${rouletteBalance} мяукоинов`;
-                }
     
                 elements.result.textContent =
                     `🎉 Награда получена: ${rouletteResult.score} мяукоинов!`;
