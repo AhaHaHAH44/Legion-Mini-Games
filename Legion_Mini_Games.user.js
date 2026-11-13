@@ -675,24 +675,37 @@
                 margin: 0;
             }
             
-            /* Плавающая подсказка над барабанами */
-            .legion-roulette-modifier-popup {
+            /* Область слотов */
+            .legion-roulette-reel-area {
                 position: relative;
-                order: -1;
-                z-index: 3;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 15px 0;
+            }
             
-                width: min(290px, 100%);
-                box-sizing: border-box;
-                padding: 0 12px;
+            .legion-roulette-reel-area .legion-roulette-reels {
                 margin: 0;
+            }
+            
+            /* Плавающая подсказка над слотами */
+            .legion-roulette-modifier-popup {
+                position: absolute;
+                left: 50%;
+                bottom: calc(100% + 6px);
+                transform: translate(-50%, 6px);
+                z-index: 10;
+            
+                width: min(270px, calc(100% - 12px));
+                box-sizing: border-box;
+                padding: 7px 12px;
             
                 border: none;
                 border-radius: 10px;
             
-                background: rgba(28, 23, 19, .48);
+                background: rgba(28, 23, 19, .72);
                 color: #f5dfc4;
                 text-align: center;
-            
                 text-shadow: 0 1px 5px rgba(0, 0, 0, .7);
             
                 backdrop-filter: blur(9px);
@@ -702,29 +715,16 @@
                 visibility: hidden;
                 pointer-events: none;
             
-                max-height: 0;
-                overflow: hidden;
-            
-                transform: translateY(6px);
-            
                 transition:
                     opacity .22s ease,
                     transform .22s ease,
-                    max-height .22s ease,
-                    margin .22s ease,
-                    padding .22s ease,
                     visibility .22s ease;
             }
             
             .legion-roulette-modifier-popup.is-visible {
                 opacity: 1;
                 visibility: visible;
-            
-                max-height: 75px;
-                padding: 5px 12px;
-                margin-bottom: 6px;
-            
-                transform: translateY(0);
+                transform: translate(-50%, 0);
             }
             
             .legion-roulette-modifier-popup [data-role="modifier-popup-title"] {
