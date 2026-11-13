@@ -1637,6 +1637,23 @@
                 width: 20px;
                 text-align: center;
             }
+
+            /* Подсветка активных эффектов Кошачьей расплаты */
+
+            .legion-cat-reckoning-status.curse-purple.active {
+                color: #d8a5ff;
+                text-shadow: 0 0 8px rgba(170,90,255,.55);
+            }
+            
+            .legion-cat-reckoning-status.curse-red.active {
+                color: #ff8585;
+                text-shadow: 0 0 8px rgba(255,45,45,.55);
+            }
+            
+            .legion-cat-reckoning-status.curse-black.active {
+                color: #b99acb;
+                text-shadow: 0 0 9px rgba(100,45,140,.7);
+            }
             
             .legion-inventory-slots {
                 display: grid;
@@ -1759,6 +1776,47 @@
                 border: 1px solid rgba(218,174,111,.10);
                 border-radius: 10px;
                 pointer-events: none;
+            }
+
+            /* Свечение ячеек — Кошачья расплата */
+
+            /* 1 модификатор — белое свечение */
+            .legion-inventory-slot.legion-cat-glow-1 {
+                border-color: rgba(255,255,255,.75);
+                box-shadow:
+                    0 0 8px rgba(255,255,255,.35),
+                    0 0 18px rgba(255,255,255,.18),
+                    inset 0 0 12px rgba(255,255,255,.12);
+            }
+            
+            /* 2 модификатора — фиолетовое свечение */
+            .legion-inventory-slot.legion-cat-glow-2 {
+                border-color: rgba(185,120,255,.9);
+                box-shadow:
+                    0 0 9px rgba(160,80,255,.65),
+                    0 0 22px rgba(145,65,255,.4),
+                    inset 0 0 15px rgba(145,65,255,.2);
+            }
+            
+            /* 3 модификатора — красное свечение */
+            .legion-inventory-slot.legion-cat-glow-3 {
+                border-color: rgba(255,75,75,.95);
+                box-shadow:
+                    0 0 10px rgba(255,45,45,.7),
+                    0 0 25px rgba(220,25,25,.5),
+                    inset 0 0 17px rgba(220,25,25,.25);
+            }
+            
+            /* 4 модификатора — зловещее чёрное свечение */
+            .legion-inventory-slot.legion-cat-glow-4 {
+                border-color: rgba(100,75,115,.95);
+                background:
+                    radial-gradient(circle at 50% 45%, rgba(65,35,85,.55), transparent 70%),
+                    linear-gradient(145deg, #17121d, #08070b);
+                box-shadow:
+                    0 0 10px rgba(70,35,100,.8),
+                    0 0 25px rgba(45,15,65,.7),
+                    inset 0 0 20px rgba(0,0,0,.95);
             }
             
             .legion-inventory-slot-icon {
@@ -8031,6 +8089,15 @@ function renderInventory(data) {
     const equippedModifierCount = modifierSlots.filter(
         slot => Boolean(slot.item_code)
     ).length;
+
+    // Уровень свечения зависит от количества модификаторов
+    const glowLevel = Math.min(equippedModifierCount, 4);
+    
+    modifierGrid.querySelectorAll('.legion-inventory-slot').forEach(slot => {
+        if (glowLevel > 0) {
+            slot.classList.add(`legion-cat-glow-${glowLevel}`);
+        }
+    });
     
     // Блок Кошачьей расплаты
     const reckoningPanel = createLeaderboardElement(
@@ -8070,9 +8137,15 @@ function renderInventory(data) {
     reckoningStatuses.forEach(status => {
         const active = equippedModifierCount >= status.threshold;
     
+        const curseClass = status.threshold === 2
+            ? ' curse-purple'
+            : status.threshold === 3
+                ? ' curse-red'
+                : ' curse-black';
+        
         const row = createLeaderboardElement(
             'div',
-            `legion-cat-reckoning-status${active ? ' active' : ''}`
+            `legion-cat-reckoning-status${active ? ' active' : ''}${curseClass}`
         );
     
         const icon = createLeaderboardElement(
