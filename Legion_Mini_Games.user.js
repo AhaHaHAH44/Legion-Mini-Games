@@ -5009,6 +5009,19 @@
                             STORAGE.playerId,
                             playerId
                         );
+                       
+                       // Обновляем подписку на уведомления с новым ID игрока
+                        if (inventorySocket?.connected) {
+                            inventorySocket.emit(
+                                'inventory:subscribe',
+                                playerId
+                            );
+                        
+                            console.log(
+                                '[Legion] Подписка на инвентарь обновлена:',
+                                playerId
+                            );
+                        }
                     }
                     if (
                         typeof result.doNotDisturb === 'boolean' &&
@@ -8557,7 +8570,7 @@ function connectInventorySocket() {
         if (document.getElementById('legion-mini-widget')) return;
 
         console.log(
-            '[Legion Кото-игры] Version 2.1.4 loaded'
+            '[Legion Кото-игры] Version 2.1.5 loaded'
         );
 
         ui = createInterface();
