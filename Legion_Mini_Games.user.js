@@ -1600,6 +1600,43 @@
                 background: linear-gradient(#e6c18b, #9b7045);
                 box-shadow: 0 0 9px rgba(218,174,111,.2);
             }
+
+            /* Статусы Кошачьей расплаты */
+            .legion-cat-reckoning {
+                display: grid;
+                gap: 7px;
+                margin-top: 13px;
+                padding: 11px;
+                border: 1px solid rgba(164,123,80,.35);
+                border-radius: 12px;
+                background: rgba(30,23,18,.35);
+            }
+            
+            .legion-cat-reckoning-title {
+                margin-bottom: 3px;
+                color: #f4d5ad;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            
+            .legion-cat-reckoning-status {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #9e927f;
+                font-size: 11px;
+                opacity: .65;
+            }
+            
+            .legion-cat-reckoning-status.active {
+                color: #ffe0b8;
+                opacity: 1;
+            }
+            
+            .legion-cat-reckoning-status .status-icon {
+                width: 20px;
+                text-align: center;
+            }
             
             .legion-inventory-slots {
                 display: grid;
@@ -7989,6 +8026,74 @@ function renderInventory(data) {
     });
 
     modifierGroup.append(modifierTitle, modifierGrid);
+
+    // Считаем количество экипированных модификаторов
+    const equippedModifierCount = modifierSlots.filter(
+        slot => Boolean(slot.item_code)
+    ).length;
+    
+    // Блок Кошачьей расплаты
+    const reckoningPanel = createLeaderboardElement(
+        'div',
+        'legion-cat-reckoning'
+    );
+    
+    const reckoningTitle = createLeaderboardElement(
+        'div',
+        'legion-cat-reckoning-title',
+        `🐾 Кошачья расплата · ${equippedModifierCount}/4`
+    );
+    
+    reckoningPanel.appendChild(reckoningTitle);
+    
+    const reckoningStatuses = [
+        {
+            threshold: 2,
+            icon: '😾',
+            name: 'Кошачья вредность',
+            description: '20% шанс отклонить выпадение модификатора'
+        },
+        {
+            threshold: 3,
+            icon: '🐈‍⬛',
+            name: 'Чёрная лапка',
+            description: '5% шанс получить пустой символ'
+        },
+        {
+            threshold: 4,
+            icon: '💀',
+            name: 'Кошачья кара',
+            description: '50% шанс удвоить время перезарядки'
+        }
+    ];
+    
+    reckoningStatuses.forEach(status => {
+        const active = equippedModifierCount >= status.threshold;
+    
+        const row = createLeaderboardElement(
+            'div',
+            `legion-cat-reckoning-status${active ? ' active' : ''}`
+        );
+    
+        const icon = createLeaderboardElement(
+            'span',
+            'status-icon',
+            status.icon
+        );
+    
+        const text = createLeaderboardElement(
+            'span',
+            '',
+            `${status.name} — ${status.description}`
+        );
+    
+        row.append(icon, text);
+    
+        reckoningPanel.appendChild(row);
+    });
+    
+    modifierGroup.appendChild(reckoningPanel);
+    
     slotsContainer.appendChild(modifierGroup);
 
     // ========================================
