@@ -95,6 +95,8 @@
     let rouletteResult = null;
     let rouletteSpinning = false;
     let rouletteSessionId = null;
+    // Уровень Кошачьей расплаты, зафиксированный при создании сессии
+    let rouletteSessionCurseLevel = 0;
     
     let rouletteRerollAvailable = false;
     let rouletteRerollUsed = false;
@@ -6318,17 +6320,17 @@ function submitBet(amount) {
         return `🎰 Кото-рулетка: ${names.join(', ')} — ${normalized.score} мяукоинов!`;
     }
 
-    // Обновление свечения Кото-рулетки по числу модификаторов
-    function updateRouletteGlow(modifierSlots) {
+    // Обновление свечения по уровню проклятия текущей сессии
+    function updateRouletteGlow(curseLevel) {
         const roulette = document.querySelector('.legion-roulette');
     
         if (!roulette) return;
     
-        const equippedCount = Array.isArray(modifierSlots)
-            ? modifierSlots.filter(slot => Boolean(slot.item_code)).length
-            : 0;
+        const level = Math.max(
+            0,
+            Math.min(Number(curseLevel) || 0, 4)
+        );
     
-        // Убираем предыдущее свечение
         roulette.classList.remove(
             'legion-cat-glow-1',
             'legion-cat-glow-2',
@@ -6336,12 +6338,11 @@ function submitBet(amount) {
             'legion-cat-glow-4'
         );
     
-        // Добавляем новый уровень
-        if (equippedCount > 0) {
-            roulette.classList.add(`legion-cat-glow-${Math.min(equippedCount, 4)}`);
+        if (level > 0) {
+            roulette.classList.add(`legion-cat-glow-${level}`);
         }
     }
-
+    
     function createRouletteUI() {
         const container = document.createElement('div');
         container.className = 'legion-roulette';
@@ -6921,6 +6922,13 @@ function submitBet(amount) {
                 rouletteResult = normalizeRouletteResult(result);
                 rouletteCooldownUntil = nextAt;
                 rouletteSessionId = result.sessionId;
+                
+                // Берём уровень проклятия именно из текущей сессии
+                rouletteSessionCurseLevel = Number(
+                    result.catReckoning?.modifierCount ?? 0
+                );
+                
+                updateRouletteGlow(rouletteSessionCurseLevel);
 
                 if (!rouletteSessionId) {
                     elements.result.textContent =
@@ -9073,9 +9081,6 @@ function startInventoryPolling() {
                     slots: result.slots,
                     modifierSlots: result.modifierSlots
                 });
-                
-                // Обновляем свечение рулетки даже при закрытом инвентаре
-                updateRouletteGlow(result.modifierSlots);
 
                 // Первоначальная загрузка — запоминаем состояние
                 if (lastInventorySnapshot === null) {
