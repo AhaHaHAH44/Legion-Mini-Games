@@ -434,7 +434,7 @@
                 display: none;
                 position: fixed;
                 inset: 0;
-                z-index: 1000001;
+                z-index: 1000006;
                 align-items: center;
                 justify-content: center;
                 padding: 18px;
