@@ -558,7 +558,7 @@
                 position: fixed;
                 right: 20px;
                 bottom: 78px;
-                z-index: 1000002;
+                z-index: 1000007;
                 max-width: 310px;
                 padding: 11px 15px;
                 border: 1px solid #806044;
@@ -3131,7 +3131,27 @@
             }
             
             #legion-mini-widget .legion-mini-return-row {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
                 width: 100%;
+                order: 0;
+            }
+            
+            #legion-mini-widget .legion-mini-button-row {
+                order: 1;
+            }
+            
+            #legion-mini-widget.restore-below .legion-mini-return-row {
+                order: 1;
+            }
+            
+            #legion-mini-widget.restore-below .legion-mini-button-row {
+                order: 0;
+            }
+            
+            #legion-mini-widget.expand-right .legion-mini-return-row {
+                justify-content: flex-start;
             }
             
             /* Верхняя кнопка возврата */
@@ -3144,35 +3164,77 @@
             
             #legion-mini-widget #legion-mini-restore {
                 display: none;
-                width: auto;
-                height: 29px;
-                min-width: 0;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 0;
+            
+                width: 48px;
+                min-width: 48px;
+                height: 48px;
                 padding: 0 13px;
+                box-sizing: border-box;
             
-                border: 1px solid rgba(177, 138, 93, 0.85);
-                border-radius: 10px;
+                overflow: hidden;
+                white-space: nowrap;
             
-                background: rgba(52, 41, 31, 0.68);
+                border: 1px solid var(--launcher-border);
+                border-radius: 13px;
+            
+                background: var(--launcher-bg);
                 color: var(--launcher-text);
             
-                font: bold 11px Arial, sans-serif;
-                white-space: nowrap;
+                font: bold 12px Arial, sans-serif;
+                cursor: pointer;
             
                 backdrop-filter: blur(9px);
                 -webkit-backdrop-filter: blur(9px);
             
-                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
-                transition: 0.2s ease;
+                box-shadow: 0 4px 13px rgba(0, 0, 0, .25);
+            
+                transition: width .25s ease, background .2s ease,
+                            border-color .2s ease;
             }
             
             #legion-mini-widget #legion-mini-restore.open {
-                display: block;
+                display: flex;
             }
             
             #legion-mini-widget #legion-mini-restore:hover {
+                width: 155px;
+                min-width: 155px;
+                gap: 8px;
                 background: var(--launcher-bg-hover);
                 border-color: #d1a875;
-                transform: translateY(-1px);
+            }
+            
+            #legion-mini-widget #legion-mini-restore .restore-icon {
+                display: inline-flex;
+                flex: 0 0 20px;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+            }
+            
+            #legion-mini-widget #legion-mini-restore .restore-text {
+                max-width: 0;
+                overflow: hidden;
+                opacity: 0;
+                transition: max-width .25s ease, opacity .2s ease;
+            }
+            
+            #legion-mini-widget #legion-mini-restore:hover .restore-text {
+                max-width: 115px;
+                opacity: 1;
+            }
+            
+            #legion-mini-widget.expand-left #legion-mini-restore {
+                flex-direction: row-reverse;
+                justify-content: flex-start;
+            }
+            
+            #legion-mini-widget.expand-right #legion-mini-restore {
+                flex-direction: row;
+                justify-content: flex-start;
             }
             
             /* Нижний ряд */
@@ -4485,11 +4547,14 @@
             const button = widget.querySelector('#legion-mini-toggle');
             const rect = widget.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
-        
+            const centerY = rect.top + rect.height / 2;
+            
             const expandLeft = centerX > window.innerWidth / 2;
-        
+            const restoreBelow = centerY < window.innerHeight / 2;
+            
             widget.classList.toggle('expand-left', expandLeft);
             widget.classList.toggle('expand-right', !expandLeft);
+            widget.classList.toggle('restore-below', restoreBelow);
         }
         
         updateLauncherDirection();
@@ -4513,6 +4578,8 @@
             widget.querySelector('#legion-mini-toggle'),
             'legion_ui_launcher_position'
         );
+
+        updateLauncherDirection();
         
         makeElementDraggable(
             lobbyPanel,
@@ -4717,7 +4784,10 @@
         const restoreButton = document.createElement('button');
         restoreButton.id = 'legion-mini-restore';
         restoreButton.type = 'button';
-        restoreButton.textContent = '🐾 Вернуться к игре';
+        restoreButton.innerHTML = `
+            <span class="restore-icon">↩</span>
+            <span class="restore-text">Вернуться к игре</span>
+        `;
 
         widget.querySelector('.legion-mini-return-row')
             .appendChild(restoreButton);
