@@ -644,6 +644,45 @@
                 to { transform: translateY(2px); }
             }
 
+            .legion-roulette-modifier-popup {
+                margin: 10px 0;
+                padding: 10px 12px;
+                border: 1px solid #b58b55;
+                border-radius: 10px;
+                background: linear-gradient(145deg, #59432f, #3b2d23);
+                color: #f5dfc4;
+                text-align: center;
+                box-shadow: 0 3px 12px #0005;
+                animation: modifier-popup-in .18s ease-out;
+            }
+            
+            .legion-roulette-modifier-popup[hidden] {
+                display: none !important;
+            }
+            
+            .legion-roulette-modifier-popup [data-role="modifier-popup-title"] {
+                margin-bottom: 4px;
+                font-size: 12px;
+                font-weight: bold;
+                color: #ffe0b8;
+            }
+            
+            .legion-roulette-modifier-popup [data-role="modifier-popup-text"] {
+                font-size: 11px;
+                line-height: 1.45;
+            }
+            
+            @keyframes modifier-popup-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(-5px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
             .legion-roulette-result {
                 min-height: 34px;
                 margin: 8px 0;
@@ -6341,11 +6380,9 @@ function submitBet(amount) {
                 </button>
             </div>
             
-            <div class="legion-roulette-hint" data-role="reroll-hint" hidden>
-                Выбери символ выше, который хочешь заменить.
-            </div>
-            <div class="legion-roulette-hint" data-role="insurance-hint" hidden>
-                🛡️ Выбери символ, который хочешь сохранить. Два остальных будут переброшены.
+            <div class="legion-roulette-modifier-popup" data-role="modifier-popup" hidden>
+                <div data-role="modifier-popup-title"></div>
+                <div data-role="modifier-popup-text"></div>
             </div>
             <div class="legion-roulette-hint" data-role="cooldown">
                 Попытка доступна раз в 5 минут.
@@ -6440,36 +6477,54 @@ function submitBet(amount) {
             result: container.querySelector('.legion-roulette-result'),
             spin: container.querySelector('[data-action="spin"]'),
             reroll: container.querySelector('[data-action="reroll"]'),
-            rerollHint: container.querySelector('[data-role="reroll-hint"]'),
             insurance: container.querySelector('[data-action="insurance"]'),
-            insuranceHint: container.querySelector('[data-role="insurance-hint"]'),
             publish: container.querySelector('[data-action="publish"]'),
             complete: container.querySelector('[data-action="complete"]'),
             cooldown: container.querySelector('[data-role="cooldown"]'),
+            modifierPopup: container.querySelector('[data-role="modifier-popup"]'),
+            modifierPopupTitle: container.querySelector('[data-role="modifier-popup-title"]'),
+            modifierPopupText: container.querySelector('[data-role="modifier-popup-text"]'),
             balance: container.querySelector('[data-role="balance"]')
         };
     }
 
     function updateRouletteCooldownUI() {
-        const elements = rouletteElements();
-        if (!elements) return;
+    const elements = rouletteElements();
+    if (!elements) return;
 
-        const remaining = Math.max(0, Math.ceil((rouletteCooldownUntil - Date.now()) / 1000));
+    const remaining = Math.max(
+        0,
+        Math.ceil((rouletteCooldownUntil - Date.now()) / 1000)
+    );
 
-        if (rouletteSpinning) {
-            elements.spin.disabled = true;
-        } else if (remaining > 0) {
-            elements.spin.disabled = true;
-            const minutes = Math.floor(remaining / 60);
-            const seconds = remaining % 60;
+    const hasActiveSession = Boolean(
+        rouletteSessionId && !rouletteCompleted
+    );
+
+    if (rouletteSpinning || rouletteCompleting || hasActiveSession) {
+        elements.spin.disabled = true;
+
+        if (hasActiveSession && !rouletteSpinning && !rouletteCompleting) {
             elements.cooldown.textContent =
-                `Следующая попытка через ${minutes}:${String(seconds).padStart(2, '0')}`;
+                '🎁 Сначала заберите награду за текущую попытку!';
         } else {
-            elements.spin.disabled = false;
-            elements.cooldown.textContent = '⛏️ Попытка доступна!';
+            elements.cooldown.textContent =
+                '⛏️ Добыча уже выполняется...';
         }
-    }
+    } else if (remaining > 0) {
+        elements.spin.disabled = true;
 
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+
+        elements.cooldown.textContent =
+            `Следующая попытка через ${minutes}:${String(seconds).padStart(2, '0')}`;
+    } else {
+        elements.spin.disabled = false;
+        elements.cooldown.textContent = '⛏️ Попытка доступна!';
+    }
+}
+    
     function updateRouletteModifierUI() {
         const elements = rouletteElements();
         if (!elements) return;
@@ -6504,13 +6559,26 @@ function submitBet(amount) {
     
         elements.reroll.hidden = !canReroll;
         elements.reroll.disabled = !canReroll;
-        elements.rerollHint.hidden = !canReroll ||
-            rouletteModifierSelectionMode !== 'reroll';
-    
         elements.insurance.hidden = !canInsurance;
         elements.insurance.disabled = !canInsurance;
-        elements.insuranceHint.hidden = !canInsurance ||
-            rouletteModifierSelectionMode !== 'insurance';
+        
+        const popupVisible =
+            (canReroll && rouletteModifierSelectionMode === 'reroll') ||
+            (canInsurance && rouletteModifierSelectionMode === 'insurance');
+        
+        elements.modifierPopup.hidden = !popupVisible;
+        
+        if (popupVisible) {
+            const isInsurance = rouletteModifierSelectionMode === 'insurance';
+        
+            elements.modifierPopupTitle.textContent = isInsurance
+                ? '🛡️ Страховка'
+                : '🔄 Переброска';
+        
+            elements.modifierPopupText.textContent = isInsurance
+                ? 'Выбери символ, который хочешь сохранить. Два остальных будут переброшены.'
+                : 'Выбери символ, который хочешь заменить.';
+        }
     
         elements.reels.forEach((reel, index) => {
             const rerollSelected =
@@ -6802,6 +6870,7 @@ function submitBet(amount) {
         !elements ||
         rouletteSpinning ||
         rouletteCompleting ||
+        (rouletteSessionId && !rouletteCompleted) ||
         Date.now() < rouletteCooldownUntil
     ) {
         return;
