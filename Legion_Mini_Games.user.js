@@ -4191,6 +4191,54 @@
                 -webkit-backdrop-filter: blur(8px);
             }
 
+            /* Свечение всей панели Кото-рулетки */
+
+            #legion-mini-panel .legion-roulette {
+                transition:
+                    border-color .5s ease,
+                    background .5s ease,
+                    box-shadow .5s ease;
+            }
+            
+            /* 1 модификатор — белое */
+            #legion-mini-panel .legion-roulette.legion-cat-glow-1 {
+                border-color: rgba(255,255,255,.85);
+                box-shadow:
+                    0 0 9px rgba(255,255,255,.35),
+                    0 0 22px rgba(255,255,255,.2),
+                    inset 0 0 18px rgba(255,255,255,.07);
+            }
+            
+            /* 2 модификатора — фиолетовое */
+            #legion-mini-panel .legion-roulette.legion-cat-glow-2 {
+                border-color: rgba(185,120,255,.95);
+                box-shadow:
+                    0 0 11px rgba(160,80,255,.6),
+                    0 0 27px rgba(145,65,255,.4),
+                    inset 0 0 20px rgba(145,65,255,.13);
+            }
+            
+            /* 3 модификатора — красное */
+            #legion-mini-panel .legion-roulette.legion-cat-glow-3 {
+                border-color: rgba(255,75,75,.95);
+                box-shadow:
+                    0 0 12px rgba(255,45,45,.7),
+                    0 0 30px rgba(220,25,25,.45),
+                    inset 0 0 22px rgba(220,25,25,.16);
+            }
+            
+            /* 4 модификатора — тёмная аура */
+            #legion-mini-panel .legion-roulette.legion-cat-glow-4 {
+                border-color: rgba(115,80,135,.95);
+                background:
+                    radial-gradient(ellipse at 50% 0%, rgba(85,45,115,.35), transparent 70%),
+                    linear-gradient(145deg, #211827, #17121d 65%, #100d14);
+                box-shadow:
+                    0 0 13px rgba(75,35,105,.8),
+                    0 0 32px rgba(45,15,65,.65),
+                    inset 0 0 25px rgba(0,0,0,.65);
+            }
+
             /* Панель дополнительных действий */
             #legion-mini-tools {
                 background: rgba(48, 38, 30, .52);
@@ -6231,6 +6279,30 @@ function submitBet(amount) {
         return `🎰 Кото-рулетка: ${names.join(', ')} — ${normalized.score} мяукоинов!`;
     }
 
+    // Обновление свечения Кото-рулетки по числу модификаторов
+    function updateRouletteGlow(modifierSlots) {
+        const roulette = document.querySelector('.legion-roulette');
+    
+        if (!roulette) return;
+    
+        const equippedCount = Array.isArray(modifierSlots)
+            ? modifierSlots.filter(slot => Boolean(slot.item_code)).length
+            : 0;
+    
+        // Убираем предыдущее свечение
+        roulette.classList.remove(
+            'legion-cat-glow-1',
+            'legion-cat-glow-2',
+            'legion-cat-glow-3',
+            'legion-cat-glow-4'
+        );
+    
+        // Добавляем новый уровень
+        if (equippedCount > 0) {
+            roulette.classList.add(`legion-cat-glow-${Math.min(equippedCount, 4)}`);
+        }
+    }
+
     function createRouletteUI() {
         const container = document.createElement('div');
         container.className = 'legion-roulette';
@@ -8118,7 +8190,7 @@ function renderInventory(data) {
             threshold: 2,
             icon: '😾',
             name: 'Кошачья вредность',
-            description: '20% шанс отклонить выпадение модификатора'
+            description: '20% шанс, что модификатор сломается при срабатывании'
         },
         {
             threshold: 3,
@@ -9017,8 +9089,12 @@ function startInventoryPolling() {
 
                 const snapshot = JSON.stringify({
                     items: result.items,
-                    slots: result.slots
+                    slots: result.slots,
+                    modifierSlots: result.modifierSlots
                 });
+                
+                // Обновляем свечение рулетки даже при закрытом инвентаре
+                updateRouletteGlow(result.modifierSlots);
 
                 // Первоначальная загрузка — запоминаем состояние
                 if (lastInventorySnapshot === null) {
