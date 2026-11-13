@@ -3138,16 +3138,12 @@
                 order: 0;
             }
             
+            #legion-mini-widget .legion-mini-return-row {
+                order: 0;
+            }
+            
             #legion-mini-widget .legion-mini-button-row {
                 order: 1;
-            }
-            
-            #legion-mini-widget.restore-below .legion-mini-return-row {
-                order: 1;
-            }
-            
-            #legion-mini-widget.restore-below .legion-mini-button-row {
-                order: 0;
             }
             
             #legion-mini-widget.expand-right .legion-mini-return-row {
