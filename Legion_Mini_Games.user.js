@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.5
+// @version      2.1.6
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -4406,9 +4406,9 @@
     
         tools.addEventListener('pointermove', event => {
             if (resizing) {
-                const desiredHeight = Math.max(
-                    58,
-                    initialBottom - event.clientY
+                const desiredHeight = Math.min(
+                    155,
+                    Math.max(58, initialBottom - event.clientY)
                 );
     
                 // При небольшой высоте переключаемся в горизонтальный режим
