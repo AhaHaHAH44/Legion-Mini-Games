@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.4
+// @version      2.1.5
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
 // @supportURL   https://github.com/AhaHaHAH44/Legion-Mini-Games/issues
 // @updateURL    https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
 // @downloadURL  https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
+// @require      https://cdn.socket.io/4.8.1/socket.io.min.js
 // @match        https://play.multidonate.ru/*
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
@@ -76,6 +77,7 @@
     let currentKnbMatch = null;
     let moveSubmitted = false;
     let ui;
+    let inventorySocket = null;
 
     const ROULETTE_RESOURCES = {
         pebble: { id: 'pebble', name: 'Камушек', emoji: '🪨', points: 1 },
@@ -4022,6 +4024,51 @@
                 -webkit-user-select: none;
                 user-select: none;
             }
+
+            /* Контейнер кнопки инвентаря */
+            #legion-mini-inventory-button {
+                position: relative;
+            }
+
+            /* Красный восклицательный знак */
+            .legion-inventory-alert {
+                position: absolute;
+                top: -6px;
+                right: -6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 17px;
+                height: 17px;
+                border: 2px solid #30251e;
+                border-radius: 50%;
+                background: #e53935;
+                color: white;
+                font-size: 13px;
+                font-weight: 900;
+                line-height: 1;
+                box-shadow: 0 0 7px rgba(229, 57, 53, 0.8);
+                animation: legion-inventory-pulse 1.2s infinite;
+                pointer-events: none;
+            }
+
+            @keyframes legion-inventory-pulse {
+                0%, 100% {
+                    transform: scale(1);
+                    box-shadow: 0 0 5px rgba(229, 57, 53, 0.6);
+                }
+
+                50% {
+                    transform: scale(1.2);
+                    box-shadow: 0 0 12px rgba(229, 57, 53, 1);
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .legion-inventory-alert {
+                    animation: none;
+                }
+            }
         `;
 
         document.head.appendChild(style);
@@ -7439,6 +7486,9 @@ function submitBet(amount) {
             }
 
             renderInventory(result);
+
+            // Игрок просмотрел актуальный инвентарь
+            setInventoryNotification(false);
         }
     );
 }
@@ -8431,6 +8481,78 @@ function openLeaderboard() {
     );
 }
 
+    // Показать или скрыть уведомление на кнопке инвентаря
+function setInventoryNotification(visible) {
+    const button = document.querySelector(
+        '#legion-mini-inventory-button'
+    );
+
+    if (!button) return;
+
+    let badge = button.querySelector(
+        '.legion-inventory-alert'
+    );
+
+    if (!visible) {
+        badge?.remove();
+        return;
+    }
+
+    if (badge) return;
+
+    badge = document.createElement('span');
+    badge.className = 'legion-inventory-alert';
+    badge.textContent = '!';
+
+    button.appendChild(badge);
+}
+
+// Подключение к серверу уведомлений
+function connectInventorySocket() {
+    if (typeof io !== 'function') {
+        console.error(
+            '[Legion] Socket.IO client не загружен'
+        );
+        return;
+    }
+
+    inventorySocket = io(CONFIG.serverUrl, {
+        reconnection: true,
+        reconnectionDelay: 2000,
+        reconnectionAttempts: Infinity
+    });
+
+    inventorySocket.on('connect', () => {
+        console.log('[Legion] Inventory Socket.IO connected');
+
+        inventorySocket.emit(
+            'inventory:subscribe',
+            playerId
+        );
+    });
+
+    inventorySocket.on('inventory:updated', (data) => {
+        console.log(
+            '[Legion] Получено уведомление об изменении инвентаря:',
+            data
+        );
+
+        setInventoryNotification(true);
+
+        // Если инвентарь уже открыт — сразу обновляем его
+        if (ui.inventoryModal.classList.contains('open')) {
+            openInventory();
+        }
+    });
+
+    inventorySocket.on('connect_error', (error) => {
+        console.warn(
+            '[Legion] Inventory Socket.IO connection error:',
+            error.message
+        );
+    });
+}
+
     function init() {
         if (document.getElementById('legion-mini-widget')) return;
 
@@ -8439,6 +8561,7 @@ function openLeaderboard() {
         );
 
         ui = createInterface();
+        connectInventorySocket();
 
         updateDoNotDisturbUI();
         createRouletteUI();
