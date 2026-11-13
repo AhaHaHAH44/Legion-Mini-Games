@@ -3109,6 +3109,7 @@
             /* Убираем общую подложку */
             
             .legion-mini-launcher {
+                position: relative;
                 display: flex !important;
                 flex-direction: column;
                 align-items: center;
@@ -3131,11 +3132,20 @@
             }
             
             #legion-mini-widget .legion-mini-return-row {
+                position: absolute;
+                bottom: calc(100% + 5px);
+                left: 0;
+            
                 display: flex;
                 justify-content: flex-end;
                 align-items: center;
+            
                 width: 100%;
-                order: 0;
+                pointer-events: none;
+            }
+            
+            #legion-mini-widget .legion-mini-return-row #legion-mini-restore {
+                pointer-events: auto;
             }
             
             #legion-mini-widget .legion-mini-return-row {
