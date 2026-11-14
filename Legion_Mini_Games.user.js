@@ -11,7 +11,10 @@
 // @match        https://play.multidonate.ru/*
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
+// @grant        GM_openInTab
+// @grant        GM_info
 // @connect      legion-server.onrender.com
+// @connect      raw.githubusercontent.com
 // ==/UserScript==
 
 (function () {
@@ -204,6 +207,570 @@
             }
         });
     }
+
+        // ==============================
+        // СИСТЕМА ПРОВЕРКИ ОБНОВЛЕНИЙ
+        // ==============================
+    
+        const UPDATE_CONFIG = {
+            versionUrl: 'https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/version.json',
+            checkInterval: 60000
+        };
+    
+        let updateCheckerStarted = false;
+        let updateCheckInProgress = false;
+        let availableUpdate = null;
+        let lastAnnouncedUpdateVersion = null;
+        // Уведомление закрыто до следующего перезапуска страницы
+        let updateNotificationDismissed = false;
+    
+        // Получаем версию установленного userscript из Tampermonkey
+        function getCurrentScriptVersion() {
+            if (
+                typeof GM_info !== 'undefined' &&
+                GM_info.script &&
+                GM_info.script.version
+            ) {
+                return GM_info.script.version;
+            }
+    
+            return '2.1.7.1';
+        }
+    
+        // Сравниваем версии вида 2.1.7.1 и 2.1.8
+        function compareVersions(versionA, versionB) {
+            const a = String(versionA).split('.').map(Number);
+            const b = String(versionB).split('.').map(Number);
+    
+            const length = Math.max(a.length, b.length);
+    
+            for (let i = 0; i < length; i++) {
+                const partA = a[i] || 0;
+                const partB = b[i] || 0;
+    
+                if (partA > partB) return 1;
+                if (partA < partB) return -1;
+            }
+    
+            return 0;
+        }
+    
+        // Загружаем информацию о последней версии с GitHub
+        function fetchUpdateManifest() {
+            return new Promise((resolve, reject) => {
+                GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: UPDATE_CONFIG.versionUrl + '?t=' + Date.now(),
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    },
+                    timeout: 15000,
+    
+                    onload(response) {
+                        if (response.status !== 200) {
+                            reject(
+                                new Error('GitHub вернул статус ' + response.status)
+                            );
+                            return;
+                        }
+    
+                        try {
+                            const manifest = JSON.parse(response.responseText);
+    
+                            if (
+                                !manifest ||
+                                typeof manifest.version !== 'string' ||
+                                !/^\d+(\.\d+)*$/.test(manifest.version)
+                            ) {
+                                throw new Error('Некорректный формат version.json');
+                            }
+    
+                            resolve(manifest);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    },
+    
+                    onerror() {
+                        reject(new Error('Не удалось подключиться к GitHub'));
+                    },
+    
+                    ontimeout() {
+                        reject(new Error('Время ожидания ответа GitHub истекло'));
+                    },
+    
+                    onabort() {
+                        reject(new Error('Запрос версии отменён'));
+                    }
+                });
+            });
+        }
+    
+        // Проверяем наличие новой версии
+        async function checkForUpdates() {
+            if (updateCheckInProgress) return;
+    
+            updateCheckInProgress = true;
+    
+            try {
+                const manifest = await fetchUpdateManifest();
+                const currentVersion = getCurrentScriptVersion();
+    
+                const comparison = compareVersions(
+                    manifest.version,
+                    currentVersion
+                );
+    
+                if (comparison <= 0) {
+                    availableUpdate = null;
+                    lastAnnouncedUpdateVersion = null;
+    
+                    console.log(
+                        '[Legion Кото-игры] Установлена актуальная версия:',
+                        currentVersion
+                    );
+    
+                    return;
+                }
+    
+                availableUpdate = {
+                    currentVersion,
+                    latestVersion: manifest.version,
+                    changelog: manifest.changelog || 'CHANGELOG.md'
+                };
+    
+                // Не отправляем одно и то же уведомление повторно
+                if (lastAnnouncedUpdateVersion === manifest.version) {
+                    return;
+                }
+    
+                lastAnnouncedUpdateVersion = manifest.version;
+    
+                console.log(
+                    '[Legion Кото-игры] Найдена новая версия:',
+                    manifest.version
+                );
+    
+                // Событие будет использовано окном обновлений на следующем этапе
+                document.dispatchEvent(
+                    new CustomEvent('legion:update-available', {
+                        detail: availableUpdate
+                    })
+                );
+    
+            } catch (error) {
+                console.warn(
+                    '[Legion Кото-игры] Ошибка проверки:',
+                    error.message
+                );
+            } finally {
+                updateCheckInProgress = false;
+            }
+        }
+    
+        // Возвращаем информацию о найденном обновлении
+        function getAvailableUpdate() {
+            return availableUpdate;
+        }
+    
+        // Запускаем автоматическую проверку
+        function startUpdateChecker() {
+            if (updateCheckerStarted) return;
+    
+            updateCheckerStarted = true;
+    
+            // Первая проверка сразу
+            checkForUpdates();
+    
+            // Проверка каждые 60 секунд
+            setInterval(
+                checkForUpdates,
+                UPDATE_CONFIG.checkInterval
+            );
+    
+            // Проверка при возвращении на вкладку
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    checkForUpdates();
+                }
+            });
+    
+            // Дополнительная проверка при возвращении фокуса
+            window.addEventListener('focus', () => {
+                checkForUpdates();
+            });
+    
+            console.log('[Legion Кото-игры] Проверка обновлений запущена');
+        }
+
+        // ==============================
+        // КОМПАКТНОЕ УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ
+        // ==============================
+    
+        const UPDATE_SCRIPT_URL =
+            'https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js';
+    
+        const UPDATE_CHANGELOG_BASE =
+            'https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/';
+    
+        let updateNotification = null;
+        let updateNotificationVersion = null;
+    
+        function initUpdateNotificationUI() {
+            if (document.getElementById('legion-update-notification')) return;
+    
+            const style = document.createElement('style');
+            style.id = 'legion-update-notification-styles';
+    
+            style.textContent = `
+                #legion-update-notification {
+                    display: none;
+                    position: fixed;
+                    top: 85px;
+                    right: 20px;
+                    z-index: 1000010;
+                    width: min(340px, calc(100vw - 30px));
+                    pointer-events: none;
+                    font-family: Arial, sans-serif;
+                    color: #f4eadb;
+                }
+    
+                #legion-update-notification.open {
+                    display: block;
+                }
+    
+                #legion-update-card {
+                    box-sizing: border-box;
+                    width: 100%;
+                    max-height: min(70vh, 500px);
+                    overflow-y: auto;
+                    padding: 14px;
+                    border: 1px solid #a17b50;
+                    border-radius: 14px;
+                    background: linear-gradient(145deg, #382d23, #292626);
+                    box-shadow: 0 8px 28px #0009;
+                    pointer-events: auto;
+                    animation: legion-update-appear .22s ease-out;
+                }
+    
+                @keyframes legion-update-appear {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-8px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+    
+                #legion-update-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
+                    margin-bottom: 9px;
+                }
+    
+                #legion-update-title {
+                    color: #ffe0b8;
+                    font-size: 14px;
+                    font-weight: bold;
+                }
+    
+                #legion-update-close {
+                    flex-shrink: 0;
+                    width: 27px;
+                    height: 27px;
+                    padding: 0;
+                    border: 1px solid #806044;
+                    border-radius: 7px;
+                    background: #4a3a2b;
+                    color: #fff0dc;
+                    font-size: 18px;
+                    line-height: 1;
+                    cursor: pointer;
+                }
+    
+                #legion-update-close:hover {
+                    background: #604a35;
+                }
+    
+                #legion-update-description {
+                    margin-bottom: 10px;
+                    color: #cdb99f;
+                    font-size: 12px;
+                    line-height: 1.5;
+                }
+    
+                #legion-update-version {
+                    margin-bottom: 11px;
+                    padding: 8px 10px;
+                    border: 1px solid #68513d;
+                    border-radius: 8px;
+                    background: #302920;
+                    color: #f2d6b4;
+                    font-size: 11px;
+                    line-height: 1.6;
+                }
+    
+                #legion-update-changelog {
+                    display: none;
+                    overflow-y: auto;
+                    max-height: 250px;
+                    margin: 0 0 11px;
+                    padding: 10px;
+                    border: 1px solid #68513d;
+                    border-radius: 9px;
+                    background: #241f1b;
+                    color: #e8d8c4;
+                    font-size: 11px;
+                    line-height: 1.55;
+                    white-space: pre-wrap;
+                    overflow-wrap: anywhere;
+                }
+    
+                #legion-update-changelog.open {
+                    display: block;
+                }
+    
+                #legion-update-actions {
+                    display: flex;
+                    gap: 7px;
+                }
+    
+                #legion-update-actions button {
+                    flex: 1;
+                    min-width: 0;
+                    padding: 9px 7px;
+                    border: 1px solid #806044;
+                    border-radius: 8px;
+                    background: #4a3a2b;
+                    color: #fff0dc;
+                    cursor: pointer;
+                    font-size: 11px;
+                }
+    
+                #legion-update-actions button:hover {
+                    background: #604a35;
+                }
+    
+                #legion-update-actions .primary {
+                    background: #735638;
+                    border-color: #a17b50;
+                }
+    
+                #legion-update-actions button:disabled {
+                    opacity: .5;
+                    cursor: wait;
+                }
+    
+                @media (max-width: 480px) {
+                    #legion-update-notification {
+                        top: 70px;
+                        right: 10px;
+                        width: min(320px, calc(100vw - 20px));
+                    }
+                }
+            `;
+    
+            document.head.appendChild(style);
+    
+            const container = document.createElement('div');
+            container.id = 'legion-update-notification';
+    
+            container.innerHTML = `
+                <div id="legion-update-card">
+    
+                    <div id="legion-update-header">
+                        <div id="legion-update-title">
+                            🐾 Доступно обновление Legion - Кото-Игры!
+                        </div>
+    
+                        <button
+                            id="legion-update-close"
+                            type="button"
+                            title="Закрыть уведомление">
+                            ×
+                        </button>
+                    </div>
+    
+                    <div id="legion-update-description">
+                        Доступна новая версия Кото-игр.
+                        Посмотри, что изменилось!
+                    </div>
+    
+                    <div id="legion-update-version"></div>
+    
+                    <pre id="legion-update-changelog"></pre>
+    
+                    <div id="legion-update-actions">
+                        <button class="primary" data-action="update">
+                            Обновить
+                        </button>
+    
+                        <button data-action="changelog">
+                            Что нового?
+                        </button>
+                    </div>
+    
+                </div>
+            `;
+    
+            document.body.appendChild(container);
+    
+            updateNotification = {
+                container,
+                version: container.querySelector('#legion-update-version'),
+                changelog: container.querySelector('#legion-update-changelog'),
+                actions: container.querySelector('#legion-update-actions'),
+                close: container.querySelector('#legion-update-close')
+            };
+    
+            // Закрытие до следующего перезапуска страницы
+            updateNotification.close.addEventListener('click', () => {
+                updateNotificationDismissed = true;
+                closeUpdateNotification();
+            });
+    
+            updateNotification.actions.addEventListener('click', event => {
+                const button = event.target.closest('button[data-action]');
+                if (!button) return;
+    
+                const action = button.dataset.action;
+    
+                if (action === 'update') {
+                    GM_openInTab(UPDATE_SCRIPT_URL, {
+                        active: true,
+                        insert: true,
+                        setParent: true
+                    });
+                }
+    
+                if (action === 'changelog') {
+                    loadUpdateChangelog(button);
+                }
+            });
+    
+            // Подписываемся на появление новой версии
+            document.addEventListener('legion:update-available', event => {
+                showUpdateNotification(event.detail);
+            });
+    
+            // Если версия была найдена раньше создания окна
+            const existingUpdate = getAvailableUpdate();
+    
+            if (existingUpdate) {
+                showUpdateNotification(existingUpdate);
+            }
+        }
+    
+        function showUpdateNotification(update) {
+            if (!update || !updateNotification) return;
+    
+            // Если игрок уже закрыл уведомление,
+            // больше не показываем его в этой сессии.
+            if (updateNotificationDismissed) return;
+    
+            updateNotificationVersion = update.latestVersion;
+    
+            updateNotification.version.textContent =
+                `Установлена версия: ${update.currentVersion}\n` +
+                `Доступна версия: ${update.latestVersion}`;
+    
+            updateNotification.changelog.classList.remove('open');
+            updateNotification.changelog.textContent = '';
+    
+            const changelogButton =
+                updateNotification.actions.querySelector(
+                    '[data-action="changelog"]'
+                );
+    
+            changelogButton.disabled = false;
+            changelogButton.textContent = 'Что нового?';
+    
+            updateNotification.container.classList.add('open');
+        }
+    
+        function closeUpdateNotification() {
+            if (!updateNotification) return;
+    
+            updateNotification.container.classList.remove('open');
+        }
+    
+        function loadUpdateChangelog(button) {
+            if (!updateNotification) return;
+    
+            const update = getAvailableUpdate();
+            if (!update) return;
+    
+            const changelogPath = String(
+                update.changelog || 'CHANGELOG.md'
+            );
+    
+            if (
+                changelogPath.startsWith('/') ||
+                changelogPath.includes('..') ||
+                !/^[a-zA-Z0-9_./-]+\.md$/.test(changelogPath)
+            ) {
+                updateNotification.changelog.textContent =
+                    'Некорректный путь к файлу истории изменений.';
+    
+                updateNotification.changelog.classList.add('open');
+                return;
+            }
+    
+            button.disabled = true;
+            button.textContent = 'Загружаем...';
+    
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: UPDATE_CHANGELOG_BASE +
+                    changelogPath +
+                    '?t=' + Date.now(),
+    
+                timeout: 15000,
+    
+                onload(response) {
+                    button.disabled = false;
+                    button.textContent = 'Что нового?';
+    
+                    if (response.status !== 200) {
+                        updateNotification.changelog.textContent =
+                            'Не удалось загрузить историю изменений.';
+    
+                        updateNotification.changelog.classList.add('open');
+                        return;
+                    }
+    
+                    // Показываем Markdown как безопасный обычный текст
+                    updateNotification.changelog.textContent =
+                        response.responseText;
+    
+                    updateNotification.changelog.classList.add('open');
+                },
+    
+                onerror() {
+                    button.disabled = false;
+                    button.textContent = 'Что нового?';
+    
+                    updateNotification.changelog.textContent =
+                        'Ошибка подключения к GitHub.';
+    
+                    updateNotification.changelog.classList.add('open');
+                },
+    
+                ontimeout() {
+                    button.disabled = false;
+                    button.textContent = 'Что нового?';
+    
+                    updateNotification.changelog.textContent =
+                        'GitHub не ответил вовремя. Попробуй ещё раз.';
+    
+                    updateNotification.changelog.classList.add('open');
+                }
+            });
+        }
 
     function addStyles() {
         const style = document.createElement('style');
@@ -9714,12 +10281,19 @@ function startInventoryPolling() {
 
     function init() {
         if (document.getElementById('legion-mini-widget')) return;
-
+    
         console.log(
-            '[Legion Кото-игры] Version 2.1.5 loaded'
+            '[Legion Кото-игры] Version 2.1.7.1 loaded'
         );
-
+    
         ui = createInterface();
+    
+        // Сначала создаём окно и подписываемся на события.
+        initUpdateNotificationUI();
+    
+        // Только после этого запускаем проверку версий.
+        startUpdateChecker();
+    
         startInventoryPolling();
 
         updateDoNotDisturbUI();
