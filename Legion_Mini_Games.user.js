@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.6
+// @version      2.1.7
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -7316,6 +7316,11 @@ function submitBet(amount) {
                 loadRouletteStatus();
                 loadRouletteRerollAvailability();
                 loadRouletteInsuranceAvailability();
+
+                // Обновляем инвентарь, если он открыт
+                if (ui.inventoryModal.classList.contains('open')) {
+                    openInventory();
+                }
     
                 if (result.modifierDrop?.granted) {
                     showToast(
@@ -8156,6 +8161,14 @@ function renderInventory(data) {
     modifierSlots.forEach(slot => {
         const unlocked = Boolean(slot.unlocked);
         const equipped = Boolean(slot.item_code);
+    
+        const lockRemainingGames = Number(
+            slot.lock_remaining_games || 0
+        );
+    
+        const isTemporarilyLocked =
+            slot.item_code === 'roulette_mod_lock' &&
+            lockRemainingGames > 0;
 
         const slotElement = createLeaderboardElement(
             'button',
@@ -8223,24 +8236,36 @@ function renderInventory(data) {
 
             slotElement.append(lockIcon, lockName);
         } else if (equipped) {
-            slotElement.title =
-                `${slot.item_name}. Нажми, чтобы снять модификатор.`;
-
+            slotElement.title = isTemporarilyLocked
+                ? `Закрепление. Осталось завершить игр: ${lockRemainingGames}. Снять пока нельзя.`
+                : `${slot.item_name}. Нажми, чтобы снять модификатор.`;
+        
             const icon = createLeaderboardElement(
                 'span',
                 'legion-inventory-slot-icon',
-                slot.item_icon || '📦'
+                isTemporarilyLocked
+                    ? '🔒'
+                    : (slot.item_icon || '📦')
             );
-
+        
             const name = createLeaderboardElement(
                 'span',
                 'legion-inventory-slot-name',
-                slot.item_name || 'Модификатор'
+                isTemporarilyLocked
+                    ? `Закреплено · ${lockRemainingGames}/3`
+                    : (slot.item_name || 'Модификатор')
             );
-
+        
             slotElement.append(icon, name);
-
+        
             slotElement.addEventListener('click', () => {
+                if (isTemporarilyLocked) {
+                    showToast(
+                        `🔒 Модификатор закреплён ещё на ${lockRemainingGames} ${lockRemainingGames === 1 ? 'игру' : 'игры'}!`
+                    );
+                    return;
+                }
+        
                 unequipInventorySlot({
                     ...slot,
                     slot_type: 'roulette_modifier',
