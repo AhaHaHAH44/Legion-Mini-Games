@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.7
+// @version      2.1.7.1
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -114,6 +114,10 @@
     let rouletteLockUsed = false;
     let rouletteLockApplying = false;
     let rouletteSelectedLockIndex = null;
+    
+    // Активное закрепление, загруженное с сервера
+    let rouletteActiveLockIndex = null;
+    let rouletteLockRemainingGames = 0;
     
     // Какой модификатор сейчас выбирает слот
     let rouletteModifierSelectionMode = null;
@@ -657,7 +661,7 @@
             }
 
             /* Металлическое Закрепление */
-            .legion-roulette-reel.lock-selected {
+            .legion-roulette-reel:is(.lock-selected, .lock-active) {
                 position: relative;
                 overflow: hidden;
             
@@ -678,7 +682,7 @@
             }
             
             /* Серая плёнка и две пересекающиеся цепи */
-            .legion-roulette-reel.lock-selected::before {
+            .legion-roulette-reel:is(.lock-selected, .lock-active)::before {
                 content: '';
             
                 position: absolute;
@@ -725,7 +729,7 @@
             }
             
             /* Замок на цепях */
-            .legion-roulette-reel.lock-selected::after {
+            .legion-roulette-reel:is(.lock-selected, .lock-active)::after {
                 content: '🔒';
             
                 position: absolute;
@@ -6905,6 +6909,9 @@ function submitBet(amount) {
             const lockSelected =
                 rouletteModifierSelectionMode === 'lock' &&
                 rouletteSelectedLockIndex === index;
+            
+            const lockActive =
+                rouletteActiveLockIndex === index;
     
             const selectionActive =
                 rouletteModifierSelectionMode === 'reroll' ? canReroll :
@@ -6916,6 +6923,7 @@ function submitBet(amount) {
             reel.classList.toggle('selected', rerollSelected);
             reel.classList.toggle('insurance-selected', insuranceSelected);
             reel.classList.toggle('lock-selected', lockSelected);
+            reel.classList.toggle('lock-active', lockActive);
     
             reel.setAttribute(
                 'aria-pressed',
@@ -6947,7 +6955,15 @@ function submitBet(amount) {
         ) {
             return;
         }
-    
+
+        // Не разрешаем перебрасывать закреплённый барабан
+        if (index === rouletteActiveLockIndex) {
+            showToast(
+                `🔒 Слот закреплён ещё на ${rouletteLockRemainingGames} игр`
+            );
+            return;
+        }
+
         rouletteSelectedReelIndex =
             rouletteSelectedReelIndex === index ? null : index;
     
@@ -6968,7 +6984,15 @@ function submitBet(amount) {
         ) {
             return;
         }
-    
+
+        // Закреплённый барабан нельзя выбирать для Страховки
+        if (index === rouletteActiveLockIndex) {
+            showToast(
+                `🔒 Этот слот уже закреплён ещё на ${rouletteLockRemainingGames} игр. Выбери другой.`
+            );
+            return;
+        }
+
         rouletteSelectedKeepIndex =
             rouletteSelectedKeepIndex === index ? null : index;
     
@@ -7066,11 +7090,21 @@ function submitBet(amount) {
                     item.code === 'roulette_mod_lock'
                 );
     
-                // Проверяем, не действует ли Закрепление уже сейчас
-                const activeLock = result.modifierSlots?.some(slot =>
+                // Получаем активное Закрепление с сервера
+                const activeLockSlot = result.modifierSlots?.find(slot =>
                     slot.item_code === 'roulette_mod_lock' &&
                     Number(slot.lock_remaining_games) > 0
                 );
+                
+                rouletteActiveLockIndex = activeLockSlot
+                    ? Number(activeLockSlot.lock_reel_index)
+                    : null;
+                
+                rouletteLockRemainingGames = activeLockSlot
+                    ? Number(activeLockSlot.lock_remaining_games)
+                    : 0;
+                
+                const activeLock = Boolean(activeLockSlot);
     
                 rouletteLockAvailable = Boolean(
                     lockItem &&
@@ -7106,28 +7140,44 @@ function submitBet(amount) {
         elements.publish.disabled = true;
         elements.result.textContent = '⛏️ Добываем Находки...';
 
-        elements.reels.forEach((reel, index) => {
-            reel.textContent = '❔';
-            reel.classList.add('spinning');
+        let finishedCount = 0;
 
-            rouletteTimers.push(setTimeout(() => {
-                const resource = normalizeRouletteResource(reels[index]);
+        const totalToAnimate = rouletteActiveLockIndex === null
+            ? 3
+            : 2;
+        
+        elements.reels.forEach((reel, index) => {
+            const resource = normalizeRouletteResource(reels[index]);
+        
+            // Закреплённый барабан не вращаем
+            if (index === rouletteActiveLockIndex) {
                 reel.classList.remove('spinning');
                 reel.textContent = resource?.emoji || '❔';
-
-                if (index === 2) {
+                return;
+            }
+        
+            reel.textContent = '❔';
+            reel.classList.add('spinning');
+        
+            rouletteTimers.push(setTimeout(() => {
+                reel.classList.remove('spinning');
+                reel.textContent = resource?.emoji || '❔';
+        
+                finishedCount++;
+        
+                if (finishedCount === totalToAnimate) {
                     rouletteSpinning = false;
-                
+        
                     callback();
-                
+        
                     updateRouletteCooldownUI();
-                    updateRouletteRerollUI();
+                    updateRouletteModifierUI();
                 }
             }, 900 + index * 650));
         });
     }
 
-    function animateRouletteInsurance(reels, keepIndex, callback) {
+    function animateRouletteInsurance(reels, keepIndex, lockedIndex, callback) {
         const elements = rouletteElements();
         if (!elements) return callback();
     
@@ -7139,13 +7189,25 @@ function submitBet(amount) {
         elements.spin.disabled = true;
         elements.publish.disabled = true;
     
-        elements.result.textContent = '🛡️ Страховка защищает выбранный символ...';
+        elements.result.textContent =
+            '🛡️ Страховка защищает выбранные символы...';
+    
+        const preservedIndexes = new Set([keepIndex]);
+    
+        if (lockedIndex !== null && lockedIndex !== undefined) {
+            preservedIndexes.add(lockedIndex);
+        }
+    
+        let finishedCount = 0;
+        const totalToAnimate = 3 - preservedIndexes.size;
     
         elements.reels.forEach((reel, index) => {
-            // Защищённый символ не трогаем
-            if (index === keepIndex) {
+            // Оба защищённых барабана остаются неподвижными
+            if (preservedIndexes.has(index)) {
                 reel.classList.remove('spinning');
-                reel.classList.add('insurance-selected');
+                reel.textContent =
+                    normalizeRouletteResource(reels[index])?.emoji || '❔';
+    
                 return;
             }
     
@@ -7159,12 +7221,9 @@ function submitBet(amount) {
                 reel.classList.remove('spinning');
                 reel.textContent = resource?.emoji || '❔';
     
-                const allFinished = elements.reels.every((item, itemIndex) =>
-                    itemIndex === keepIndex ||
-                    !item.classList.contains('spinning')
-                );
+                finishedCount++;
     
-                if (allFinished) {
+                if (finishedCount === totalToAnimate) {
                     rouletteSpinning = false;
     
                     callback();
@@ -7374,7 +7433,7 @@ function submitBet(amount) {
         }
     
         if (![0, 1, 2].includes(index)) return;
-    
+            
         elements.reroll.disabled = true;
         rouletteSelectedReelIndex = null;
         updateRouletteRerollUI();
@@ -7393,6 +7452,11 @@ function submitBet(amount) {
                 if (error || !result?.success) {
                     elements.result.textContent =
                         result?.error || 'Не удалось выполнить переброс.';
+
+                    if (result?.code === 'LOCKED_REEL') {
+                        showToast(result.error);
+                        loadRouletteLockAvailability();
+                    }
     
                     updateRouletteRerollUI();
                     elements.complete.disabled = false;
@@ -7470,6 +7534,11 @@ function submitBet(amount) {
                 if (error || !result?.success) {
                     elements.result.textContent =
                         result?.error || 'Не удалось применить Страховку.';
+
+                    if (result?.code === 'INSURANCE_KEEP_LOCKED') {
+                        showToast(result.error);
+                        loadRouletteLockAvailability();
+                    }
     
                     updateRouletteModifierUI();
     
@@ -7486,9 +7555,12 @@ function submitBet(amount) {
     
                 rouletteResult = normalizeRouletteResult(result);
     
+                const lockedIndex = rouletteActiveLockIndex;
+
                 animateRouletteInsurance(
                     rouletteResult.reels,
                     keepIndex,
+                    lockedIndex,
                     () => {
                         const description = rouletteResourceText(
                             rouletteResult.reels
@@ -7569,6 +7641,10 @@ function submitBet(amount) {
                 rouletteSelectedLockIndex = null;
                 rouletteSelectedReelIndex = null;
                 rouletteModifierSelectionMode = null;
+
+                // Сохраняем активное Закрепление локально
+                rouletteActiveLockIndex = keepIndex;
+                rouletteLockRemainingGames = 3;
     
                 // Результат рулетки не меняется
                 rouletteResult = normalizeRouletteResult(result);
@@ -7576,7 +7652,7 @@ function submitBet(amount) {
                 // Просто визуально отмечаем выбранный символ
                 elements.reels.forEach((reel, index) => {
                     reel.classList.toggle(
-                        'lock-selected',
+                        'lock-active',
                         index === keepIndex
                     );
                 });
