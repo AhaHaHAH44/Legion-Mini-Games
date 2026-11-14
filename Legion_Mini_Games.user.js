@@ -7346,6 +7346,7 @@ function submitBet(amount) {
                     updateRouletteRerollUI();
                     loadRouletteRerollAvailability();
                     loadRouletteInsuranceAvailability();
+                    loadRouletteLockAvailability();
 
                     elements.complete.disabled = false;
                     elements.publish.disabled = true;
