@@ -109,6 +109,12 @@
     let rouletteInsuranceApplying = false;
     let rouletteSelectedKeepIndex = null;
     
+    // Закрепление
+    let rouletteLockAvailable = false;
+    let rouletteLockUsed = false;
+    let rouletteLockApplying = false;
+    let rouletteSelectedLockIndex = null;
+    
     // Какой модификатор сейчас выбирает слот
     let rouletteModifierSelectionMode = null;
     
@@ -648,6 +654,133 @@
                 background: #3a2d1b;
                 box-shadow: 0 0 0 2px #f2c45f33, 0 0 14px #f2c45f66, inset 0 0 12px #0006;
                 transform: translateY(-2px);
+            }
+
+            /* Металлическое Закрепление */
+            .legion-roulette-reel.lock-selected {
+                position: relative;
+                overflow: hidden;
+            
+                border: 2px solid #92999f;
+            
+                background: linear-gradient(
+                    145deg,
+                    rgba(190, 198, 204, .34),
+                    rgba(90, 99, 107, .42)
+                );
+            
+                box-shadow:
+                    0 0 0 2px rgba(160, 170, 180, .18),
+                    0 0 18px rgba(170, 180, 190, .35),
+                    inset 0 0 16px rgba(210, 220, 230, .18);
+            
+                transform: translateY(-2px);
+            }
+            
+            /* Серая плёнка и две пересекающиеся цепи */
+            .legion-roulette-reel.lock-selected::before {
+                content: '';
+            
+                position: absolute;
+                inset: 0;
+            
+                border-radius: inherit;
+                pointer-events: none;
+            
+                background:
+                    /* Полупрозрачная металлическая плёнка */
+                    linear-gradient(
+                        145deg,
+                        rgba(205, 213, 220, .25),
+                        rgba(95, 105, 115, .32)
+                    ),
+            
+                    /* Первая цепь */
+                    linear-gradient(
+                        32deg,
+                        transparent 40%,
+                        rgba(65, 73, 80, .95) 42%,
+                        rgba(210, 218, 225, .95) 44%,
+                        rgba(125, 135, 145, .95) 47%,
+                        rgba(55, 63, 70, .95) 49%,
+                        transparent 51%
+                    ),
+            
+                    /* Вторая цепь */
+                    linear-gradient(
+                        148deg,
+                        transparent 40%,
+                        rgba(65, 73, 80, .95) 42%,
+                        rgba(210, 218, 225, .95) 44%,
+                        rgba(125, 135, 145, .95) 47%,
+                        rgba(55, 63, 70, .95) 49%,
+                        transparent 51%
+                    );
+            
+                box-shadow: inset 0 0 12px rgba(20, 25, 30, .35);
+            
+                z-index: 2;
+            
+                animation: lock-chain-appear .4s ease-out;
+            }
+            
+            /* Замок на цепях */
+            .legion-roulette-reel.lock-selected::after {
+                content: '🔒';
+            
+                position: absolute;
+                top: 2px;
+                right: 2px;
+            
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            
+                width: 23px;
+                height: 23px;
+            
+                font-size: 15px;
+            
+                border-radius: 6px;
+            
+                background: linear-gradient(
+                    145deg,
+                    rgba(210, 216, 221, .95),
+                    rgba(95, 105, 114, .98)
+                );
+            
+                box-shadow:
+                    0 1px 4px rgba(0, 0, 0, .65),
+                    inset 0 1px 2px rgba(255, 255, 255, .5);
+            
+                pointer-events: none;
+                z-index: 3;
+            
+                animation: lock-padlock-appear .35s ease-out;
+            }
+            
+            @keyframes lock-chain-appear {
+                from {
+                    opacity: 0;
+                    transform: scale(.85);
+                }
+            
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+            
+            @keyframes lock-padlock-appear {
+                from {
+                    opacity: 0;
+                    transform: translateY(-8px) scale(.6);
+                }
+            
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
             }
 
             .legion-roulette-reel.spinning {
@@ -6432,6 +6565,10 @@ function submitBet(amount) {
                 <button class="legion-mini-button" data-action="insurance" disabled hidden>
                     🛡️ Страховка
                 </button>
+                
+                <button class="legion-mini-button" data-action="lock" disabled hidden>
+                    🔒 Закрепление
+                </button>
             
                 <button class="legion-mini-button" data-action="complete" disabled>
                     💰 Забрать награду
@@ -6466,6 +6603,7 @@ function submitBet(amount) {
 
                 const rerollButton = container.querySelector('[data-action="reroll"]');
                 const insuranceButton = container.querySelector('[data-action="insurance"]');
+                const lockButton = container.querySelector('[data-action="lock"]');
 
                 container.querySelectorAll('.legion-roulette-reel').forEach((reel, index) => {
                     reel.setAttribute('role', 'button');
@@ -6477,6 +6615,8 @@ function submitBet(amount) {
                             selectRouletteKeepReel(index);
                         } else if (rouletteModifierSelectionMode === 'reroll') {
                             selectRouletteReel(index);
+                        } else if (rouletteModifierSelectionMode === 'lock') {
+                            selectRouletteLockReel(index);
                         }
                     };
                 
@@ -6523,6 +6663,24 @@ function submitBet(amount) {
                 
                     updateRouletteModifierUI();
                 });
+
+                lockButton.addEventListener('click', () => {
+                    if (lockButton.disabled) return;
+                
+                    if (rouletteModifierSelectionMode === 'lock') {
+                        if (rouletteSelectedLockIndex === null) return;
+                
+                        lockRouletteSolo(rouletteSelectedLockIndex);
+                        return;
+                    }
+                
+                    rouletteModifierSelectionMode = 'lock';
+                    rouletteSelectedLockIndex = null;
+                    rouletteSelectedKeepIndex = null;
+                    rouletteSelectedReelIndex = null;
+                
+                    updateRouletteModifierUI();
+                });
         
     }
 
@@ -6536,6 +6694,7 @@ function submitBet(amount) {
             spin: container.querySelector('[data-action="spin"]'),
             reroll: container.querySelector('[data-action="reroll"]'),
             insurance: container.querySelector('[data-action="insurance"]'),
+            lock: container.querySelector('[data-action="lock"]'),
             publish: container.querySelector('[data-action="publish"]'),
             complete: container.querySelector('[data-action="complete"]'),
             cooldown: container.querySelector('[data-role="cooldown"]'),
@@ -6669,37 +6828,66 @@ function submitBet(amount) {
             !rouletteCompleting
         );
     
+        const canLock = Boolean(
+            rouletteLockAvailable &&
+            !rouletteLockApplying &&
+            rouletteResult &&
+            rouletteSessionId &&
+            !rouletteLockUsed &&
+            !rouletteSpinning &&
+            !rouletteCompleting
+        );
+    
         // Если выбранный режим больше недоступен — выключаем его
         if (
             (rouletteModifierSelectionMode === 'reroll' && !canReroll) ||
-            (rouletteModifierSelectionMode === 'insurance' && !canInsurance)
+            (rouletteModifierSelectionMode === 'insurance' && !canInsurance) ||
+            (rouletteModifierSelectionMode === 'lock' && !canLock)
         ) {
             rouletteModifierSelectionMode = null;
         }
     
         elements.reroll.hidden = !canReroll;
         elements.reroll.disabled = !canReroll;
+    
         elements.insurance.hidden = !canInsurance;
         elements.insurance.disabled = !canInsurance;
-        
+    
+        elements.lock.hidden = !canLock;
+        elements.lock.disabled = !canLock;
+    
         const popupVisible =
             (canReroll && rouletteModifierSelectionMode === 'reroll') ||
-            (canInsurance && rouletteModifierSelectionMode === 'insurance');
-        
+            (canInsurance && rouletteModifierSelectionMode === 'insurance') ||
+            (canLock && rouletteModifierSelectionMode === 'lock');
+    
         elements.reelArea.classList.toggle('is-modifier-active', popupVisible);
         elements.modifierPopup.classList.toggle('is-visible', popupVisible);
-        elements.modifierPopup.setAttribute('aria-hidden', String(!popupVisible));
-        
+        elements.modifierPopup.setAttribute(
+            'aria-hidden',
+            String(!popupVisible)
+        );
+    
         if (popupVisible) {
-            const isInsurance = rouletteModifierSelectionMode === 'insurance';
-        
-            elements.modifierPopupTitle.textContent = isInsurance
-                ? '🛡️ Страховка'
-                : '🔄 Переброска';
-        
-            elements.modifierPopupText.textContent = isInsurance
-                ? 'Выбери символ, который хочешь сохранить. Два остальных будут переброшены.'
-                : 'Выбери символ, который хочешь заменить.';
+            const mode = rouletteModifierSelectionMode;
+    
+            const popupInfo = {
+                reroll: {
+                    title: '🔄 Переброска',
+                    text: 'Выбери символ, который хочешь заменить.'
+                },
+                insurance: {
+                    title: '🛡️ Страховка',
+                    text: 'Выбери символ, который хочешь сохранить. Два остальных будут переброшены.'
+                },
+                lock: {
+                    title: '🔒 Закрепление',
+                    text: 'Выбери символ, который хочешь закрепить на три игры.'
+                }
+            };
+    
+            elements.modifierPopupTitle.textContent = popupInfo[mode].title;
+            elements.modifierPopupText.textContent = popupInfo[mode].text;
         }
     
         elements.reels.forEach((reel, index) => {
@@ -6711,18 +6899,24 @@ function submitBet(amount) {
                 rouletteModifierSelectionMode === 'insurance' &&
                 rouletteSelectedKeepIndex === index;
     
+            const lockSelected =
+                rouletteModifierSelectionMode === 'lock' &&
+                rouletteSelectedLockIndex === index;
+    
             const selectionActive =
                 rouletteModifierSelectionMode === 'reroll' ? canReroll :
                 rouletteModifierSelectionMode === 'insurance' ? canInsurance :
+                rouletteModifierSelectionMode === 'lock' ? canLock :
                 false;
     
             reel.classList.toggle('selectable', selectionActive);
             reel.classList.toggle('selected', rerollSelected);
             reel.classList.toggle('insurance-selected', insuranceSelected);
+            reel.classList.toggle('lock-selected', lockSelected);
     
             reel.setAttribute(
                 'aria-pressed',
-                String(rerollSelected || insuranceSelected)
+                String(rerollSelected || insuranceSelected || lockSelected)
             );
     
             reel.setAttribute('tabindex', selectionActive ? '0' : '-1');
@@ -6805,6 +6999,27 @@ function submitBet(amount) {
         );
     }
 
+    function selectRouletteLockReel(index) {
+        if (
+            rouletteModifierSelectionMode !== 'lock' ||
+            ![0, 1, 2].includes(index) ||
+            !rouletteLockAvailable ||
+            !rouletteResult ||
+            !rouletteSessionId ||
+            rouletteLockUsed ||
+            rouletteLockApplying ||
+            rouletteSpinning ||
+            rouletteCompleting
+        ) {
+            return;
+        }
+    
+        rouletteSelectedLockIndex =
+            rouletteSelectedLockIndex === index ? null : index;
+    
+        updateRouletteModifierUI();
+    }
+
     function loadRouletteInsuranceAvailability() {
         request(
             'GET',
@@ -6828,6 +7043,40 @@ function submitBet(amount) {
                 );
     
                 updateRouletteInsuranceUI();
+            }
+        );
+    }
+
+    function loadRouletteLockAvailability() {
+        request(
+            'GET',
+            '/api/inventory/' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                if (error || !result?.success) {
+                    rouletteLockAvailable = false;
+                    updateRouletteModifierUI();
+                    return;
+                }
+    
+                const lockItem = result.items?.find(item =>
+                    item.code === 'roulette_mod_lock'
+                );
+    
+                // Проверяем, не действует ли Закрепление уже сейчас
+                const activeLock = result.modifierSlots?.some(slot =>
+                    slot.item_code === 'roulette_mod_lock' &&
+                    Number(slot.lock_remaining_games) > 0
+                );
+    
+                rouletteLockAvailable = Boolean(
+                    lockItem &&
+                    lockItem.equipped &&
+                    Number(lockItem.quantity) > 0 &&
+                    !activeLock
+                );
+    
+                updateRouletteModifierUI();
             }
         );
     }
@@ -7011,6 +7260,9 @@ function submitBet(amount) {
     rouletteInsuranceApplying = false;
     rouletteSelectedKeepIndex = null;
     rouletteModifierSelectionMode = null;
+    rouletteLockUsed = false;
+    rouletteLockApplying = false;
+    rouletteSelectedLockIndex = null;
 
     updateRouletteRerollUI();
 
@@ -7259,6 +7511,93 @@ function submitBet(amount) {
         );
     }
 
+    function lockRouletteSolo(keepIndex) {
+        const elements = rouletteElements();
+    
+        if (
+            !elements ||
+            !rouletteResult ||
+            !rouletteSessionId ||
+            rouletteLockUsed ||
+            rouletteLockApplying ||
+            rouletteSpinning ||
+            rouletteCompleting ||
+            !rouletteLockAvailable ||
+            ![0, 1, 2].includes(keepIndex)
+        ) {
+            return;
+        }
+    
+        rouletteLockApplying = true;
+    
+        elements.lock.disabled = true;
+        elements.reroll.disabled = true;
+        elements.publish.disabled = true;
+    
+        elements.result.textContent = '🔒 Закрепляем выбранный символ...';
+    
+        updateRouletteModifierUI();
+    
+        request(
+            'POST',
+            '/api/roulette/solo/lock',
+            {
+                playerId,
+                sessionId: rouletteSessionId,
+                keepIndex
+            },
+            (error, result) => {
+                rouletteLockApplying = false;
+    
+                if (error || !result?.success) {
+                    elements.result.textContent =
+                        result?.error || 'Не удалось применить Закрепление.';
+    
+                    updateRouletteModifierUI();
+    
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
+    
+                    return;
+                }
+    
+                rouletteLockUsed = true;
+                rouletteSelectedLockIndex = null;
+                rouletteSelectedReelIndex = null;
+                rouletteModifierSelectionMode = null;
+    
+                // Результат рулетки не меняется
+                rouletteResult = normalizeRouletteResult(result);
+    
+                // Просто визуально отмечаем выбранный символ
+                elements.reels.forEach((reel, index) => {
+                    reel.classList.toggle(
+                        'lock-selected',
+                        index === keepIndex
+                    );
+                });
+    
+                const description = rouletteResourceText(
+                    rouletteResult.reels
+                );
+    
+                const multiplierText = rouletteResult.multiplier > 1
+                    ? ` · множитель ×${rouletteResult.multiplier}`
+                    : '';
+    
+                elements.result.textContent =
+                    `🔒 Символ закреплён на 3 игры! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
+    
+                updateRouletteModifierUI();
+    
+                elements.complete.disabled = false;
+                elements.publish.disabled = true;
+    
+                loadRouletteLockAvailability();
+            }
+        );
+    }
+
     function completeRouletteSolo() {
         if (
             !rouletteResult ||
@@ -7316,6 +7655,7 @@ function submitBet(amount) {
                 loadRouletteStatus();
                 loadRouletteRerollAvailability();
                 loadRouletteInsuranceAvailability();
+                loadRouletteLockAvailability();
 
                 // Обновляем инвентарь, если он открыт
                 if (ui.inventoryModal.classList.contains('open')) {
@@ -9304,6 +9644,7 @@ function startInventoryPolling() {
         loadRouletteStatus();
         loadRouletteRerollAvailability();
         loadRouletteInsuranceAvailability();
+        loadRouletteLockAvailability();
 
         heartbeat();
         refreshPlayers();
