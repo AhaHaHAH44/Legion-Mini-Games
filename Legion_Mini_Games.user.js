@@ -6815,7 +6815,8 @@ function submitBet(amount) {
             rouletteSessionId &&
             !rouletteRerollUsed &&
             !rouletteSpinning &&
-            !rouletteCompleting
+            !rouletteCompleting &&
+            !rouletteCompleted
         );
     
         const canInsurance = Boolean(
@@ -6825,7 +6826,8 @@ function submitBet(amount) {
             rouletteSessionId &&
             !rouletteInsuranceUsed &&
             !rouletteSpinning &&
-            !rouletteCompleting
+            !rouletteCompleting &&
+            !rouletteCompleted
         );
     
         const canLock = Boolean(
@@ -6835,7 +6837,8 @@ function submitBet(amount) {
             rouletteSessionId &&
             !rouletteLockUsed &&
             !rouletteSpinning &&
-            !rouletteCompleting
+            !rouletteCompleting &&
+            !rouletteCompleted
         );
     
         // Если выбранный режим больше недоступен — выключаем его
@@ -7637,8 +7640,11 @@ function submitBet(amount) {
                 }
     
                 rouletteCompleted = true;
+                rouletteModifierSelectionMode = null;
+                
                 updateRouletteGlow(0);
-    
+                updateRouletteModifierUI();
+                
                 rouletteResult = normalizeRouletteResult(result);
     
                 animateRouletteBalance(
