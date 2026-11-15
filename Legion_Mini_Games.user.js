@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.8
+// @version      2.1.8.1
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -10079,7 +10079,7 @@ function renderInventory(data) {
             threshold: 3,
             icon: '🐈‍⬛',
             name: 'Чёрная лапка',
-            description: '5% шанс получить пустой символ'
+            description: '15% шанс получить пустой символ'
         },
         {
             threshold: 4,
@@ -11052,7 +11052,7 @@ function startInventoryPolling() {
         if (document.getElementById('legion-mini-widget')) return;
     
         console.log(
-            '[Legion Кото-игры] Version 2.1.8 loaded'
+            '[Legion Кото-игры] Version 2.1.8.1 loaded'
         );
     
         ui = createInterface();
