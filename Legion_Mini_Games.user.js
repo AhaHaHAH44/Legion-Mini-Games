@@ -1161,38 +1161,50 @@
                 top: 85px;
                 right: 20px;
                 z-index: 1000011;
+            
                 max-width: min(320px, calc(100vw - 40px));
                 box-sizing: border-box;
                 padding: 11px 15px;
+            
                 border: 1px solid transparent;
                 border-radius: 11px;
-                color: #fff0dc;
+            
+                color: rgba(255, 240, 220, .78);
                 font: 13px Arial, sans-serif;
                 line-height: 1.45;
-                box-shadow: 0 5px 18px #0007;
+            
+                box-shadow: 0 5px 18px rgba(0, 0, 0, .35);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            
                 opacity: 0;
                 visibility: hidden;
-                transform: translateY(-6px);
-                transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+                transform: translateX(120%) scale(.92);
+            
+                transition:
+                    opacity .35s ease,
+                    transform .45s cubic-bezier(.16, 1, .3, 1),
+                    visibility .35s ease;
+            
                 pointer-events: none;
             }
             
             #legion-modifier-outcome-toast.open {
                 opacity: 1;
                 visibility: visible;
-                transform: translateY(0);
+                transform: translateX(0) scale(1);
             }
             
             /* Успешное применение */
             #legion-modifier-outcome-toast.applied {
-                border-color: #5b9d62;
-                background: rgba(34, 83, 43, .96);
+                border-color: rgba(91, 157, 98, .55);
+                background: rgba(34, 83, 43, .68);
             }
             
             /* Поломка модификатора */
             #legion-modifier-outcome-toast.broken {
-                border-color: #b85b5b;
-                background: rgba(105, 37, 37, .97);
+                border-color: rgba(184, 91, 91, .6);
+                background: rgba(105, 37, 37, .72);
             }
             
             @media (max-width: 480px) {
@@ -5198,7 +5210,7 @@
     
         toast.timer = setTimeout(
             () => toast.classList.remove('open'),
-            2000
+            3000
         );
     }
     
