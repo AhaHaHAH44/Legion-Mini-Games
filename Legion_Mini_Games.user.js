@@ -117,6 +117,13 @@
     let rouletteLockUsed = false;
     let rouletteLockApplying = false;
     let rouletteSelectedLockIndex = null;
+
+    // Дублирование
+    let rouletteDuplicateAvailable = false;
+    let rouletteDuplicateUsed = false;
+    let rouletteDuplicateApplying = false;
+    let rouletteSelectedSourceIndex = null;
+    let rouletteSelectedTargetIndex = null;
     
     // Активное закрепление, загруженное с сервера
     let rouletteActiveLockIndex = null;
@@ -1322,6 +1329,93 @@
                 background: #3a2d1b;
                 box-shadow: 0 0 0 2px #f2c45f33, 0 0 14px #f2c45f66, inset 0 0 12px #0006;
                 transform: translateY(-2px);
+            }
+
+            /* Источник копирования */
+            .legion-roulette-reel.duplicate-source-selected {
+                border: 2px solid #777;
+                background: #302f30;
+                box-shadow:
+                    0 0 0 2px rgba(70, 70, 70, .25),
+                    0 0 17px rgba(20, 20, 20, .8),
+                    inset 0 0 16px rgba(0, 0, 0, .8);
+            }
+            
+            /* Целевой слот */
+            .legion-roulette-reel.duplicate-target-selected {
+                border: 2px solid #aaa;
+                background: #393638;
+                box-shadow:
+                    0 0 0 2px rgba(130, 130, 130, .2),
+                    0 0 18px rgba(70, 70, 70, .65),
+                    inset 0 0 14px rgba(0, 0, 0, .7);
+            }
+            
+            /* Вспышка при попадании угольной дымки */
+            .legion-roulette-reel.coal-copy-arrival {
+                animation: legion-coal-arrival .65s ease-out;
+            }
+            
+            @keyframes legion-coal-arrival {
+                0% {
+                    filter: brightness(.35);
+                    box-shadow: inset 0 0 25px #000;
+                }
+            
+                45% {
+                    filter: brightness(1.6);
+                    box-shadow:
+                        0 0 22px rgba(150, 150, 150, .8),
+                        inset 0 0 20px rgba(0, 0, 0, .9);
+                    transform: scale(1.08);
+                }
+            
+                100% {
+                    filter: brightness(1);
+                    transform: scale(1);
+                }
+            }
+            
+            /* Частицы угольного дыма */
+            .legion-coal-particle {
+                position: absolute;
+                display: block;
+                border-radius: 50%;
+                pointer-events: none;
+            
+                background: radial-gradient(
+                    circle,
+                    rgba(100, 100, 100, .95) 0%,
+                    rgba(45, 43, 44, .85) 45%,
+                    rgba(12, 12, 13, 0) 100%
+                );
+            
+                box-shadow: 0 0 12px rgba(0, 0, 0, .8);
+                filter: blur(2px);
+            
+                animation: legion-coal-flight .85s ease-in-out forwards;
+            }
+            
+            @keyframes legion-coal-flight {
+                0% {
+                    opacity: 0;
+                    transform: translate(0, 0) scale(.3);
+                }
+            
+                15% {
+                    opacity: .95;
+                }
+            
+                65% {
+                    opacity: .85;
+                }
+            
+                100% {
+                    opacity: 0;
+                    transform:
+                        translate(var(--dx), var(--dy))
+                        scale(1.8);
+                }
             }
 
             /* Металлическое Закрепление */
@@ -7325,6 +7419,10 @@ function submitBet(amount) {
                 <button class="legion-mini-button" data-action="lock" disabled hidden>
                     🔒 Закрепление
                 </button>
+
+                <button class="legion-mini-button" data-action="duplicate" disabled hidden>
+                    ⬛ Дублирование
+                </button>
             
                 <button class="legion-mini-button" data-action="complete" disabled>
                     💰 Забрать награду
@@ -7360,6 +7458,7 @@ function submitBet(amount) {
                 const rerollButton = container.querySelector('[data-action="reroll"]');
                 const insuranceButton = container.querySelector('[data-action="insurance"]');
                 const lockButton = container.querySelector('[data-action="lock"]');
+                const duplicateButton = container.querySelector('[data-action="duplicate"]');
 
                 container.querySelectorAll('.legion-roulette-reel').forEach((reel, index) => {
                     reel.setAttribute('role', 'button');
@@ -7373,6 +7472,8 @@ function submitBet(amount) {
                             selectRouletteReel(index);
                         } else if (rouletteModifierSelectionMode === 'lock') {
                             selectRouletteLockReel(index);
+                        } else if (rouletteModifierSelectionMode === 'duplicate') {
+                            selectRouletteDuplicateReel(index);
                         }
                     };
                 
@@ -7437,6 +7538,25 @@ function submitBet(amount) {
                 
                     updateRouletteModifierUI();
                 });
+
+                duplicateButton.addEventListener('click', () => {
+                    if (duplicateButton.disabled) return;
+                
+                    if (rouletteModifierSelectionMode === 'duplicate') {
+                        rouletteModifierSelectionMode = null;
+                        rouletteSelectedSourceIndex = null;
+                        rouletteSelectedTargetIndex = null;
+                    } else {
+                        rouletteModifierSelectionMode = 'duplicate';
+                        rouletteSelectedSourceIndex = null;
+                        rouletteSelectedTargetIndex = null;
+                        rouletteSelectedReelIndex = null;
+                        rouletteSelectedKeepIndex = null;
+                        rouletteSelectedLockIndex = null;
+                    }
+                
+                    updateRouletteModifierUI();
+                });
         
     }
 
@@ -7451,6 +7571,7 @@ function submitBet(amount) {
             reroll: container.querySelector('[data-action="reroll"]'),
             insurance: container.querySelector('[data-action="insurance"]'),
             lock: container.querySelector('[data-action="lock"]'),
+            duplicate: container.querySelector('[data-action="duplicate"]'),
             publish: container.querySelector('[data-action="publish"]'),
             complete: container.querySelector('[data-action="complete"]'),
             cooldown: container.querySelector('[data-role="cooldown"]'),
@@ -7596,12 +7717,24 @@ function submitBet(amount) {
             !rouletteCompleting &&
             !rouletteCompleted
         );
+
+        const canDuplicate = Boolean(
+            rouletteDuplicateAvailable &&
+            !rouletteDuplicateApplying &&
+            rouletteResult &&
+            rouletteSessionId &&
+            !rouletteDuplicateUsed &&
+            !rouletteSpinning &&
+            !rouletteCompleting &&
+            !rouletteCompleted
+        );
     
         // Если выбранный режим больше недоступен — выключаем его
         if (
             (rouletteModifierSelectionMode === 'reroll' && !canReroll) ||
             (rouletteModifierSelectionMode === 'insurance' && !canInsurance) ||
-            (rouletteModifierSelectionMode === 'lock' && !canLock)
+            (rouletteModifierSelectionMode === 'lock' && !canLock) ||
+            (rouletteModifierSelectionMode === 'duplicate' && !canDuplicate)
         ) {
             rouletteModifierSelectionMode = null;
         }
@@ -7614,11 +7747,15 @@ function submitBet(amount) {
     
         elements.lock.hidden = !canLock;
         elements.lock.disabled = !canLock;
+
+        elements.duplicate.hidden = !canDuplicate;
+        elements.duplicate.disabled = !canDuplicate;
     
         const popupVisible =
             (canReroll && rouletteModifierSelectionMode === 'reroll') ||
             (canInsurance && rouletteModifierSelectionMode === 'insurance') ||
-            (canLock && rouletteModifierSelectionMode === 'lock');
+            (canLock && rouletteModifierSelectionMode === 'lock') ||
+            (canDuplicate && rouletteModifierSelectionMode === 'duplicate');
     
         elements.reelArea.classList.toggle('is-modifier-active', popupVisible);
         elements.modifierPopup.classList.toggle('is-visible', popupVisible);
@@ -7642,6 +7779,12 @@ function submitBet(amount) {
                 lock: {
                     title: '🔒 Закрепление',
                     text: 'Выбери символ, который хочешь закрепить на три игры.'
+                },
+                duplicate: {
+                    title: '⬛ Дублирование',
+                    text: rouletteSelectedSourceIndex === null
+                        ? 'Выбери символ, который нужно скопировать.'
+                        : 'Теперь выбери другой слот, куда перенести копию.'
                 }
             };
     
@@ -7664,11 +7807,20 @@ function submitBet(amount) {
             
             const lockActive =
                 rouletteActiveLockIndex === index;
+
+            const duplicateSourceSelected =
+                rouletteModifierSelectionMode === 'duplicate' &&
+                rouletteSelectedSourceIndex === index;
+            
+            const duplicateTargetSelected =
+                rouletteModifierSelectionMode === 'duplicate' &&
+                rouletteSelectedTargetIndex === index;
     
             const selectionActive =
                 rouletteModifierSelectionMode === 'reroll' ? canReroll :
                 rouletteModifierSelectionMode === 'insurance' ? canInsurance :
                 rouletteModifierSelectionMode === 'lock' ? canLock :
+                rouletteModifierSelectionMode === 'duplicate' ? canDuplicate :
                 false;
     
             reel.classList.toggle('selectable', selectionActive);
@@ -7676,10 +7828,18 @@ function submitBet(amount) {
             reel.classList.toggle('insurance-selected', insuranceSelected);
             reel.classList.toggle('lock-selected', lockSelected);
             reel.classList.toggle('lock-active', lockActive);
+            reel.classList.toggle('duplicate-source-selected', duplicateSourceSelected);
+            reel.classList.toggle('duplicate-target-selected', duplicateTargetSelected);
     
             reel.setAttribute(
                 'aria-pressed',
-                String(rerollSelected || insuranceSelected || lockSelected)
+                String(
+                    rerollSelected ||
+                    insuranceSelected ||
+                    lockSelected ||
+                    duplicateSourceSelected ||
+                    duplicateTargetSelected
+                )
             );
     
             reel.setAttribute('tabindex', selectionActive ? '0' : '-1');
@@ -7799,6 +7959,55 @@ function submitBet(amount) {
         updateRouletteModifierUI();
     }
 
+    function selectRouletteDuplicateReel(index) {
+        if (
+            rouletteModifierSelectionMode !== 'duplicate' ||
+            ![0, 1, 2].includes(index) ||
+            !rouletteDuplicateAvailable ||
+            !rouletteResult ||
+            !rouletteSessionId ||
+            rouletteDuplicateUsed ||
+            rouletteDuplicateApplying ||
+            rouletteSpinning ||
+            rouletteCompleting
+        ) {
+            return;
+        }
+    
+        // Первый выбор — источник копирования.
+        if (rouletteSelectedSourceIndex === null) {
+            rouletteSelectedSourceIndex = index;
+            updateRouletteModifierUI();
+            return;
+        }
+    
+        // Нельзя копировать ячейку в саму себя.
+        if (rouletteSelectedSourceIndex === index) {
+            rouletteSelectedSourceIndex = null;
+            rouletteSelectedTargetIndex = null;
+            updateRouletteModifierUI();
+            return;
+        }
+    
+        // Нельзя заменять закреплённую ячейку.
+        if (index === rouletteActiveLockIndex) {
+            showToast(
+                `🔒 Этот слот закреплён ещё на ${rouletteLockRemainingGames} игр`
+            );
+            return;
+        }
+    
+        // Второй выбор — место назначения.
+        rouletteSelectedTargetIndex = index;
+    
+        updateRouletteModifierUI();
+    
+        duplicateRouletteSolo(
+            rouletteSelectedSourceIndex,
+            rouletteSelectedTargetIndex
+        );
+    }
+
     function loadRouletteInsuranceAvailability() {
         request(
             'GET',
@@ -7863,6 +8072,34 @@ function submitBet(amount) {
                     lockItem.equipped &&
                     Number(lockItem.quantity) > 0 &&
                     !activeLock
+                );
+    
+                updateRouletteModifierUI();
+            }
+        );
+    }
+
+    function loadRouletteDuplicateAvailability() {
+        request(
+            'GET',
+            '/api/inventory/' + encodeURIComponent(playerId),
+            null,
+            (error, result) => {
+                if (error || !result?.success) {
+                    rouletteDuplicateAvailable = false;
+                    updateRouletteModifierUI();
+                    return;
+                }
+    
+                const duplicateItem = result.items?.find(item =>
+                    item.code === 'roulette_mod_duplicate'
+                );
+    
+                rouletteDuplicateAvailable = Boolean(
+                    duplicateItem &&
+                    duplicateItem.equipped &&
+                    Number(duplicateItem.quantity) > 0 &&
+                    !rouletteDuplicateUsed
                 );
     
                 updateRouletteModifierUI();
@@ -8078,6 +8315,11 @@ function submitBet(amount) {
     rouletteLockApplying = false;
     rouletteSelectedLockIndex = null;
 
+    rouletteDuplicateUsed = false;
+    rouletteDuplicateApplying = false;
+    rouletteSelectedSourceIndex = null;
+    rouletteSelectedTargetIndex = null;
+
     updateRouletteRerollUI();
 
     // Запрашиваем вращение у сервера.
@@ -8133,6 +8375,10 @@ function submitBet(amount) {
                 rouletteSelectedKeepIndex = null;
                 rouletteModifierSelectionMode = null;
 
+                rouletteDuplicateUsed = Boolean(result.duplicateUsed);
+                rouletteSelectedSourceIndex = null;
+                rouletteSelectedTargetIndex = null;
+
                 updateRouletteRerollUI();
 
                 animateRoulette(rouletteResult.reels, () => {
@@ -8158,6 +8404,7 @@ function submitBet(amount) {
                     loadRouletteRerollAvailability();
                     loadRouletteInsuranceAvailability();
                     loadRouletteLockAvailability();
+                    loadRouletteDuplicateAvailability();
 
                     elements.complete.disabled = false;
                     elements.publish.disabled = true;
@@ -8524,6 +8771,245 @@ function submitBet(amount) {
                 elements.publish.disabled = true;
     
                 loadRouletteLockAvailability();
+            }
+        );
+    }
+
+    function animateRouletteDuplicate(sourceIndex, targetIndex, callback) {
+        const elements = rouletteElements();
+    
+        if (!elements) {
+            callback();
+            return;
+        }
+    
+        const source = elements.reels[sourceIndex];
+        const target = elements.reels[targetIndex];
+    
+        if (!source || !target) {
+            callback();
+            return;
+        }
+    
+        const sourceRect = source.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+    
+        const sourceX = sourceRect.left + sourceRect.width / 2;
+        const sourceY = sourceRect.top + sourceRect.height / 2;
+    
+        const targetX = targetRect.left + targetRect.width / 2;
+        const targetY = targetRect.top + targetRect.height / 2;
+    
+        const overlay = document.createElement('div');
+    
+        overlay.style.cssText = `
+            position: fixed;
+            inset: 0;
+            z-index: 1000012;
+            pointer-events: none;
+            overflow: hidden;
+        `;
+    
+        document.body.appendChild(overlay);
+    
+        const distanceX = targetX - sourceX;
+        const distanceY = targetY - sourceY;
+    
+        // Основная масса дыма.
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('span');
+    
+            particle.className = 'legion-coal-particle';
+    
+            const size = 13 + Math.random() * 23;
+            const offsetX = (Math.random() - .5) * 24;
+            const offsetY = (Math.random() - .5) * 24;
+    
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+    
+            particle.style.left = `${sourceX + offsetX}px`;
+            particle.style.top = `${sourceY + offsetY}px`;
+    
+            particle.style.setProperty(
+                '--dx',
+                `${distanceX + (Math.random() - .5) * 45}px`
+            );
+    
+            particle.style.setProperty(
+                '--dy',
+                `${distanceY + (Math.random() - .5) * 45}px`
+            );
+    
+            particle.style.animationDelay = `${Math.random() * .2}s`;
+    
+            overlay.appendChild(particle);
+        }
+    
+        // Затемнение целевого слота перед проявлением символа.
+        target.classList.add('coal-copy-arrival');
+    
+        setTimeout(() => {
+            overlay.remove();
+            target.classList.remove('coal-copy-arrival');
+    
+            callback();
+        }, 1100);
+    }
+
+    function duplicateRouletteSolo(sourceIndex, targetIndex) {
+        const elements = rouletteElements();
+    
+        if (
+            !elements ||
+            !rouletteResult ||
+            !rouletteSessionId ||
+            !rouletteDuplicateAvailable ||
+            rouletteDuplicateUsed ||
+            rouletteDuplicateApplying ||
+            rouletteSpinning ||
+            rouletteCompleting ||
+            ![0, 1, 2].includes(sourceIndex) ||
+            ![0, 1, 2].includes(targetIndex) ||
+            sourceIndex === targetIndex
+        ) {
+            return;
+        }
+    
+        // Нельзя заменять закреплённый слот.
+        if (targetIndex === rouletteActiveLockIndex) {
+            showToast(
+                `🔒 Этот слот закреплён ещё на ${rouletteLockRemainingGames} игр`
+            );
+            return;
+        }
+    
+        rouletteDuplicateApplying = true;
+    
+        elements.duplicate.disabled = true;
+        elements.reroll.disabled = true;
+        elements.publish.disabled = true;
+        elements.complete.disabled = true;
+    
+        elements.result.textContent = '⬛ Копируем выбранный символ...';
+    
+        updateRouletteModifierUI();
+    
+        request(
+            'POST',
+            '/api/roulette/solo/duplicate',
+            {
+                playerId,
+                sessionId: rouletteSessionId,
+                sourceIndex,
+                targetIndex
+            },
+            (error, result) => {
+                rouletteDuplicateApplying = false;
+    
+                if (error || !result?.success) {
+                    elements.result.textContent =
+                        result?.error ||
+                        error?.message ||
+                        'Не удалось применить Дублирование.';
+    
+                    if (result?.code === 'DUPLICATE_TARGET_LOCKED') {
+                        showToast(result.error);
+                        loadRouletteLockAvailability();
+                    }
+    
+                    if (result?.code === 'DUPLICATE_ALREADY_USED') {
+                        rouletteDuplicateUsed = true;
+                        rouletteDuplicateAvailable = false;
+                    }
+    
+                    rouletteSelectedSourceIndex = null;
+                    rouletteSelectedTargetIndex = null;
+                    rouletteModifierSelectionMode = null;
+    
+                    updateRouletteModifierUI();
+    
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
+    
+                    return;
+                }
+    
+                // Сервер подтвердил использование модификатора.
+                // Даже если он сломался, повторно применить его нельзя.
+                rouletteDuplicateUsed = true;
+                rouletteDuplicateAvailable = false;
+    
+                rouletteSelectedSourceIndex = null;
+                rouletteSelectedTargetIndex = null;
+                rouletteModifierSelectionMode = null;
+    
+                // Модификатор сломался из-за Кошачьей расплаты.
+                if (
+                    result.modifierOutcome === 'broken' ||
+                    result.modifierBroken
+                ) {
+                    showModifierOutcomeToast(
+                        'broken',
+                        'Дублирование',
+                        elements.reels[sourceIndex]
+                    );
+    
+                    restoreRouletteResultText(elements);
+    
+                    updateRouletteModifierUI();
+    
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
+    
+                    loadRouletteRerollAvailability();
+                    loadRouletteInsuranceAvailability();
+                    loadRouletteLockAvailability();
+    
+                    return;
+                }
+    
+                // Дублирование успешно применено.
+                showModifierOutcomeToast(
+                    'applied',
+                    'Дублирование',
+                    elements.reels[targetIndex]
+                );
+    
+                // Принимаем пересчитанный результат от сервера.
+                rouletteResult = normalizeRouletteResult(result);
+    
+                // Анимируем перемещение символа из исходного слота в целевой.
+                animateRouletteDuplicate(
+                    sourceIndex,
+                    targetIndex,
+                    () => {
+                        rouletteResult.reels.forEach((item, index) => {
+                            elements.reels[index].textContent = item.emoji;
+                        });
+                        
+                        const description = rouletteResourceText(
+                            rouletteResult.reels
+                        );
+    
+                        const multiplierText = rouletteResult.multiplier > 1
+                            ? ` · множитель ×${rouletteResult.multiplier}`
+                            : '';
+    
+                        elements.result.textContent = rouletteResult.jackpot
+                            ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`
+                            : `⬛ Дублирование сработало! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
+    
+                        updateRouletteModifierUI();
+    
+                        elements.complete.disabled = false;
+                        elements.publish.disabled = true;
+    
+                        loadRouletteRerollAvailability();
+                        loadRouletteInsuranceAvailability();
+                        loadRouletteLockAvailability();
+                    }
+                );
             }
         );
     }
@@ -10585,6 +11071,7 @@ function startInventoryPolling() {
         loadRouletteRerollAvailability();
         loadRouletteInsuranceAvailability();
         loadRouletteLockAvailability();
+        loadRouletteDuplicateAvailability();
 
         heartbeat();
         refreshPlayers();
