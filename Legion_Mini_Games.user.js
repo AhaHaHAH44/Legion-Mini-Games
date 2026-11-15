@@ -8,7 +8,7 @@
 // @supportURL   https://github.com/AhaHaHAH44/Legion-Mini-Games/issues
 // @updateURL    https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
 // @downloadURL  https://raw.githubusercontent.com/AhaHaHAH44/Legion-Mini-Games/main/Legion_Mini_Games.user.js
-// @match        https://play.multidonate.ru/*
+// @match        https://legiongame.gg/*
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
 // @grant        GM_openInTab
