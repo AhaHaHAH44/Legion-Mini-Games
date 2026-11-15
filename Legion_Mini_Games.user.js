@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.7.4
+// @version      2.1.8
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -7421,7 +7421,7 @@ function submitBet(amount) {
                 </button>
 
                 <button class="legion-mini-button" data-action="duplicate" disabled hidden>
-                    ⬛ Дублирование
+                    🧬 Дублирование
                 </button>
             
                 <button class="legion-mini-button" data-action="complete" disabled>
@@ -7781,7 +7781,7 @@ function submitBet(amount) {
                     text: 'Выбери символ, который хочешь закрепить на три игры.'
                 },
                 duplicate: {
-                    title: '⬛ Дублирование',
+                    title: '🧬 Дублирование',
                     text: rouletteSelectedSourceIndex === null
                         ? 'Выбери символ, который нужно скопировать.'
                         : 'Теперь выбери другой слот, куда перенести копию.'
@@ -11052,7 +11052,7 @@ function startInventoryPolling() {
         if (document.getElementById('legion-mini-widget')) return;
     
         console.log(
-            '[Legion Кото-игры] Version 2.1.7.4 loaded'
+            '[Legion Кото-игры] Version 2.1.8 loaded'
         );
     
         ui = createInterface();
