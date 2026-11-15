@@ -10566,7 +10566,7 @@ function startInventoryPolling() {
         if (document.getElementById('legion-mini-widget')) return;
     
         console.log(
-            '[Legion Кото-игры] Version 2.1.7.1 loaded'
+            '[Legion Кото-игры] Version 2.1.7.4 loaded'
         );
     
         ui = createInterface();
