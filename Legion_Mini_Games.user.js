@@ -1158,11 +1158,14 @@
             /* Уведомление об исходе применения модификатора */
             #legion-modifier-outcome-toast {
                 position: fixed;
-                top: 85px;
-                right: 20px;
+                left: 50%;
+                top: 50%;
+                right: auto;
+                bottom: auto;
                 z-index: 1000011;
             
-                max-width: min(320px, calc(100vw - 40px));
+                width: max-content;
+                max-width: min(320px, calc(100vw - 30px));
                 box-sizing: border-box;
                 padding: 11px 15px;
             
@@ -1172,19 +1175,20 @@
                 color: rgba(255, 240, 220, .78);
                 font: 13px Arial, sans-serif;
                 line-height: 1.45;
+                text-align: center;
             
-                box-shadow: 0 5px 18px rgba(0, 0, 0, .35);
+                box-shadow: 0 5px 18px rgba(0, 0, 0, .3);
                 backdrop-filter: blur(8px);
                 -webkit-backdrop-filter: blur(8px);
             
                 opacity: 0;
                 visibility: hidden;
-                transform: translateX(120%) scale(.92);
+                transform: translate(-50%, -50%) scale(.72);
             
                 transition:
-                    opacity .35s ease,
-                    transform .45s cubic-bezier(.16, 1, .3, 1),
-                    visibility .35s ease;
+                    opacity .3s ease,
+                    transform .55s cubic-bezier(.16, 1, .3, 1),
+                    visibility .3s ease;
             
                 pointer-events: none;
             }
@@ -1192,7 +1196,7 @@
             #legion-modifier-outcome-toast.open {
                 opacity: 1;
                 visibility: visible;
-                transform: translateX(0) scale(1);
+                transform: translate(-50%, -145%) scale(1);
             }
             
             /* Успешное применение */
@@ -1205,14 +1209,6 @@
             #legion-modifier-outcome-toast.broken {
                 border-color: rgba(184, 91, 91, .6);
                 background: rgba(105, 37, 37, .72);
-            }
-            
-            @media (max-width: 480px) {
-                #legion-modifier-outcome-toast {
-                    top: 70px;
-                    right: 10px;
-                    max-width: calc(100vw - 20px);
-                }
             }
 
             .legion-roulette {
@@ -5188,8 +5184,8 @@
         );
     }
 
-    // Показываем исход применения только после ответа сервера.
-    function showModifierOutcomeToast(outcome, modifierName) {
+    // Показываем уведомление из места подтверждения модификатора.
+    function showModifierOutcomeToast(outcome, modifierName, anchorElement) {
         const toast = document.getElementById(
             'legion-modifier-outcome-toast'
         );
@@ -5204,14 +5200,42 @@
     
         toast.classList.toggle('broken', broken);
         toast.classList.toggle('applied', !broken);
-        toast.classList.add('open');
     
+        // Определяем координаты элемента, подтвердившего действие.
+        const rect = anchorElement?.getBoundingClientRect();
+    
+        if (rect) {
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+    
+            const halfWidth = toast.offsetWidth / 2;
+    
+            const safeX = Math.max(
+                halfWidth + 10,
+                Math.min(
+                    window.innerWidth - halfWidth - 10,
+                    centerX
+                )
+            );
+    
+            toast.style.left = `${safeX}px`;
+            toast.style.top = `${centerY}px`;
+        }
+    
+        // Перезапускаем анимацию, если уведомление уже показывалось.
         clearTimeout(toast.timer);
     
-        toast.timer = setTimeout(
-            () => toast.classList.remove('open'),
-            3000
-        );
+        toast.classList.remove('open');
+    
+        // Принудительно фиксируем начальное состояние анимации.
+        void toast.offsetWidth;
+    
+        toast.classList.add('open');
+    
+        // Скрываем через 3 секунды.
+        toast.timer = setTimeout(() => {
+            toast.classList.remove('open');
+        }, 3000);
     }
     
     // Возвращаем текст исходного результата рулетки.
@@ -8149,7 +8173,11 @@ function submitBet(amount) {
                     result.modifierOutcome === 'broken' ||
                     result.modifierBroken
                 ) {
-                    showModifierOutcomeToast('broken', 'Переброс');
+                    showModifierOutcomeToast(
+                        'broken',
+                        'Переброс',
+                        elements.reels[index]
+                    );
                 
                     restoreRouletteResultText(elements);
                 
@@ -8166,7 +8194,11 @@ function submitBet(amount) {
                 }
                 
                 // Модификатор успешно применён.
-                showModifierOutcomeToast('applied', 'Переброс');
+                showModifierOutcomeToast(
+                    'applied',
+                    'Переброс',
+                    elements.reels[index]
+                );
                 
                 rouletteResult = normalizeRouletteResult(result);
     
@@ -8261,7 +8293,11 @@ function submitBet(amount) {
                     result.modifierOutcome === 'broken' ||
                     result.modifierBroken
                 ) {
-                    showModifierOutcomeToast('broken', 'Страховка');
+                    showModifierOutcomeToast(
+                        'broken',
+                        'Страховка',
+                        elements.reels[keepIndex]
+                    );
                 
                     restoreRouletteResultText(elements);
                 
@@ -8278,7 +8314,11 @@ function submitBet(amount) {
                 }
                 
                 // Страховка успешно применена.
-                showModifierOutcomeToast('applied', 'Страховка');
+                showModifierOutcomeToast(
+                    'applied',
+                    'Страховка',
+                    elements.reels[keepIndex]
+                );
                 
                 rouletteResult = normalizeRouletteResult(result);
     
@@ -8374,7 +8414,11 @@ function submitBet(amount) {
                     result.modifierOutcome === 'broken' ||
                     result.modifierBroken
                 ) {
-                    showModifierOutcomeToast('broken', 'Закрепление');
+                    showModifierOutcomeToast(
+                        'broken',
+                        'Закрепление',
+                        elements.reels[keepIndex]
+                    );
                 
                     restoreRouletteResultText(elements);
                 
@@ -8391,7 +8435,11 @@ function submitBet(amount) {
                 }
                 
                 // Закрепление успешно применено.
-                showModifierOutcomeToast('applied', 'Закрепление');
+                showModifierOutcomeToast(
+                    'applied',
+                    'Закрепление',
+                    elements.reels[keepIndex]
+                );
                 
                 // Сохраняем активное Закрепление локально.
                 rouletteActiveLockIndex = keepIndex;
