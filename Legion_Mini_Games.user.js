@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.7.2
+// @version      2.1.7.3
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -1153,6 +1153,54 @@
 
             #legion-mini-toast.open {
                 display: block;
+            }
+
+            /* Уведомление об исходе применения модификатора */
+            #legion-modifier-outcome-toast {
+                position: fixed;
+                top: 85px;
+                right: 20px;
+                z-index: 1000011;
+                max-width: min(320px, calc(100vw - 40px));
+                box-sizing: border-box;
+                padding: 11px 15px;
+                border: 1px solid transparent;
+                border-radius: 11px;
+                color: #fff0dc;
+                font: 13px Arial, sans-serif;
+                line-height: 1.45;
+                box-shadow: 0 5px 18px #0007;
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(-6px);
+                transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+                pointer-events: none;
+            }
+            
+            #legion-modifier-outcome-toast.open {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+            }
+            
+            /* Успешное применение */
+            #legion-modifier-outcome-toast.applied {
+                border-color: #5b9d62;
+                background: rgba(34, 83, 43, .96);
+            }
+            
+            /* Поломка модификатора */
+            #legion-modifier-outcome-toast.broken {
+                border-color: #b85b5b;
+                background: rgba(105, 37, 37, .97);
+            }
+            
+            @media (max-width: 480px) {
+                #legion-modifier-outcome-toast {
+                    top: 70px;
+                    right: 10px;
+                    max-width: calc(100vw - 20px);
+                }
             }
 
             .legion-roulette {
@@ -5128,6 +5176,47 @@
         );
     }
 
+    // Показываем исход применения только после ответа сервера.
+    function showModifierOutcomeToast(outcome, modifierName) {
+        const toast = document.getElementById(
+            'legion-modifier-outcome-toast'
+        );
+    
+        if (!toast) return;
+    
+        const broken = outcome === 'broken';
+    
+        toast.textContent = broken
+            ? `💔 ${modifierName} сломался из-за Кошачьей расплаты`
+            : `✨ ${modifierName} успешно применён`;
+    
+        toast.classList.toggle('broken', broken);
+        toast.classList.toggle('applied', !broken);
+        toast.classList.add('open');
+    
+        clearTimeout(toast.timer);
+    
+        toast.timer = setTimeout(
+            () => toast.classList.remove('open'),
+            2000
+        );
+    }
+    
+    // Возвращаем текст исходного результата рулетки.
+    function restoreRouletteResultText(elements) {
+        if (!elements || !rouletteResult) return;
+    
+        const description = rouletteResourceText(rouletteResult.reels);
+    
+        const multiplierText = Number(rouletteResult.multiplier || 1) > 1
+            ? ` · множитель ×${rouletteResult.multiplier}`
+            : '';
+    
+        elements.result.textContent = rouletteResult.jackpot
+            ? `🎉 ДЖЕКПОТ! ${description} · ${rouletteResult.score} мяукоинов${multiplierText}`
+            : `${description} · ${rouletteResult.score} мяукоинов${multiplierText}`;
+    }
+
     function positionLegionTools() {
         const panel = document.querySelector('#legion-mini-panel');
         const tools = document.querySelector('#legion-mini-tools');
@@ -5837,6 +5926,15 @@
         toast.id = 'legion-mini-toast';
 
         document.body.appendChild(toast);
+
+        const modifierOutcomeToast = document.createElement('div');
+
+        modifierOutcomeToast.id = 'legion-modifier-outcome-toast';
+        
+        modifierOutcomeToast.setAttribute('role', 'status');
+        modifierOutcomeToast.setAttribute('aria-live', 'polite');
+        
+        document.body.appendChild(modifierOutcomeToast);
 
         widget.querySelector('#legion-mini-toggle')
             .addEventListener('click', () => {
@@ -8032,6 +8130,32 @@ function submitBet(amount) {
                 }
     
                 rouletteRerollUsed = true;
+                rouletteSelectedReelIndex = null;
+                
+                // Сервер подтвердил использование, но модификатор сломался.
+                if (
+                    result.modifierOutcome === 'broken' ||
+                    result.modifierBroken
+                ) {
+                    showModifierOutcomeToast('broken', 'Переброс');
+                
+                    restoreRouletteResultText(elements);
+                
+                    updateRouletteModifierUI();
+                
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
+                
+                    loadRouletteRerollAvailability();
+                    loadRouletteInsuranceAvailability();
+                    loadRouletteLockAvailability();
+                
+                    return;
+                }
+                
+                // Модификатор успешно применён.
+                showModifierOutcomeToast('applied', 'Переброс');
+                
                 rouletteResult = normalizeRouletteResult(result);
     
                 animateRoulette(rouletteResult.reels, () => {
@@ -8119,7 +8243,31 @@ function submitBet(amount) {
                 rouletteSelectedKeepIndex = null;
                 rouletteSelectedReelIndex = null;
                 rouletteModifierSelectionMode = null;
-    
+                
+                // Проверяем, не сломалась ли Страховка.
+                if (
+                    result.modifierOutcome === 'broken' ||
+                    result.modifierBroken
+                ) {
+                    showModifierOutcomeToast('broken', 'Страховка');
+                
+                    restoreRouletteResultText(elements);
+                
+                    updateRouletteModifierUI();
+                
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
+                
+                    loadRouletteInsuranceAvailability();
+                    loadRouletteRerollAvailability();
+                    loadRouletteLockAvailability();
+                
+                    return;
+                }
+                
+                // Страховка успешно применена.
+                showModifierOutcomeToast('applied', 'Страховка');
+                
                 rouletteResult = normalizeRouletteResult(result);
     
                 const lockedIndex = rouletteActiveLockIndex;
@@ -8208,8 +8356,32 @@ function submitBet(amount) {
                 rouletteSelectedLockIndex = null;
                 rouletteSelectedReelIndex = null;
                 rouletteModifierSelectionMode = null;
-
-                // Сохраняем активное Закрепление локально
+                
+                // Проверяем, не сломалось ли Закрепление.
+                if (
+                    result.modifierOutcome === 'broken' ||
+                    result.modifierBroken
+                ) {
+                    showModifierOutcomeToast('broken', 'Закрепление');
+                
+                    restoreRouletteResultText(elements);
+                
+                    updateRouletteModifierUI();
+                
+                    elements.complete.disabled = false;
+                    elements.publish.disabled = true;
+                
+                    loadRouletteLockAvailability();
+                    loadRouletteRerollAvailability();
+                    loadRouletteInsuranceAvailability();
+                
+                    return;
+                }
+                
+                // Закрепление успешно применено.
+                showModifierOutcomeToast('applied', 'Закрепление');
+                
+                // Сохраняем активное Закрепление локально.
                 rouletteActiveLockIndex = keepIndex;
                 rouletteLockRemainingGames = 3;
     
