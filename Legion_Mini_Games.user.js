@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.7.3
+// @version      2.1.7.4
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -697,15 +697,56 @@
     
             updateNotification.container.classList.remove('open');
         }
-    
-        function loadUpdateChangelog(button) {
+
+        // Ручное открытие истории изменений
+        function openChangelog() {
             if (!updateNotification) return;
-    
+        
+            // Если доступно обновление — используем его данные.
             const update = getAvailableUpdate();
-            if (!update) return;
+        
+            // Если обновления нет, используем установленную версию.
+            const changelogData = update || {
+                currentVersion: getCurrentScriptVersion(),
+                latestVersion: getCurrentScriptVersion(),
+                changelog: 'CHANGELOG.md'
+            };
+        
+            updateNotification.version.textContent =
+                `Установленная версия: ${changelogData.currentVersion}`;
+        
+            updateNotification.changelog.classList.remove('open');
+            updateNotification.changelog.textContent = '';
+        
+            // Показываем окно истории без кнопки обновления.
+            updateNotification.container.classList.add('open');
+        
+            const updateButton = updateNotification.actions.querySelector(
+                '[data-action="update"]'
+            );
+        
+            updateButton.style.display = update ? '' : 'none';
+        
+            const changelogButton = updateNotification.actions.querySelector(
+                '[data-action="changelog"]'
+            );
+        
+            loadUpdateChangelog(changelogButton, true);
+        }
+    
+        function loadUpdateChangelog(button, manual = false) {
+            if (!updateNotification) return;
+        
+            const update = getAvailableUpdate();
+        
+            const changelogData = update || {
+                changelog: 'CHANGELOG.md'
+            };
+        
+            if (!update && !manual) return;
     
             const changelogPath = String(
-                update.changelog || 'CHANGELOG.md'
+                changelogData.changelog || 'CHANGELOG.md'
             );
     
             if (
@@ -5704,6 +5745,13 @@
                         title="Инвентарь котика">
                     🧺
                 </button>
+
+                <button id="legion-mini-changelog-button"
+                        class="legion-mini-icon-button"
+                        type="button"
+                        title="История изменений">
+                    📋
+                </button>
             </div>
         `;
 
@@ -5996,6 +6044,9 @@
         
         toolsPanel.querySelector('#legion-mini-inventory-button')
             .addEventListener('click', openInventory);
+
+        toolsPanel.querySelector('#legion-mini-changelog-button')
+            .addEventListener('click', openChangelog);
 
         lobbyPanel.querySelector('#legion-mini-dnd-toggle')
             .addEventListener('click', toggleDoNotDisturb);
