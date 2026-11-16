@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.8.1
+// @version      2.1.8.2
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -5544,7 +5544,7 @@
             console.warn('Legion: не удалось загрузить настройки панели');
         }
     
-        // Восстанавливаем позицию и форму панели
+        // Восстанавливаем позицию и строго одну из двух ориентаций
         if (saved) {
             if (
                 Number.isFinite(saved.left) &&
@@ -5556,19 +5556,15 @@
                 tools.style.bottom = 'auto';
             }
     
-            if (saved.horizontal) {
-                tools.classList.add('horizontal');
-            } else if (Number.isFinite(saved.height)) {
-                tools.style.height = `${saved.height}px`;
-            }
+            tools.classList.toggle('horizontal', saved.horizontal === true);
+            tools.style.height = '';
         }
     
         let dragging = false;
-        let resizing = false;
+        let changingOrientation = false;
     
         let startX = 0;
         let startY = 0;
-    
         let initialLeft = 0;
         let initialTop = 0;
         let initialBottom = 0;
@@ -5580,18 +5576,16 @@
     
             startX = event.clientX;
             startY = event.clientY;
+    
             initialLeft = rect.left;
             initialTop = rect.top;
             initialBottom = rect.bottom;
     
-            // Верхний край — изменение высоты
+            // Верхняя полоска переключает ориентацию
             if (event.clientY <= rect.top + 8) {
-                resizing = true;
-                dragging = false;
-    
-                tools.style.height = `${rect.height}px`;
-    
+                changingOrientation = true;
                 tools.setPointerCapture(event.pointerId);
+    
                 event.preventDefault();
                 event.stopPropagation();
                 return;
@@ -5601,26 +5595,20 @@
             if (event.target.closest('button')) return;
     
             dragging = true;
-            resizing = false;
-    
             tools.setPointerCapture(event.pointerId);
         });
     
         tools.addEventListener('pointermove', event => {
-            if (resizing) {
-                const desiredHeight = Math.min(
-                    155,
-                    Math.max(58, initialBottom - event.clientY)
+            if (changingOrientation) {
+                const desiredHeight = initialBottom - event.clientY;
+    
+                // Только два состояния: горизонтальное или вертикальное
+                tools.classList.toggle(
+                    'horizontal',
+                    desiredHeight <= 125
                 );
     
-                // При небольшой высоте переключаемся в горизонтальный режим
-                if (desiredHeight <= 125) {
-                    tools.classList.add('horizontal');
-                    tools.style.height = '';
-                } else {
-                    tools.classList.remove('horizontal');
-                    tools.style.height = `${desiredHeight}px`;
-                }
+                tools.style.height = '';
     
                 const actualHeight = tools.offsetHeight;
     
@@ -5629,14 +5617,9 @@
                     initialBottom - actualHeight
                 )}px`;
     
-                const maxLeft = Math.max(
-                    0,
-                    window.innerWidth - tools.offsetWidth
-                );
-    
                 tools.style.left = `${Math.min(
-                    maxLeft,
-                    Math.max(0, initialLeft)
+                    Math.max(0, initialLeft),
+                    Math.max(0, window.innerWidth - tools.offsetWidth)
                 )}px`;
     
                 tools.style.right = 'auto';
@@ -5650,23 +5633,13 @@
             const deltaX = event.clientX - startX;
             const deltaY = event.clientY - startY;
     
-            const maxLeft = Math.max(
-                0,
-                window.innerWidth - tools.offsetWidth
-            );
-    
-            const maxTop = Math.max(
-                0,
-                window.innerHeight - tools.offsetHeight
-            );
-    
             const left = Math.min(
-                maxLeft,
+                Math.max(0, window.innerWidth - tools.offsetWidth),
                 Math.max(0, initialLeft + deltaX)
             );
     
             const top = Math.min(
-                maxTop,
+                Math.max(0, window.innerHeight - tools.offsetHeight),
                 Math.max(0, initialTop + deltaY)
             );
     
@@ -5677,10 +5650,10 @@
         });
     
         const stopInteraction = () => {
-            if (!dragging && !resizing) return;
+            if (!dragging && !changingOrientation) return;
     
             dragging = false;
-            resizing = false;
+            changingOrientation = false;
     
             const rect = tools.getBoundingClientRect();
     
@@ -5689,7 +5662,6 @@
                 JSON.stringify({
                     left: rect.left,
                     top: rect.top,
-                    height: rect.height,
                     horizontal: tools.classList.contains('horizontal')
                 })
             );
@@ -7328,7 +7300,18 @@ function submitBet(amount) {
         reels.forEach(item => counts.set(item.id, (counts.get(item.id) || 0) + 1));
         const maxCount = Math.max(0, ...counts.values());
         const multiplier = Number(data?.multiplier || (maxCount === 3 ? 2 : maxCount === 2 ? 1.5 : 1));
-        return { reels, score, jackpot, multiplier };
+
+        const penalty = Math.max(0, Number(data?.penalty) || 0);
+        const allEmpty = Boolean(data?.allEmpty);
+        
+        return {
+            reels,
+            score,
+            jackpot,
+            multiplier,
+            penalty,
+            allEmpty
+        };
     }
 
     function rouletteResourceText(reels) {
@@ -9064,8 +9047,16 @@ function submitBet(amount) {
                     Number(result.balance ?? rouletteBalance)
                 );
     
-                elements.result.textContent =
-                    `🎉 Награда получена: ${rouletteResult.score} мяукоинов!`;
+                const penalty = Number(result.penalty || 0);
+                const finalBalance = Number(result.balance ?? rouletteBalance);
+                
+                if (penalty > 0) {
+                    elements.result.textContent =
+                        `😿 Кошачья расплата! Три пустых символа отняли ${penalty.toLocaleString('ru-RU')} мяукоинов. Баланс: ${finalBalance.toLocaleString('ru-RU')}.`;
+                } else {
+                    elements.result.textContent =
+                        `🎉 Награда получена: ${rouletteResult.score} мяукоинов!`;
+                }
     
                 elements.complete.disabled = true;
                 elements.publish.disabled =
@@ -9087,7 +9078,13 @@ function submitBet(amount) {
                     );
                 }
     
-                showToast('🐾 Награда начислена!');
+                if (penalty > 0) {
+                    showToast(
+                        `😿 Кошачья расплата: −${penalty.toLocaleString('ru-RU')} мяукоинов`
+                    );
+                } else {
+                    showToast('🐾 Награда начислена!');
+                }
             }
         );
     }
@@ -11052,7 +11049,7 @@ function startInventoryPolling() {
         if (document.getElementById('legion-mini-widget')) return;
     
         console.log(
-            '[Legion Кото-игры] Version 2.1.8.1 loaded'
+            '[Legion Кото-игры] Version 2.1.8.2 loaded'
         );
     
         ui = createInterface();
