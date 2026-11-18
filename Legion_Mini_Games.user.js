@@ -13,7 +13,7 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_openInTab
 // @grant        GM_info
-// @connect      legion-server.onrender.com
+// @connect      legion-server-1zr6.onrender.com
 // @connect      raw.githubusercontent.com
 // ==/UserScript==
 
@@ -21,7 +21,7 @@
     'use strict';
 
     const CONFIG = {
-        serverUrl: 'https://legion-server.onrender.com',
+        serverUrl: 'https://legion-server-1zr6.onrender.com',
         heartbeatInterval: 20000,
         playersRefreshInterval: 10000,
         invitationsRefreshInterval: 5000,
