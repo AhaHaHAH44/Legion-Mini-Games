@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Legion - Кото-игры
 // @namespace    https://github.com/AhaHaHAH44/Legion-Mini-Games
-// @version      2.1.8.2
+// @version      2.1.8.3
 // @description  Multiplayer mini-games for Multidonate
 // @author       Sectwi1l
 // @homepageURL  https://github.com/AhaHaHAH44/Legion-Mini-Games
@@ -100,6 +100,9 @@
     let rouletteResult = null;
     let rouletteSpinning = false;
     let rouletteSessionId = null;
+    // Активная сессия Лихорадки
+    let rouletteFeverSessionId = null;
+    let rouletteFeverRunning = false;
     // Уровень Кошачьей расплаты, зафиксированный при создании сессии
     let rouletteSessionCurseLevel = 0;
     
@@ -1296,6 +1299,98 @@
                 justify-content: center;
                 gap: 8px;
                 margin: 13px 0;
+            }
+
+            /* ================================
+               ЛИХОРАДКА — поле 3×3
+            ================================ */
+            
+            .legion-fever-panel {
+                margin: 14px 0;
+                padding: 12px;
+                border: 1px solid #9a7548;
+                border-radius: 13px;
+                background: linear-gradient(145deg, #493725, #30271f);
+                box-shadow: inset 0 0 18px rgba(0, 0, 0, .22);
+            }
+            
+            .legion-fever-panel[hidden] {
+                display: none !important;
+            }
+            
+            .legion-fever-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+            
+            .legion-fever-title {
+                color: #ffe0a8;
+                font-size: 13px;
+                font-weight: bold;
+            }
+            
+            .legion-fever-progress {
+                color: #c9ad88;
+                font-size: 11px;
+            }
+            
+            .legion-fever-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 7px;
+                align-items: center;
+                margin: 12px 0;
+            }
+            
+            .legion-fever-row {
+                display: flex;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+            }
+            
+            .legion-fever-cell {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 58px;
+                height: 58px;
+                flex: 0 0 58px;
+                border: 1px solid #80694e;
+                border-radius: 12px;
+                background: #241f1b;
+                box-shadow: inset 0 0 12px #0006;
+                font-size: 27px;
+                user-select: none;
+            }
+            
+            .legion-fever-cell.empty {
+                color: #766b5e;
+                opacity: .55;
+            }
+            
+            .legion-fever-row.projected {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            
+            .legion-fever-row.projected.visible {
+                opacity: 1;
+                transform: translateY(0);
+                transition:
+                    opacity .55s ease,
+                    transform .7s cubic-bezier(.16, 1, .3, 1);
+            }
+            
+            .legion-fever-result {
+                min-height: 20px;
+                color: #ffe0a8;
+                font-size: 12px;
+                line-height: 1.5;
+                text-align: center;
             }
 
             .legion-roulette-reel {
@@ -7384,11 +7479,56 @@ function submitBet(amount) {
                     <div data-role="modifier-popup-text"></div>
                 </div>
             </div>
+            <!-- ЛИХОРАДКА -->
+            <div class="legion-fever-panel" data-role="fever-panel" hidden>
+                <div class="legion-fever-header">
+                    <div class="legion-fever-title">
+                        🔥 Кото-рулетка: Лихорадка
+                    </div>
+
+                    <div class="legion-fever-progress" data-role="fever-progress">
+                        Прокрутка 0 / 3
+                    </div>
+                </div>
+
+                <div class="legion-fever-grid" data-role="fever-grid">
+
+                    <div class="legion-fever-row projected" data-round="1">
+                        <div class="legion-fever-cell empty">❔</div>
+                        <div class="legion-fever-cell empty">❔</div>
+                        <div class="legion-fever-cell empty">❔</div>
+                    </div>
+
+                    <div class="legion-fever-row projected" data-round="2">
+                        <div class="legion-fever-cell empty">❔</div>
+                        <div class="legion-fever-cell empty">❔</div>
+                        <div class="legion-fever-cell empty">❔</div>
+                    </div>
+
+                    <div class="legion-fever-row" data-round="3">
+                        <div class="legion-fever-cell empty">❔</div>
+                        <div class="legion-fever-cell empty">❔</div>
+                        <div class="legion-fever-cell empty">❔</div>
+                    </div>
+
+                </div>
+
+                <div class="legion-fever-result" data-role="fever-result">
+                    Ожидание начала Лихорадки...
+                </div>
+            </div>
             <div class="legion-roulette-result">🍀 Испытайте удачу, котик!</div>
             <div class="legion-roulette-hint" data-role="balance">Баланс: загрузка...</div>
             <div class="legion-roulette-controls">
                 <button class="legion-mini-button" data-action="spin">
                     ⛏️ Копать!
+                </button>
+
+                <button
+                    class="legion-mini-button"
+                    data-action="fever"
+                    type="button">
+                    🔥 Лихорадка
                 </button>
             
                 <button class="legion-mini-button" data-action="reroll" disabled hidden>
@@ -7431,6 +7571,9 @@ function submitBet(amount) {
 
                 container.querySelector('[data-action="spin"]')
                     .addEventListener('click', spinRouletteSolo);
+
+                container.querySelector('[data-action="fever"]')
+                    .addEventListener('click', startRouletteFever);
         
                 container.querySelector('[data-action="complete"]')
                     .addEventListener('click', completeRouletteSolo);
@@ -7548,6 +7691,7 @@ function submitBet(amount) {
         if (!container) return null;
 
         return {
+            container,
             reels: [...container.querySelectorAll('.legion-roulette-reel')],
             result: container.querySelector('.legion-roulette-result'),
             spin: container.querySelector('[data-action="spin"]'),
@@ -7562,72 +7706,378 @@ function submitBet(amount) {
             modifierPopup: container.querySelector('[data-role="modifier-popup"]'),
             modifierPopupTitle: container.querySelector('[data-role="modifier-popup-title"]'),
             modifierPopupText: container.querySelector('[data-role="modifier-popup-text"]'),
+            feverPanel: container.querySelector('[data-role="fever-panel"]'),
+            feverGrid: container.querySelector('[data-role="fever-grid"]'),
+            feverProgress: container.querySelector('[data-role="fever-progress"]'),
+            feverResult: container.querySelector('[data-role="fever-result"]'),
             balance: container.querySelector('[data-role="balance"]')
         };
     }
 
-    function animateRouletteBalance(targetBalance) {
-        const elements = rouletteElements();
-        if (!elements?.balance) return;
-    
-        const target = Math.max(0, Math.floor(Number(targetBalance) || 0));
-        const start = rouletteBalance;
-    
-        // Сохраняем итоговый баланс сразу
-        rouletteBalance = target;
-    
-        // Останавливаем предыдущую анимацию
-        if (rouletteBalanceAnimation) {
-            clearInterval(rouletteBalanceAnimation);
-            rouletteBalanceAnimation = null;
+    // Сброс интерфейса Лихорадки перед новой сессией
+function resetRouletteFeverUI() {
+    const elements = rouletteElements();
+    if (!elements?.feverPanel) return;
+
+    elements.feverPanel.hidden = false;
+
+    elements.feverProgress.textContent = 'Прокрутка 0 / 3';
+    elements.feverResult.textContent =
+        '🔥 Лихорадка начинается...';
+
+    const rows = elements.feverGrid.querySelectorAll(
+        '.legion-fever-row'
+    );
+
+    rows.forEach((row, index) => {
+        row.classList.remove('visible');
+
+        // Первые два ряда появляются с анимацией.
+        if (index < 2) {
+            row.classList.add('projected');
+        } else {
+            row.classList.remove('projected');
         }
-    
-        // При первой загрузке просто показываем баланс
-        if (elements.balance.textContent.includes('загрузка')) {
-            elements.balance.textContent =
-                `💰 Баланс: ${target} мяукоинов`;
-            return;
-        }
-    
-        const difference = target - start;
-    
-        if (difference === 0) {
-            elements.balance.textContent =
-                `💰 Баланс: ${target} мяукоинов`;
-            return;
-        }
-    
-        const direction = difference > 0 ? 1 : -1;
-        const totalSteps = Math.abs(difference);
-    
-        let current = start;
-        const step = totalSteps > 80
-            ? Math.ceil(totalSteps / 80)
-            : 1;
-    
-        elements.balance.classList.remove('balance-counting');
-        void elements.balance.offsetWidth;
-        elements.balance.classList.add('balance-counting');
-    
-        rouletteBalanceAnimation = setInterval(() => {
-            current += direction * step;
-    
-            if (
-                (direction > 0 && current >= target) ||
-                (direction < 0 && current <= target)
-            ) {
-                current = target;
-                clearInterval(rouletteBalanceAnimation);
-                rouletteBalanceAnimation = null;
-                elements.balance.classList.remove('balance-counting');
-            }
-    
-            elements.balance.textContent =
-                `💰 Баланс: ${current} мяукоинов`;
-        }, 25);
+
+        row.querySelectorAll('.legion-fever-cell').forEach(cell => {
+            cell.textContent = '❔';
+            cell.classList.add('empty');
+        });
+    });
+}
+
+// Отображение результата одной прокрутки Лихорадки
+function renderRouletteFeverRound(roundNumber, reels) {
+    const elements = rouletteElements();
+
+    if (
+        !elements?.feverGrid ||
+        ![1, 2, 3].includes(roundNumber) ||
+        !Array.isArray(reels) ||
+        reels.length !== 3
+    ) {
+        return;
     }
 
-    function updateRouletteCooldownUI() {
+    const row = elements.feverGrid.querySelector(
+        `[data-round="${roundNumber}"]`
+    );
+
+    if (!row) return;
+
+    elements.feverPanel.hidden = false;
+
+    const cells = row.querySelectorAll('.legion-fever-cell');
+
+    reels.forEach((value, index) => {
+        const resource = normalizeRouletteResource(value);
+
+        cells[index].textContent = resource?.emoji || '❔';
+        cells[index].classList.remove('empty');
+    });
+
+    elements.feverProgress.textContent =
+        `Прокрутка ${roundNumber} / 3`;
+
+    if (roundNumber < 3) {
+        elements.feverResult.textContent =
+            `Прокрутка ${roundNumber} завершена. Готовимся к следующей...`;
+
+        // Запускаем CSS-переход после обновления содержимого.
+        row.classList.remove('visible');
+        void row.offsetWidth;
+
+        requestAnimationFrame(() => {
+            row.classList.add('visible');
+        });
+    } else {
+        elements.feverResult.textContent =
+            '✨ Все три прокрутки завершены!';
+    }
+}
+
+// Универсальная обёртка над существующим request()
+function rouletteFeverRequest(path, data) {
+    return new Promise((resolve, reject) => {
+        request('POST', path, data, (error, result, status) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+
+            if (!result?.success) {
+                reject(new Error(
+                    result?.error || `Ошибка сервера (${status})`
+                ));
+                return;
+            }
+
+            resolve(result);
+        });
+    });
+}
+
+
+// Ожидание завершения стандартной анимации барабана
+function animateRouletteFeverRound(reels) {
+    return new Promise(resolve => {
+        const elements = rouletteElements();
+
+        if (!elements || !Array.isArray(reels) || reels.length !== 3) {
+            resolve();
+            return;
+        }
+
+        rouletteTimers.forEach(clearTimeout);
+        rouletteTimers = [];
+
+        rouletteSpinning = true;
+
+        elements.reels.forEach((reel, index) => {
+            const resource = normalizeRouletteResource(reels[index]);
+
+            reel.classList.remove('lock-active');
+            reel.classList.remove('spinning');
+            reel.textContent = '❔';
+            reel.classList.add('spinning');
+
+            const timer = setTimeout(() => {
+                reel.classList.remove('spinning');
+                reel.textContent = resource?.emoji || '❔';
+
+                if (index === 2) {
+                    rouletteSpinning = false;
+                    updateRouletteCooldownUI();
+                    updateRouletteModifierUI();
+                    resolve();
+                }
+            }, 900 + index * 450);
+
+            rouletteTimers.push(timer);
+        });
+    });
+}
+
+
+// Запуск трёх последовательных прокруток
+async function startRouletteFever() {
+    const elements = rouletteElements();
+
+    if (
+        !elements ||
+        rouletteFeverRunning ||
+        rouletteSpinning ||
+        rouletteCompleting ||
+        (rouletteSessionId && !rouletteCompleted)
+    ) {
+        return;
+    }
+
+    const feverButton = elements.container?.querySelector(
+        '[data-action="fever"]'
+    );
+
+    rouletteFeverRunning = true;
+
+    if (feverButton) feverButton.disabled = true;
+
+    elements.spin.disabled = true;
+    elements.publish.disabled = true;
+    elements.complete.disabled = true;
+
+    rouletteFeverSessionId = null;
+
+    resetRouletteFeverUI();
+
+    try {
+        // 1. Создаём или восстанавливаем сессию
+        elements.feverResult.textContent =
+            '🔥 Подготавливаем Лихорадку...';
+
+        const startResult = await rouletteFeverRequest(
+            '/api/roulette/fever/start',
+            { playerId }
+        );
+
+        rouletteFeverSessionId = startResult.sessionId;
+
+        if (!rouletteFeverSessionId) {
+            throw new Error('Сервер не вернул ID сессии Лихорадки.');
+        }
+
+        // 2. Выполняем недостающие прокрутки
+        const completedRounds = Array.isArray(startResult.rounds)
+            ? startResult.rounds.length
+            : Number(startResult.currentRound || 0);
+
+        // Восстанавливаем результаты уже выполненных прокруток
+        if (Array.isArray(startResult.rounds)) {
+            startResult.rounds.forEach(savedRound => {
+                if (
+                    savedRound &&
+                    Number.isInteger(savedRound.round) &&
+                    Array.isArray(savedRound.reels)
+                ) {
+                    renderRouletteFeverRound(
+                        savedRound.round,
+                        savedRound.reels
+                    );
+                }
+            });
+        }
+
+        for (let roundNumber = completedRounds + 1;
+             roundNumber <= 3;
+             roundNumber++) {
+
+            elements.feverProgress.textContent =
+                `Прокрутка ${roundNumber} / 3`;
+
+            elements.feverResult.textContent =
+                `🔥 Выполняем прокрутку ${roundNumber}...`;
+
+            const spinResult = await rouletteFeverRequest(
+                '/api/roulette/fever/spin',
+                {
+                    playerId,
+                    sessionId: rouletteFeverSessionId,
+                    roundNumber
+                }
+            );
+
+            const round = spinResult.round;
+
+            if (!round || !Array.isArray(round.reels) ||
+                round.reels.length !== 3) {
+                throw new Error(
+                    `Сервер вернул некорректный результат прокрутки ${roundNumber}.`
+                );
+            }
+
+            // Используем обычную анимацию барабана
+            await animateRouletteFeverRound(round.reels);
+
+            // Показываем результат в соответствующем ряду 3×3
+            renderRouletteFeverRound(
+                roundNumber,
+                round.reels
+            );
+
+            // Небольшая пауза между прокрутками
+            if (roundNumber < 3) {
+                await new Promise(resolve =>
+                    setTimeout(resolve, 650)
+                );
+            }
+        }
+
+        // 3. Завершаем сессию и получаем награду
+        elements.feverResult.textContent =
+            '✨ Все прокрутки завершены. Подсчитываем добычу...';
+
+        const completeResult = await rouletteFeverRequest(
+            '/api/roulette/fever/complete',
+            {
+                playerId,
+                sessionId: rouletteFeverSessionId
+            }
+        );
+
+        animateRouletteBalance(
+            Number(completeResult.balance ?? rouletteBalance)
+        );
+
+        elements.feverProgress.textContent = 'Прокрутка 3 / 3';
+
+        elements.feverResult.textContent =
+            completeResult.allEmpty
+                ? '😿 Все девять ячеек оказались пустыми. Награда сгорела.'
+                : `🎉 Лихорадка завершена! Получено ${completeResult.reward} мяукоинов!`;
+
+        rouletteFeverSessionId = null;
+
+    } catch (error) {
+        console.error('[Legion] Ошибка Лихорадки:', error);
+
+        elements.feverResult.textContent =
+            `😿 ${error.message}`;
+
+    } finally {
+        rouletteFeverRunning = false;
+
+        if (feverButton) feverButton.disabled = false;
+
+        elements.spin.disabled = false;
+        elements.publish.disabled = true;
+        elements.complete.disabled = true;
+    }
+}
+
+function animateRouletteBalance(targetBalance) {
+    const elements = rouletteElements();
+    if (!elements?.balance) return;
+
+    const target = Math.max(
+        0,
+        Math.round((Number(targetBalance) || 0) * 100) / 100
+    );
+    const start = rouletteBalance;
+
+    // Сохраняем итоговый баланс сразу
+    rouletteBalance = target;
+
+    // Останавливаем предыдущую анимацию
+    if (rouletteBalanceAnimation) {
+        clearInterval(rouletteBalanceAnimation);
+        rouletteBalanceAnimation = null;
+    }
+
+    // При первой загрузке просто показываем баланс
+    if (elements.balance.textContent.includes('загрузка')) {
+        elements.balance.textContent =
+            `💰 Баланс: ${target.toFixed(2)} мяукоинов`;
+        return;
+    }
+
+    const difference = target - start;
+
+    if (difference === 0) {
+        elements.balance.textContent =
+            `💰 Баланс: ${target.toFixed(2)} мяукоинов`;
+        return;
+    }
+
+    const direction = difference > 0 ? 1 : -1;
+    const totalSteps = Math.abs(difference);
+
+    let current = start;
+    const step = totalSteps > 80
+        ? Math.ceil(totalSteps / 80)
+        : 1;
+
+    elements.balance.classList.remove('balance-counting');
+    void elements.balance.offsetWidth;
+    elements.balance.classList.add('balance-counting');
+
+    rouletteBalanceAnimation = setInterval(() => {
+        current += direction * step;
+
+        if (
+            (direction > 0 && current >= target) ||
+            (direction < 0 && current <= target)
+        ) {
+            current = target;
+            clearInterval(rouletteBalanceAnimation);
+            rouletteBalanceAnimation = null;
+            elements.balance.classList.remove('balance-counting');
+        }
+
+        elements.balance.textContent =
+            `💰 Баланс: ${current.toFixed(2)} мяукоинов`;
+    }, 25);
+}
+
+function updateRouletteCooldownUI() {
     const elements = rouletteElements();
     if (!elements) return;
 
@@ -11049,7 +11499,7 @@ function startInventoryPolling() {
         if (document.getElementById('legion-mini-widget')) return;
     
         console.log(
-            '[Legion Кото-игры] Version 2.1.8.2 loaded'
+            '[Legion Кото-игры] Version 2.1.8.3 loaded'
         );
     
         ui = createInterface();
